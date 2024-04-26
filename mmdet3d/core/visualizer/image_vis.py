@@ -3,7 +3,7 @@ import copy
 import cv2
 import numpy as np
 import torch
-from matplotlib import pyplot as plt
+#from matplotlib import pyplot as plt
 
 
 def project_pts_on_img(points,

@@ -18,6 +18,7 @@ from .m2bevnet import M2BevNet
 from .m2bevnet_seq import M2BevNetSeq
 from .m2bevnet_ms_seq import MultiScaleM2BevNetSeq
 from .fastbev import FastBEV
+from .fast_bev_fusion import FastBEVFusion
 
 
 __all__ = [
@@ -25,5 +26,5 @@ __all__ = [
     'DynamicMVXFasterRCNN', 'MVXFasterRCNN', 'PartA2', 'VoteNet', 'H3DNet',
     'CenterPoint', 'SSD3DNet', 'ImVoteNet', 'SingleStageMono3DDetector',
     'FCOSMono3D', 'ImVoxelNet', 'GroupFree3DNet', 'M2BevNet', 'M2BevNetSeq',
-    'MultiScaleM2BevNetSeq', 'FastBEV'
+    'MultiScaleM2BevNetSeq', 'FastBEV',"FastBEVFusion"
 ]

@@ -262,7 +262,7 @@ class DataBaseSampler(object):
                 s_points_list.append(s_points)
 
             gt_labels = np.array([self.cat2label[s['name']] for s in sampled],
-                                 dtype=np.long)
+                                 dtype=np.longlong)
             ret = {
                 'gt_labels_3d':
                 gt_labels,

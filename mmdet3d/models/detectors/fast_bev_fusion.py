@@ -4,19 +4,23 @@ import torch
 import torch.nn as nn
 import torch.utils.checkpoint as cp
 
-from mmdet.models import DETECTORS, build_backbone, build_head, build_neck
+from mmdet.models import DETECTORS
 from mmseg.models import build_head as build_seg_head
 from mmdet.models.detectors import BaseDetector
 from mmdet3d.core import bbox3d2result
 from mmseg.ops import resize
 from mmcv.runner import get_dist_info, auto_fp16
+from mmdet3d.ops import Voxelization
+from .. import builder
+from mmcv.runner import force_fp32
+import torch.nn.functional as F
 
 import copy
 import ipdb  # noqa
 
 
 @DETECTORS.register_module()
-class M2BevNet(BaseDetector):
+class FastBEVFusion(BaseDetector):
     def __init__(
         self,
         backbone,
@@ -27,6 +31,12 @@ class M2BevNet(BaseDetector):
         seg_head,
         n_voxels,
         voxel_size,
+        pts_voxel_layer,
+        pts_voxel_encoder=None,
+        pts_middle_encoder=None,
+        pts_backbone=None,
+        pts_neck=None,
+        fusion_module=None,
         bbox_head_2d=None,
         train_cfg=None,
         test_cfg=None,
@@ -39,8 +49,22 @@ class M2BevNet(BaseDetector):
         style="v1",
     ):
         super().__init__(init_cfg=init_cfg)
-        self.backbone = build_backbone(backbone)
-        self.neck = build_neck(neck)
+
+        #Pointa
+        self.pts_voxel_layer = Voxelization(**pts_voxel_layer)
+        self.pts_voxel_encoder = builder.build_voxel_encoder(pts_voxel_encoder)
+        self.pts_middle_encoder= builder.build_middle_encoder(
+                pts_middle_encoder)
+        self.pts_backbone = builder.build_backbone(pts_backbone)
+        self.pts_neck = builder.build_neck(pts_neck)
+
+        #Fusion
+
+        self.fusion_module = builder.build_fusion_layer(fusion_module)
+
+        self.backbone = builder.build_backbone(backbone)
+        self.neck = builder.build_neck(neck)
+        
         self.neck_fuse = nn.Conv2d(
             neck_fuse["in_channels"],
             neck_fuse["out_channels"],
@@ -48,12 +72,12 @@ class M2BevNet(BaseDetector):
             stride=1,
             padding=1,
         )
-        self.neck_3d = build_neck(neck_3d)
+        self.neck_3d = builder.build_neck(neck_3d)
 
         if bbox_head is not None:
             bbox_head.update(train_cfg=train_cfg)
             bbox_head.update(test_cfg=test_cfg)
-            self.bbox_head = build_head(bbox_head)
+            self.bbox_head = builder.build_head(bbox_head)
             self.bbox_head.voxel_size = voxel_size
         else:
             self.bbox_head = None
@@ -66,7 +90,7 @@ class M2BevNet(BaseDetector):
         if bbox_head_2d is not None:
             bbox_head_2d.update(train_cfg=train_cfg_2d)
             bbox_head_2d.update(test_cfg=test_cfg_2d)
-            self.bbox_head_2d = build_head(bbox_head_2d)
+            self.bbox_head_2d = builder.build_head(bbox_head_2d)
         else:
             self.bbox_head_2d = None
 
@@ -217,6 +241,49 @@ class M2BevNet(BaseDetector):
             x = _inner_forward(x)
 
         return x, None, features_2d
+    
+    def extract_pts_feat(self, pts):
+        """Extract features of points."""
+
+        voxels, num_points, coors = self.voxelize(pts)
+
+        voxel_features = self.pts_voxel_encoder(voxels, num_points, coors)
+        batch_size = coors[-1, 0] + 1
+        x = self.pts_middle_encoder(voxel_features, coors, batch_size)
+        x = self.pts_backbone(x)
+        
+        x = self.pts_neck(x)
+
+        return x
+    
+    @torch.no_grad()
+    @force_fp32()
+    def voxelize(self, points):
+        """Apply dynamic voxelization to points.
+
+        Args:
+            points (list[torch.Tensor]): Points of each sample.
+
+        Returns:
+            tuple[torch.Tensor]: Concatenated points, number of points
+                per voxel, and coordinates.
+        """
+        voxels, coors, num_points = [], [], []
+        for res in points:
+            res_voxels, res_coors, res_num_points = self.pts_voxel_layer(res)
+            voxels.append(res_voxels)
+            coors.append(res_coors)
+            num_points.append(res_num_points)
+        voxels = torch.cat(voxels, dim=0)
+        num_points = torch.cat(num_points, dim=0)
+        coors_batch = []
+        for i, coor in enumerate(coors):
+            coor_pad = F.pad(coor, (1, 0), mode='constant', value=i)
+            coors_batch.append(coor_pad)
+        coors_batch = torch.cat(coors_batch, dim=0)
+        return voxels, num_points, coors_batch
+
+
 
     @auto_fp16(apply_to=('img', ))
     def forward(self, img, img_metas, return_loss=True, **kwargs):
@@ -243,14 +310,26 @@ class M2BevNet(BaseDetector):
             return self.forward_test(img, img_metas, **kwargs)
 
     def forward_train(
-        self, img, img_metas, gt_bboxes_3d, gt_labels_3d, gt_bev_seg=None, **kwargs
-    ):
+        self, img, img_metas, gt_bboxes_3d, gt_labels_3d, gt_bev_seg=None, points=None, **kwargs
+    ):  
+        
+        
+        lidar_features = self.extract_pts_feat(points)
+
+
         feature_bev, valids, features_2d = self.extract_feat(img, img_metas, "train")
+
+
         """
         feature_bev: [(1, 256, 100, 100)]
         valids: (1, 1, 200, 200, 12)
         features_2d: [[6, 64, 232, 400], [6, 64, 116, 200], [6, 64, 58, 100], [6, 64, 29, 50]]
         """
+
+        #fuse lidar BEV and camera BEV features
+        feature_bev = self.fusion_module(lidar_features[0], feature_bev[0])
+        feature_bev =[feature_bev]
+
         assert self.bbox_head is not None or self.seg_head is not None
 
         losses = dict()

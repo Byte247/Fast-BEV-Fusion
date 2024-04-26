@@ -9,7 +9,9 @@ from .lyft_dataset import LyftDataset
 from .nuscenes_dataset import NuScenesDataset
 from .nuscenes_mono_dataset import NuScenesMonoDataset
 from .nuscenes_monocular_dataset import NuScenesMultiViewDataset
+from .nuscenes_monocular_dataset import NuScenesMultiViewMultiModalDataset
 from .nuscenes_monocular_dataset_map_2 import NuScenesMultiView_Map_Dataset2
+from .nuscenes_monocular_dataset_map_2 import NuScenesMultiView_Map_MultiModalDataset
 
 from .pipelines import (BackgroundPointsFilter, GlobalAlignment,
                         GlobalRotScaleTrans, IndoorPatchPointSample,
@@ -42,5 +44,6 @@ __all__ = [
     'WaymoDataset', 'BackgroundPointsFilter', 'VoxelBasedPointSampler',
     'get_loading_pipeline', 'RandomDropPointsColor', 'RandomJitterPoints',
     'ObjectNameFilter', 'InternalDataset', 'NuScenesMultiViewDataset',
-    'NuScenesMultiView_Map_Dataset2'
+    'NuScenesMultiView_Map_Dataset2','NuScenesMultiViewMultiModalDataset',
+    "NuScenesMultiView_Map_MultiModalDataset"
 ]
