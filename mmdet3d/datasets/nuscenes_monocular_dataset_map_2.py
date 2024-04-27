@@ -32,8 +32,9 @@ class NuScenesMultiView_Map_MultiModalDataset(NuScenesMultiViewMultiModalDataset
         # box 2d
         self.with_box2d = with_box2d
 
-        xbound = [-50, 50, 0.5]
-        ybound = [-50, 50, 0.5]
+
+        xbound = [-51.2, 51.2, 0.5]
+        ybound = [-51.2, 51.2, 0.5]
         zbound = [-10, 10, 20.0]
         dbound = [4.0, 45.0, 1.0]
 
@@ -257,6 +258,7 @@ class NuScenesMultiView_Map_MultiModalDataset(NuScenesMultiViewMultiModalDataset
                 seg_gt_lane = mmcv.imread(seg_gt_path+'lane/{}.png'.format(i), flag='grayscale').astype('float64')
                 new_bevseg_gts_road.append(seg_gt_road)
                 new_bevseg_gts_lane.append(seg_gt_lane)
+        
 
         if vis_mode:
             print('### vis nus test data ###')

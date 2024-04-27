@@ -107,7 +107,7 @@ model = dict(
 
     #Point Modules:
     pts_voxel_layer=dict(
-        max_num_points=20, voxel_size=[0.2, 0.2, 8], max_voxels=(30000, 40000), point_cloud_range=point_cloud_range),
+        max_num_points=20, voxel_size=[0.2, 0.2, 8], max_voxels=(30000, 60000), point_cloud_range=point_cloud_range),
     pts_voxel_encoder=dict(
         type='PillarFeatureNet',
         in_channels=5,
@@ -247,9 +247,6 @@ test_pipeline = [
         use_dim=[0, 1, 2, 3, 4],
         pad_empty_sweeps=True,
         remove_close=True),
-    dict(type='PointsRangeFilter', point_cloud_range=point_cloud_range),
-    dict(type='ObjectRangeFilter', point_cloud_range=point_cloud_range),
-    dict(type='ObjectNameFilter', classes=class_names),
     dict(
         type='MultiViewPipeline',
         n_images=6,
@@ -260,7 +257,7 @@ test_pipeline = [
             dict(type='Pad', size_divisor=32)]),
     dict(type='KittiSetOrigin', point_cloud_range=point_cloud_range),
     dict(type='DefaultFormatBundle3D', class_names=class_names, with_label=False),
-    dict(type='Collect3D', keys=['img'])]
+    dict(type='Collect3D', keys=['img','points'])]
 
 
 

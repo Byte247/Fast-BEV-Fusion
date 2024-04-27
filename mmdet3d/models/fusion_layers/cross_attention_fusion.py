@@ -161,8 +161,6 @@ class MultiHeadCrossAttention(nn.Module):
         lidar_bev_features = self.reduce_lidar_channel_act(self.reduce_lidar_channel_norm(self.reduce_lidar_channel(lidar_bev_features)))
         
 
-
-
         # # get patch embeddings
         image_patch_embedding = self.create_camera_patches(camera_bev_features)
         lidar_patch_embedding = self.create_lidar_patches(lidar_bev_features)

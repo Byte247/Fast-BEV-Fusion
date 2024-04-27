@@ -209,24 +209,7 @@ class FastBEVFusion(BaseDetector):
             height = img_meta["img_shape"][0] // stride
             width = img_meta["img_shape"][1] // stride
 
-            if self.style == "v1":
-                volume, valid = backproject(
-                    feature[:, :, :height, :width], points, projection
-                )
-
-                volume = volume.sum(dim=0)  # [6, 64, 200, 200, 12] -> [64, 200, 200, 12]
-                valid = valid.sum(dim=0)  # [6, 1, 200, 200, 12] -> [1, 200, 200, 12]
-                volume = volume / valid
-                valid = valid > 0
-                volume[:, ~valid[0]] = 0.0
-            elif self.style == "v2":
-                volume = backproject_v2(
-                    feature[:, :, :height, :width], points, projection
-                )  # [64, 200, 200, 12]
-            else:
-                volume = backproject_v3(
-                    feature[:, :, :height, :width], points, projection
-                )  # [64, 200, 200, 12]
+            volume = backproject_inplace(feature[:, :, :height, :width], points, projection)
             volumes.append(volume)
 
         x = torch.stack(volumes)  # [1, 64, 200, 200, 12]
@@ -373,9 +356,9 @@ class FastBEVFusion(BaseDetector):
 
         return losses
 
-    def forward_test(self, img, img_metas, **kwargs):
+    def forward_test(self, img, img_metas, points,**kwargs): 
         if not self.test_cfg.get('use_tta', False):
-            return self.simple_test(img, img_metas)
+            return self.simple_test(img, img_metas, points)
         return self.aug_test(img, img_metas)
 
     def onnx_export_2d(self, img, img_metas):
@@ -429,9 +412,17 @@ class FastBEVFusion(BaseDetector):
 
         return x
 
-    def simple_test(self, img, img_metas):
+    def simple_test(self, img, img_metas, points):
         bbox_results = []
         feature_bev, _, features_2d = self.extract_feat(img, img_metas, "test")
+
+        lidar_features = self.extract_pts_feat(points)
+
+        #fuse lidar BEV and camera BEV features
+        feature_bev = self.fusion_module(lidar_features[0], feature_bev[0])
+        feature_bev =[feature_bev]
+
+
         if self.bbox_head is not None:
             x = self.bbox_head(feature_bev)
             bbox_list = self.bbox_head.get_bboxes(*x, img_metas, valid=None)
@@ -492,44 +483,7 @@ def get_points(n_voxels, voxel_size, origin):
     return points
 
 
-# modify from https://github.com/magicleap/Atlas/blob/master/atlas/model.py
-def backproject(features, points, projection):
-    '''
-    function: 2d feature + predefined point cloud -> 3d volume
-    input:
-        features: [6, 64, 225, 400]
-        points: [3, 200, 200, 12]
-        projection: [6, 3, 4]
-    output:
-        volume: [6, 64, 200, 200, 12]
-        valid: [6, 1, 200, 200, 12]
-    '''
-    n_images, n_channels, height, width = features.shape
-    n_x_voxels, n_y_voxels, n_z_voxels = points.shape[-3:]
-    # [3, 200, 200, 12] -> [1, 3, 480000] -> [6, 3, 480000]
-    points = points.view(1, 3, -1).expand(n_images, 3, -1)
-    # [6, 3, 480000] -> [6, 4, 480000]
-    points = torch.cat((points, torch.ones_like(points[:, :1])), dim=1)
-    # ego_to_cam
-    # [6, 3, 4] * [6, 4, 480000] -> [6, 3, 480000]
-    points_2d_3 = torch.bmm(projection, points)  # lidar2img
-    x = (points_2d_3[:, 0] / points_2d_3[:, 2]).round().long()  # [6, 480000]
-    y = (points_2d_3[:, 1] / points_2d_3[:, 2]).round().long()  # [6, 480000]
-    z = points_2d_3[:, 2]  # [6, 480000]
-    valid = (x >= 0) & (y >= 0) & (x < width) & (y < height) & (z > 0)  # [6, 480000]
-    volume = torch.zeros(
-        (n_images, n_channels, points.shape[-1]), device=features.device
-    ).type_as(features)  # [6, 64, 480000]
-    for i in range(n_images):
-        volume[i, :, valid[i]] = features[i, :, y[i, valid[i]], x[i, valid[i]]]
-    # [6, 64, 480000] -> [6, 64, 200, 200, 12]
-    volume = volume.view(n_images, n_channels, n_x_voxels, n_y_voxels, n_z_voxels)
-    # [6, 480000] -> [6, 1, 200, 200, 12]
-    valid = valid.view(n_images, 1, n_x_voxels, n_y_voxels, n_z_voxels)
-    return volume, valid
-
-
-def backproject_v2(features, points, projection):
+def backproject_inplace(features, points, projection):
     '''
     function: 2d feature + predefined point cloud -> 3d volume
     input:
@@ -552,48 +506,6 @@ def backproject_v2(features, points, projection):
     y = (points_2d_3[:, 1] / points_2d_3[:, 2]).round().long()  # [6, 480000]
     z = points_2d_3[:, 2]  # [6, 480000]
     valid = (x >= 0) & (y >= 0) & (x < width) & (y < height) & (z > 0)  # [6, 480000]
-    # print(f"valid: {valid.shape}, percept: {valid.sum() / (valid.shape[0] * valid.shape[1])}")
-
-    # method1：特征填充，只填充有效特征，重复特征加和平均
-    volume = torch.zeros(
-        (n_channels, points.shape[-1]), device=features.device
-    ).type_as(features)
-    count = torch.zeros(
-        (n_channels, points.shape[-1]), device=features.device
-    ).type_as(features)
-    for i in range(n_images):
-        volume[:, valid[i]] += features[i, :, y[i, valid[i]], x[i, valid[i]]]
-        count[:, valid[i]] += 1
-    volume[count > 0] /= count[count > 0]
-
-    volume = volume.view(n_channels, n_x_voxels, n_y_voxels, n_z_voxels)
-    return volume
-
-
-def backproject_v3(features, points, projection):
-    '''
-    function: 2d feature + predefined point cloud -> 3d volume
-    input:
-        features: [6, 64, 225, 400]
-        points: [3, 200, 200, 12]
-        projection: [6, 3, 4]
-    output:
-        volume: [64, 200, 200, 12]
-    '''
-    n_images, n_channels, height, width = features.shape
-    n_x_voxels, n_y_voxels, n_z_voxels = points.shape[-3:]
-    # [3, 200, 200, 12] -> [1, 3, 480000] -> [6, 3, 480000]
-    points = points.view(1, 3, -1).expand(n_images, 3, -1)
-    # [6, 3, 480000] -> [6, 4, 480000]
-    points = torch.cat((points, torch.ones_like(points[:, :1])), dim=1)
-    # ego_to_cam
-    # [6, 3, 4] * [6, 4, 480000] -> [6, 3, 480000]
-    points_2d_3 = torch.bmm(projection, points)  # lidar2img
-    x = (points_2d_3[:, 0] / points_2d_3[:, 2]).round().long()  # [6, 480000]
-    y = (points_2d_3[:, 1] / points_2d_3[:, 2]).round().long()  # [6, 480000]
-    z = points_2d_3[:, 2]  # [6, 480000]
-    valid = (x >= 0) & (y >= 0) & (x < width) & (y < height) & (z > 0)  # [6, 480000]
-    # print(f"valid: {valid.shape}, percept: {valid.sum() / (valid.shape[0] * valid.shape[1])}")
 
     # method2：特征填充，只填充有效特征，重复特征直接覆盖
     volume = torch.zeros(
