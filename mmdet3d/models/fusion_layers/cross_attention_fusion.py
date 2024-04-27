@@ -119,6 +119,8 @@ class MultiHeadCrossAttention(nn.Module):
 
 
         self.reduce_lidar_spatialy = nn.MaxPool2d(kernel_size=2, stride=2)
+        self.reduce_camera_spatialy = nn.MaxPool2d(kernel_size=2, stride=2)
+
         self.lidar_camera_cross_attention = Decoder(self.embed_dim, hidden_dim=self.embed_dim * 2, num_heads= num_heads, dropout=dropout, show_weights=False)
         
         self.pos_embed_camera = nn.Parameter(torch.randn(1, self.embed_dim, 4096) * .02) #done as in ViT: https://github.com/lucidrains/vit-pytorch/blob/main/vit_pytorch/vit.py, (14 (image hight) * 25 image width * 6 images) / 16 (image patches)
@@ -157,8 +159,11 @@ class MultiHeadCrossAttention(nn.Module):
 
     def forward(self, lidar_bev_features, camera_bev_features):
 
-        lidar_bev_features = self.reduce_lidar_spatialy(lidar_bev_features)
+        
         lidar_bev_features = self.reduce_lidar_channel_act(self.reduce_lidar_channel_norm(self.reduce_lidar_channel(lidar_bev_features)))
+        lidar_bev_features = self.reduce_lidar_spatialy(lidar_bev_features)
+
+        camera_bev_features = self.reduce_camera_spatialy(camera_bev_features)
         
 
         # # get patch embeddings

@@ -30,7 +30,7 @@ model = dict(
         in_channels=384,
         out_channels=256,
         num_layers=6,
-        stride=4,
+        stride=2,
         is_transpose=False,
         norm_cfg=dict(type='SyncBN', requires_grad=True)),
     seg_head=dict(
@@ -55,7 +55,7 @@ model = dict(
         num_classes=10,
         in_channels=256,
         feat_channels=256,
-        num_convs=0,
+        num_convs=1,
         use_direction_classifier=True,
         pre_anchor_topk=25,
         bbox_thr=0.5,
@@ -226,7 +226,7 @@ train_pipeline = [
         n_images=6,
         transforms=[
             dict(type='LoadImageFromFile'),
-            dict(type='Resize', img_scale=(800, 448), keep_ratio=True),
+            dict(type='Resize', img_scale=(1600, 900), keep_ratio=True),
             dict(type='Normalize', **img_norm_cfg),
             dict(type='Pad', size_divisor=32)]),
     dict(type='ObjectRangeFilter', point_cloud_range=point_cloud_range),
@@ -252,7 +252,7 @@ test_pipeline = [
         n_images=6,
         transforms=[
             dict(type='LoadImageFromFile'),
-            dict(type='Resize', img_scale=(800, 448), keep_ratio=True),
+            dict(type='Resize', img_scale=(1600, 900), keep_ratio=True),
             dict(type='Normalize', **img_norm_cfg),
             dict(type='Pad', size_divisor=32)]),
     dict(type='KittiSetOrigin', point_cloud_range=point_cloud_range),
@@ -264,7 +264,7 @@ test_pipeline = [
 
 data = dict(
     samples_per_gpu=1,
-    workers_per_gpu=0,
+    workers_per_gpu=8,
     train=dict(
         type='RepeatDataset',
         times=1,
