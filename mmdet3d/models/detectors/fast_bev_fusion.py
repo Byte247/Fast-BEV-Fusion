@@ -5,6 +5,7 @@ import torch.nn as nn
 import torch.utils.checkpoint as cp
 
 from mmdet.models import DETECTORS
+from mmseg.models import build_head as build_seg_head
 from mmdet.models.detectors import BaseDetector
 from mmdet3d.core import bbox3d2result
 from mmseg.ops import resize
@@ -27,6 +28,7 @@ class FastBEVFusion(BaseDetector):
         neck_fuse,
         neck_3d,
         bbox_head,
+        seg_head,
         n_voxels,
         voxel_size,
         pts_voxel_layer,
@@ -80,6 +82,10 @@ class FastBEVFusion(BaseDetector):
         else:
             self.bbox_head = None
 
+        if seg_head is not None:
+            self.seg_head = build_seg_head(seg_head)
+        else:
+            self.seg_head = None
 
         if bbox_head_2d is not None:
             bbox_head_2d.update(train_cfg=train_cfg_2d)
@@ -307,19 +313,25 @@ class FastBEVFusion(BaseDetector):
         feature_bev = self.fusion_module(lidar_features[0], feature_bev[0])
         feature_bev =[feature_bev]
 
-        assert self.bbox_head is not None 
+        assert self.bbox_head is not None or self.seg_head is not None
 
         losses = dict()
         if self.bbox_head is not None:
             x = self.bbox_head(feature_bev)
             loss_det = self.bbox_head.loss(*x, gt_bboxes_3d, gt_labels_3d, img_metas)
             losses.update(loss_det)
-            
+
+        if self.seg_head is not None:
+            assert len(gt_bev_seg) == 1
+            x_bev = self.seg_head(feature_bev)
+            gt_bev = gt_bev_seg[0][None, ...].long()
+            loss_seg = self.seg_head.losses(x_bev, gt_bev)
+            losses.update(loss_seg)
 
         if self.bbox_head_2d is not None:
             gt_bboxes = kwargs["gt_bboxes"][0]
             gt_labels = kwargs["gt_labels"][0]
-            #assert len(kwargs["gt_bboxes"]) == 1 and len(kwargs["gt_labels"]) == 1
+            assert len(kwargs["gt_bboxes"]) == 1 and len(kwargs["gt_labels"]) == 1
             # hack a img_metas_2d
             img_metas_2d = []
             img_info = img_metas[0]["img_info"]
@@ -420,6 +432,11 @@ class FastBEVFusion(BaseDetector):
             ]
         else:
             bbox_results = [dict()]
+
+        # BEV semantic seg
+        if self.seg_head is not None:
+            x_bev = self.seg_head(feature_bev)
+            bbox_results[0]['bev_seg'] = x_bev
 
         return bbox_results
 
