@@ -33,6 +33,22 @@ model = dict(
         stride=2,
         is_transpose=False,
         norm_cfg=dict(type='BN', requires_grad=True)),
+    seg_head=dict(
+        type='BEV_FCNHead',
+        use_centerness=True,
+        is_transpose=True,
+        in_channels=256,
+        in_index=0,
+        channels=256,
+        num_convs=4,
+        concat_input=False,
+        dropout_ratio=0.1,
+        num_classes=2,
+        norm_cfg=dict(type='BN', requires_grad=True),
+        align_corners=False,
+        loss_ce=dict(type='CrossEntropyLoss',use_sigmoid=True, loss_weight=1.0),
+        loss_dice=dict(type='DiceLoss_zq', loss_weight=1.0)
+    ),
     bbox_head=dict(
         type='FreeAnchor3DHead',
         is_transpose=True,
