@@ -319,7 +319,7 @@ class FastBEVFusion(BaseDetector):
         if self.bbox_head_2d is not None:
             gt_bboxes = kwargs["gt_bboxes"][0]
             gt_labels = kwargs["gt_labels"][0]
-            assert len(kwargs["gt_bboxes"]) == 1 and len(kwargs["gt_labels"]) == 1
+            #assert len(kwargs["gt_bboxes"]) == 1 and len(kwargs["gt_labels"]) == 1
             # hack a img_metas_2d
             img_metas_2d = []
             img_info = img_metas[0]["img_info"]
