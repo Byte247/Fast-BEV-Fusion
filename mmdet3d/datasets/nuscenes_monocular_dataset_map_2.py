@@ -257,8 +257,7 @@ class NuScenesMultiView_Map_MultiModalDataset(NuScenesMultiViewMultiModalDataset
                 seg_gt_road = mmcv.imread(seg_gt_path+'road/{}.png'.format(i), flag='grayscale').astype('float64')
                 seg_gt_lane = mmcv.imread(seg_gt_path+'lane/{}.png'.format(i), flag='grayscale').astype('float64')
                 new_bevseg_gts_road.append(seg_gt_road)
-                new_bevseg_gts_lane.append(seg_gt_lane)
-        
+                new_bevseg_gts_lane.append(seg_gt_lane)       
 
         if vis_mode:
             print('### vis nus test data ###')
