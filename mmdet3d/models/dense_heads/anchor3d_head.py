@@ -49,7 +49,7 @@ class Anchor3DHead(BaseModule, AnchorTrainMixin):
                  test_cfg,
                  num_convs=0,
                  kernel_size=3,
-                 norm_cfg=dict(type='SyncBN', requires_grad=True),
+                 norm_cfg=dict(type='BN', requires_grad=True),
                  is_transpose=False,
                  feat_channels=256,
                  use_direction_classifier=True,
