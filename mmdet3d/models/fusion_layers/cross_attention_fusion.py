@@ -126,6 +126,11 @@ class MultiHeadCrossAttention(nn.Module):
         self.pos_embed_camera = nn.Parameter(torch.randn(1, self.embed_dim, 4096) * .02) #done as in ViT: https://github.com/lucidrains/vit-pytorch/blob/main/vit_pytorch/vit.py, (14 (image hight) * 25 image width * 6 images) / 16 (image patches)
         self.pos_embed_lidar = nn.Parameter(torch.randn(1, self.embed_dim, 4096) * .02) #done as in ViT: https://github.com/lucidrains/vit-pytorch/blob/main/vit_pytorch/vit.py, no reduction for now
 
+        self.upsample_layer = nn.ConvTranspose2d(embed_dim, embed_dim, kernel_size=2, stride=2)
+        self.upsample_layer_norm = nn.BatchNorm2d(self.embed_dim)
+        self.upsample_layer_act = nn.LeakyReLU(inplace=True)
+
+
     def create_lidar_patches(self, lidar_tensor):
         
         #flatten all patches:   
@@ -178,6 +183,8 @@ class MultiHeadCrossAttention(nn.Module):
         # Reshape the 1d tensor back to a 2d representation used in the CenterHead
         output = cross_attention.permute(0,2,1)
         output = output.view(output.shape[0], output.shape[1], 64, 64)  # Shape: [batch * 6, 256, 64, 64]
+
+        output = self.upsample_layer_act(self.upsample_layer_norm(self.upsample_layer(output)))
 
         
         return output
