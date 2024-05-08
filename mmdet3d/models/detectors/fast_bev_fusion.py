@@ -329,7 +329,7 @@ class FastBEVFusion(BaseDetector):
             losses.update(loss_seg)
 
         if self.bbox_head_2d is not None:
-            print(f"gt_bboxes: {kwargs['gt_bboxes'][0]}")
+            
             gt_bboxes = kwargs["gt_bboxes"][0]
             gt_labels = kwargs["gt_labels"][0]
             #assert len(kwargs["gt_bboxes"]) == 1 and len(kwargs["gt_labels"]) == 1
