@@ -33,29 +33,14 @@ model = dict(
         stride=2,
         is_transpose=False,
         norm_cfg=dict(type='BN', requires_grad=True)),
-    seg_head=dict(
-        type='BEV_FCNHead',
-        use_centerness=True,
-        is_transpose=True,
-        in_channels=256,
-        in_index=0,
-        channels=256,
-        num_convs=4,
-        concat_input=False,
-        dropout_ratio=0.1,
-        num_classes=2,
-        norm_cfg=dict(type='BN', requires_grad=True),
-        align_corners=False,
-        loss_ce=dict(type='CrossEntropyLoss',use_sigmoid=True, loss_weight=1.0),
-        loss_dice=dict(type='DiceLoss_zq', loss_weight=1.0)
-    ),
+    
     bbox_head=dict(
         type='FreeAnchor3DHead',
         is_transpose=True,
         num_classes=10,
         in_channels=256,
         feat_channels=256,
-        num_convs=2,
+        num_convs=0,
         use_direction_classifier=True,
         pre_anchor_topk=25,
         bbox_thr=0.5,
@@ -88,22 +73,6 @@ model = dict(
         loss_bbox=dict(type='SmoothL1Loss', beta=1.0 / 9.0, loss_weight=0.8),
         loss_dir=dict(
             type='CrossEntropyLoss', use_sigmoid=False, loss_weight=0.8)),
-    bbox_head_2d=dict(
-        type='FCOSHead',
-        num_classes=10,
-        in_channels=64,
-        stacked_convs=2,
-        feat_channels=32,
-        strides=[4, 8, 16, 32],
-        regress_ranges=((-1, 64), (64, 128), (128, 256), (256, 1e8)),
-        loss_cls=dict(
-            type='FocalLoss',
-            use_sigmoid=True,
-            gamma=2.0,
-            alpha=0.25,
-            loss_weight=1.0),
-        loss_bbox=dict(type='IoULoss', loss_weight=1.0),
-        loss_centerness=dict(type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0)),
 
     #Point Modules:
     pts_voxel_layer=dict(
@@ -299,7 +268,7 @@ data = dict(
 
 optimizer = dict(
     type='AdamW',
-    lr=0.01,
+    lr=0.0004,
     weight_decay=0.01,
     paramwise_cfg=dict(
         custom_keys={'backbone': dict(lr_mult=0.1, decay_mult=1.0)}))

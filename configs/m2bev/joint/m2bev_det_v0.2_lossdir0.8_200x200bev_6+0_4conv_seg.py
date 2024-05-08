@@ -137,8 +137,8 @@ train_pipeline = [
         n_images=6,
         transforms=[
             dict(type='LoadImageFromFile'),
-            #dict(type='Resize', img_scale=(1600, 900), keep_ratio=True),
-            dict(type='Resize', img_scale=(800, 448), keep_ratio=True),
+            dict(type='Resize', img_scale=(1600, 900), keep_ratio=True),
+            #dict(type='Resize', img_scale=(800, 448), keep_ratio=True),
             dict(type='Normalize', **img_norm_cfg),
             dict(type='Pad', size_divisor=32)]),
     dict(type='ObjectRangeFilter', point_cloud_range=point_cloud_range),
@@ -151,8 +151,8 @@ test_pipeline = [
         n_images=6,
         transforms=[
             dict(type='LoadImageFromFile'),
-            #dict(type='Resize', img_scale=(1600, 900), keep_ratio=True),
-            dict(type='Resize', img_scale=(800, 448), keep_ratio=True),
+            dict(type='Resize', img_scale=(1600, 900), keep_ratio=True),
+            #dict(type='Resize', img_scale=(800, 448), keep_ratio=True),
             dict(type='Normalize', **img_norm_cfg),
             dict(type='Pad', size_divisor=32)]),
     dict(type='KittiSetOrigin', point_cloud_range=point_cloud_range),

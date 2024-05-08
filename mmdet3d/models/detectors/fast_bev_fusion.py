@@ -28,10 +28,10 @@ class FastBEVFusion(BaseDetector):
         neck_fuse,
         neck_3d,
         bbox_head,
-        seg_head,
         n_voxels,
         voxel_size,
         pts_voxel_layer,
+        seg_head=None,
         pts_voxel_encoder=None,
         pts_middle_encoder=None,
         pts_backbone=None,
@@ -329,9 +329,10 @@ class FastBEVFusion(BaseDetector):
             losses.update(loss_seg)
 
         if self.bbox_head_2d is not None:
+            print(f"gt_bboxes: {kwargs['gt_bboxes'][0]}")
             gt_bboxes = kwargs["gt_bboxes"][0]
             gt_labels = kwargs["gt_labels"][0]
-            assert len(kwargs["gt_bboxes"]) == 1 and len(kwargs["gt_labels"]) == 1
+            #assert len(kwargs["gt_bboxes"]) == 1 and len(kwargs["gt_labels"]) == 1
             # hack a img_metas_2d
             img_metas_2d = []
             img_info = img_metas[0]["img_info"]

@@ -108,7 +108,7 @@ class FeedForwardBlock(nn.Module):
 
 @FUSION_LAYERS.register_module()
 class MultiHeadCrossAttention(nn.Module):
-    def __init__(self, embed_dim = 256, num_heads=8, dropout = 0.3):
+    def __init__(self, embed_dim = 256, num_heads=8, dropout = 0.3, fuse_on_lidar=True):
         super(MultiHeadCrossAttention, self).__init__()
 
         self.embed_dim = embed_dim
@@ -116,7 +116,7 @@ class MultiHeadCrossAttention(nn.Module):
         self.reduce_lidar_channel = nn.Conv2d(384, 256, kernel_size=1, stride=1)
         self.reduce_lidar_channel_norm = nn.BatchNorm2d(256)
         self.reduce_lidar_channel_act = nn.LeakyReLU()
-
+        self.fuse_on_lidar = fuse_on_lidar
 
         self.reduce_lidar_spatialy = nn.MaxPool2d(kernel_size=2, stride=2)
         self.reduce_camera_spatialy = nn.MaxPool2d(kernel_size=2, stride=2)
@@ -170,8 +170,10 @@ class MultiHeadCrossAttention(nn.Module):
         image_patch_embedding = self.create_camera_patches(camera_bev_features)
         lidar_patch_embedding = self.create_lidar_patches(lidar_bev_features)
 
-
-        cross_attention = self.lidar_camera_cross_attention(lidar_patch_embedding, image_patch_embedding)
+        if self.fuse_on_lidar:
+            cross_attention = self.lidar_camera_cross_attention(lidar_patch_embedding, image_patch_embedding)
+        else:
+            cross_attention = self.lidar_camera_cross_attention(image_patch_embedding, lidar_patch_embedding)
 
         # Reshape the 1d tensor back to a 2d representation used in the CenterHead
         output = cross_attention.permute(0,2,1)

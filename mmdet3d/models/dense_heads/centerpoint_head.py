@@ -453,6 +453,7 @@ class CenterHead(BaseModule):
                 - list[torch.Tensor]: Masks indicating which boxes \
                     are valid.
         """
+        print(gt_labels_3d)
         device = gt_labels_3d.device
         gt_bboxes_3d = torch.cat(
             (gt_bboxes_3d.gravity_center, gt_bboxes_3d.tensor[:, 3:]),

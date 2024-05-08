@@ -9,10 +9,9 @@ import cv2
 from nuscenes.nuscenes import NuScenes
 from nuscenes.map_expansion.map_api import NuScenesMap
 from pyquaternion import Quaternion
-try:
-    from tools.data_converter.nuscenes_converter import get_2d_boxes
-except:
-    print('import error')
+
+from tools.data_converter.nuscenes_converter import get_2d_boxes
+
 
 import ipdb
 
@@ -25,7 +24,7 @@ class NuScenesMultiView_Map_MultiModalDataset(NuScenesMultiViewMultiModalDataset
                  with_box2d=False,
                  **kwargs):
         super().__init__(**kwargs)
-
+        
         self.nusc = NuScenes(version='v1.0-trainval', dataroot=self.data_root, verbose=True)
         self.scene2map = get_scene2map(self.nusc)
         self.maps = get_nusc_maps()
@@ -85,7 +84,7 @@ class NuScenesMultiView_Map_MultiModalDataset(NuScenesMultiViewMultiModalDataset
                     coco_infos = get_2d_boxes(self.nusc,
                                               info['cams'][cam]['sample_data_token'],
                                               visibilities=['', '1', '2', '3', '4'],
-                                              mono3d=False)
+                                              mono3d=False)            
                     for coco_info in coco_infos:
                         if coco_info is None:
                             continue

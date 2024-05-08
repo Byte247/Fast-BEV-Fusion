@@ -3,7 +3,7 @@ import argparse
 from os import path as osp
 
 from tools.data_converter import indoor_converter as indoor
-from tools.data_converter import kitti_converter as kitti
+#from tools.data_converter import kitti_converter as kitti
 from tools.data_converter import lyft_converter as lyft_converter
 from tools.data_converter import nuscenes_converter as nuscenes_converter
 from tools.data_converter.create_gt_database import create_groundtruth_database
@@ -198,7 +198,7 @@ parser.add_argument(
     required=False,
     help='specify the dataset version, no need for kitti')
 parser.add_argument(
-    '--max-sweeps',
+    '--max_sweeps',
     type=int,
     default=10,
     required=False,
