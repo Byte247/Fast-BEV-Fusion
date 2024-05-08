@@ -215,7 +215,7 @@ train_pipeline = [
         use_dim=5,),
     dict(
         type='LoadPointsFromMultiSweeps',
-        sweeps_num=9,
+        sweeps_num=10,
         use_dim=[0, 1, 2, 3, 4],
         pad_empty_sweeps=True,
         remove_close=True),
@@ -243,7 +243,7 @@ test_pipeline = [
         use_dim=5,),
     dict(
         type='LoadPointsFromMultiSweeps',
-        sweeps_num=9,
+        sweeps_num=10,
         use_dim=[0, 1, 2, 3, 4],
         pad_empty_sweeps=True,
         remove_close=True),
@@ -300,7 +300,7 @@ data = dict(
 
 optimizer = dict(
     type='AdamW',
-    lr=0.001,
+    lr=0.0001,
     weight_decay=0.01,
     paramwise_cfg=dict(
         custom_keys={'backbone': dict(lr_mult=0.1, decay_mult=1.0)}))
