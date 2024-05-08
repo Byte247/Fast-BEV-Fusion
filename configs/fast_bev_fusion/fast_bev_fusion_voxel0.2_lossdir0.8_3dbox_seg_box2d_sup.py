@@ -107,7 +107,7 @@ model = dict(
 
     #Point Modules:
     pts_voxel_layer=dict(
-        max_num_points=20, voxel_size=[0.2, 0.2, 8], max_voxels=(30000, 60000), point_cloud_range=point_cloud_range),
+        max_num_points=20, voxel_size=[0.2, 0.2, 8], max_voxels=(30000, 40000), point_cloud_range=point_cloud_range),
     pts_voxel_encoder=dict(
         type='PillarFeatureNet',
         in_channels=5,
@@ -137,7 +137,7 @@ model = dict(
 
 
     #Fusion layer
-    fusion_module = dict(type='MultiHeadCrossAttention',embed_dim = 256, num_heads=8, dropout = 0.1, fuse_on_lidar=True),
+    fusion_module = dict(type='MultiHeadCrossAttention',embed_dim = 256, num_heads=8, dropout = 0.1, fuse_on_lidar=False),
 
     # training and testing settings for 2d
     train_cfg_2d=dict(
