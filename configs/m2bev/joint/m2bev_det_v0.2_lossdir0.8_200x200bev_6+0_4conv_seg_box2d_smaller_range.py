@@ -1,10 +1,6 @@
 # -*- coding: utf-8 -*-
-# If point cloud range is changed, the models should also change their point cloud range accordingly
-point_cloud_range = [-51.2, -51.2, -5.0, 51.2, 51.2, 3.0]
-
-
 model = dict(
-    type='FastBEVFusion',
+    type='M2BevNet',
     backbone=dict(
         type='ResNet',
         depth=50,
@@ -27,7 +23,7 @@ model = dict(
     neck_fuse=dict(in_channels=256, out_channels=64),
     neck_3d=dict(
         type='M2BevNeck',
-        in_channels=384,
+        in_channels=64*12,
         out_channels=256,
         num_layers=6,
         stride=2,
@@ -104,41 +100,6 @@ model = dict(
             loss_weight=1.0),
         loss_bbox=dict(type='IoULoss', loss_weight=1.0),
         loss_centerness=dict(type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0)),
-
-    #Point Modules:
-    pts_voxel_layer=dict(
-        max_num_points=20, voxel_size=[0.2, 0.2, 8], max_voxels=(30000, 40000), point_cloud_range=point_cloud_range),
-    pts_voxel_encoder=dict(
-        type='PillarFeatureNet',
-        in_channels=5,
-        feat_channels=[64],
-        with_distance=False,
-        voxel_size=(0.2, 0.2, 8),
-        norm_cfg=dict(type='BN1d', eps=1e-3, momentum=0.01),
-        legacy=False),
-    pts_middle_encoder=dict(
-        type='PointPillarsScatter', in_channels=64, output_shape=(512, 512)),
-    pts_backbone=dict(
-        type='SECOND',
-        in_channels=64,
-        out_channels=[64, 128, 256],
-        layer_nums=[3, 5, 5],
-        layer_strides=[2, 2, 2],
-        norm_cfg=dict(type='BN', eps=1e-3, momentum=0.01),
-        conv_cfg=dict(type='Conv2d', bias=False)),
-    pts_neck=dict(
-        type='SECONDFPN',
-        in_channels=[64, 128, 256],
-        out_channels=[128, 128, 128],
-        upsample_strides=[0.5, 1, 2],
-        norm_cfg=dict(type='BN', eps=1e-3, momentum=0.01),
-        upsample_cfg=dict(type='deconv', bias=False),
-        use_conv_for_no_stride=True),
-
-
-    #Fusion layer
-    fusion_module = dict(type='MultiHeadCrossAttention',embed_dim = 256, num_heads=8, dropout = 0.1, fuse_on_lidar=True),
-
     # training and testing settings for 2d
     train_cfg_2d=dict(
         assigner=dict(
@@ -183,42 +144,31 @@ model = dict(
 
 
 
+# If point cloud range is changed, the models should also change their point cloud range accordingly
+point_cloud_range = [-51.2, -51.2, -5, 51.2, 51.2, 3]
 
 # For nuScenes we usually do 10-class detection
 class_names = [
     'car', 'truck', 'trailer', 'bus', 'construction_vehicle', 'bicycle',
     'motorcycle', 'pedestrian', 'traffic_cone', 'barrier'
 ]
-dataset_type = 'NuScenesMultiView_Map_MultiModalDataset'
+dataset_type = 'NuScenesMultiView_Map_Dataset2'
 data_root = 'data/nuscenes/'
 # Input modality for nuScenes dataset, this is consistent with the submission
 # format which requires the information in input_modality.
 input_modality = dict(
-    use_lidar=True,
+    use_lidar=False,
     use_camera=True,
     use_radar=False,
     use_map=False,
     use_external=True)
 
 img_norm_cfg = dict(mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
-
 train_pipeline = [
     dict(type='LoadAnnotations3D',
          with_bbox=True,
          with_label=True,
          with_bev_seg=True),
-     dict(
-        type='LoadPointsFromFile',
-        coord_type='LIDAR',
-        load_dim=5,
-        use_dim=5,),
-    dict(
-        type='LoadPointsFromMultiSweeps',
-        sweeps_num=10,
-        use_dim=[0, 1, 2, 3, 4],
-        pad_empty_sweeps=True,
-        remove_close=True),
-    dict(type='PointsRangeFilter', point_cloud_range=point_cloud_range),
     dict(
         type='MultiViewPipeline',
         n_images=6,
@@ -232,19 +182,8 @@ train_pipeline = [
     dict(type='DefaultFormatBundle3D', class_names=class_names),
     dict(type='Collect3D', keys=['img', 'gt_bboxes', 'gt_labels', 
                                  'gt_bboxes_3d', 'gt_labels_3d',
-                                 'gt_bev_seg', 'points'])]
+                                 'gt_bev_seg'])]
 test_pipeline = [
-    dict(
-        type='LoadPointsFromFile',
-        coord_type='LIDAR',
-        load_dim=5,
-        use_dim=5,),
-    dict(
-        type='LoadPointsFromMultiSweeps',
-        sweeps_num=10,
-        use_dim=[0, 1, 2, 3, 4],
-        pad_empty_sweeps=True,
-        remove_close=True),
     dict(
         type='MultiViewPipeline',
         n_images=6,
@@ -253,17 +192,13 @@ test_pipeline = [
             dict(type='Resize', img_scale=(1600, 900), keep_ratio=True),
             dict(type='Normalize', **img_norm_cfg),
             dict(type='Pad', size_divisor=32)]),
-    dict(type='ObjectRangeFilter', point_cloud_range=point_cloud_range),
     dict(type='KittiSetOrigin', point_cloud_range=point_cloud_range),
     dict(type='DefaultFormatBundle3D', class_names=class_names, with_label=False),
-    dict(type='Collect3D', keys=['img','points'])]
-
-
-
+    dict(type='Collect3D', keys=['img'])]
 
 data = dict(
     samples_per_gpu=1,
-    workers_per_gpu=8,
+    workers_per_gpu=1,
     train=dict(
         type='RepeatDataset',
         times=1,
@@ -299,7 +234,7 @@ data = dict(
 
 optimizer = dict(
     type='AdamW',
-    lr=0.0001,
+    lr=0.00005,
     weight_decay=0.01,
     paramwise_cfg=dict(
         custom_keys={'backbone': dict(lr_mult=0.1, decay_mult=1.0)}))
@@ -316,7 +251,7 @@ lr_config = dict(
     by_epoch=False
     )
 
-total_epochs = 20
+total_epochs = 12
 checkpoint_config = dict(interval=1)
 log_config = dict(
     interval=10,
@@ -335,4 +270,3 @@ workflow = [('train', 1)]
 
 # fp16 settings, the loss scale is specifically tuned to avoid Nan
 fp16 = dict(loss_scale='dynamic')
-
