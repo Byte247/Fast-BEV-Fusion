@@ -27,7 +27,7 @@ model = dict(
     neck_fuse=dict(in_channels=256, out_channels=64),
     neck_3d=dict(
         type='M2BevNeck',
-        in_channels=384,
+        in_channels=762,
         out_channels=256,
         num_layers=6,
         stride=2,
@@ -55,7 +55,7 @@ model = dict(
         num_classes=10,
         in_channels=256,
         feat_channels=256,
-        num_convs=0,
+        num_convs=2,
         use_direction_classifier=True,
         pre_anchor_topk=25,
         bbox_thr=0.5,
@@ -157,7 +157,7 @@ model = dict(
         nms=dict(type='nms', iou_threshold=0.5),
         max_per_img=100),
     # # #
-    n_voxels=(256, 256, 6),
+    n_voxels=(256, 256, 12),
     voxel_size=[0.2, 0.2, 0.5],
     # model training and testing settings
     train_cfg = dict(

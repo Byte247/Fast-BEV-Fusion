@@ -299,7 +299,6 @@ class FastBEVFusion(BaseDetector):
         
         lidar_features = self.extract_pts_feat(points)
 
-
         feature_bev, valids, features_2d = self.extract_feat(img, img_metas, "train")
 
 

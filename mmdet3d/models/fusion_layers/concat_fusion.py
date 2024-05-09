@@ -11,15 +11,28 @@ class ConcatFusion(nn.Module):
     def __init__(self):
         super(ConcatFusion, self).__init__()
 
-        
+        self.downsample = nn.Conv2d(384 + 256, 512, kernel_size=3, stride=2, padding=1)
+        self.downsample_act = nn.LeakyReLU()
+        self.downsample_norm = nn.BatchNorm2d(512)
+
+        self.conv = nn.Conv2d(512, 512, kernel_size=3, stride=1, padding=1)
+        self.conv_norm = nn.BatchNorm2d(512)
+        self.conv_act = nn.LeakyReLU()
+
+        self.upsample = nn.ConvTranspose2d(512, 256, kernel_size=2, stride=2)
+        self.upsample_norm = nn.BatchNorm2d(256)
+        self.upsample_act = nn.LeakyReLU()
 
     def forward(self, lidar_features, camera_features):
 
         
+        concat_features = torch.cat([lidar_features, camera_features],dim=1)
 
-        print(f"lidar_features: {lidar_features.shape}")
-        print(f"camera_features: {camera_features.shape}")
+        downsample_features = self.downsample_act(self.downsample_norm(self.downsample(concat_features)))
+        middle_features = self.conv_act(self.conv_norm(self.conv(downsample_features)))
+        upsample_features = self.upsample_act(self.upsample_norm(self.upsample(middle_features)))
 
-        return 0
+
+        return upsample_features
 
 

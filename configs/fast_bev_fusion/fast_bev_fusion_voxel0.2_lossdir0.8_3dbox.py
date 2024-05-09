@@ -27,7 +27,7 @@ model = dict(
     neck_fuse=dict(in_channels=256, out_channels=64),
     neck_3d=dict(
         type='M2BevNeck',
-        in_channels=384,
+        in_channels=768,
         out_channels=256,
         num_layers=6,
         stride=2,
@@ -106,27 +106,10 @@ model = dict(
 
 
     #Fusion layer
-    fusion_module = dict(type='MultiHeadCrossAttention',embed_dim = 256, num_heads=8, dropout = 0.1, fuse_on_lidar=True),
+    fusion_module = dict(type='MultiHeadCrossAttentionV2',embed_dim = 256, num_heads=8, dropout = 0.1, fuse_on_lidar=True),
 
-    # training and testing settings for 2d
-    train_cfg_2d=dict(
-        assigner=dict(
-            type='MaxIoUAssigner',
-            pos_iou_thr=0.5,
-            neg_iou_thr=0.4,
-            min_pos_iou=0,
-            ignore_iof_thr=-1),
-        allowed_border=-1,
-        pos_weight=-1,
-        debug=False),
-    test_cfg_2d=dict(
-        nms_pre=1000,
-        min_bbox_size=0,
-        score_thr=0.05,
-        nms=dict(type='nms', iou_threshold=0.5),
-        max_per_img=100),
     # # #
-    n_voxels=(256, 256, 6),
+    n_voxels=(256, 256, 12),
     voxel_size=[0.2, 0.2, 0.5],
     # model training and testing settings
     train_cfg = dict(
@@ -222,7 +205,6 @@ test_pipeline = [
             dict(type='Resize', img_scale=(1600, 900), keep_ratio=True),
             dict(type='Normalize', **img_norm_cfg),
             dict(type='Pad', size_divisor=32)]),
-    dict(type='ObjectRangeFilter', point_cloud_range=point_cloud_range),
     dict(type='KittiSetOrigin', point_cloud_range=point_cloud_range),
     dict(type='DefaultFormatBundle3D', class_names=class_names, with_label=False),
     dict(type='Collect3D', keys=['img','points'])]
@@ -268,7 +250,7 @@ data = dict(
 
 optimizer = dict(
     type='AdamW',
-    lr=0.0004,
+    lr=0.0001,
     weight_decay=0.01,
     paramwise_cfg=dict(
         custom_keys={'backbone': dict(lr_mult=0.1, decay_mult=1.0)}))
