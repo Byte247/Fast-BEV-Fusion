@@ -20,7 +20,7 @@ import ipdb  # noqa
 
 
 @DETECTORS.register_module()
-class FastBEVFusion(BaseDetector):
+class FastBEVFusionCenterhead(BaseDetector):
     def __init__(
         self,
         backbone,
@@ -308,6 +308,7 @@ class FastBEVFusion(BaseDetector):
         features_2d: [[6, 64, 232, 400], [6, 64, 116, 200], [6, 64, 58, 100], [6, 64, 29, 50]]
         """
 
+        
         #fuse lidar BEV and camera BEV features
         feature_bev = self.fusion_module(lidar_features[0], feature_bev[0]) # this framework requires features inside lists for some reason. 
         feature_bev =[feature_bev]
@@ -317,8 +318,11 @@ class FastBEVFusion(BaseDetector):
         losses = dict()
         if self.bbox_head is not None:
             x = self.bbox_head(feature_bev)
-            loss_det = self.bbox_head.loss(*x, gt_bboxes_3d, gt_labels_3d, img_metas)
+
+            loss_inputs = [gt_bboxes_3d, gt_labels_3d, x]
+            loss_det = self.bbox_head.loss(*loss_inputs)
             losses.update(loss_det)
+            
 
         if self.seg_head is not None:
             assert len(gt_bev_seg) == 1

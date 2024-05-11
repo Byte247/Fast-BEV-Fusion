@@ -170,7 +170,7 @@ train_pipeline = [
         use_dim=[0, 1, 2, 3, 4],
         pad_empty_sweeps=True,
         remove_close=True),
-    dict(type='PointsRangeFilter', point_cloud_range=point_cloud_range),
+    
     dict(
         type='MultiViewPipeline',
         n_images=6,
@@ -179,6 +179,7 @@ train_pipeline = [
             dict(type='Resize', img_scale=(1600, 900), keep_ratio=True),
             dict(type='Normalize', **img_norm_cfg),
             dict(type='Pad', size_divisor=32)]),
+    dict(type='PointsRangeFilter', point_cloud_range=point_cloud_range),
     dict(type='ObjectRangeFilter', point_cloud_range=point_cloud_range),
     dict(type='KittiSetOrigin', point_cloud_range=point_cloud_range),
     dict(type='DefaultFormatBundle3D', class_names=class_names),
@@ -269,7 +270,7 @@ optimizer = dict(
     lr=0.0001,
     weight_decay=0.01,
     paramwise_cfg=dict(
-        custom_keys={'backbone': dict(lr_mult=0.01, decay_mult=1.0)}))
+        custom_keys={'backbone': dict(lr_mult=0.1, decay_mult=1.0)}))
 optimizer_config = dict(grad_clip=dict(max_norm=35., norm_type=2))
 
 # learning policy

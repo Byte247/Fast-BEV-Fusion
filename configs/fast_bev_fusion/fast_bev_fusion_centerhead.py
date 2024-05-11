@@ -4,7 +4,7 @@ point_cloud_range = [-51.2, -51.2, -5.0, 51.2, 51.2, 3.0]
 
 
 model = dict(
-    type='FastBEVFusion',
+    type='FastBEVFusionCenterhead',
     backbone=dict(
         type='ResNet',
         depth=50,
@@ -27,45 +27,17 @@ model = dict(
     neck_fuse=dict(in_channels=256, out_channels=64),
     neck_3d=dict(
         type='M2BevNeck',
-        in_channels=384,
+        in_channels=768,
         out_channels=256,
         num_layers=6,
         stride=2,
         is_transpose=False,
         norm_cfg=dict(type='BN', requires_grad=True)),
     
-    bbox_head= dict(
-        type='CenterHead',
-        in_channels=256,
-        tasks=[
-            dict(num_class=1, class_names=['car']),
-            dict(num_class=2, class_names=['truck', 'construction_vehicle']),
-            dict(num_class=2, class_names=['bus', 'trailer']),
-            dict(num_class=1, class_names=['barrier']),
-            dict(num_class=2, class_names=['motorcycle', 'bicycle']),
-            dict(num_class=2, class_names=['pedestrian', 'traffic_cone']),
-        ],
-        common_heads=dict(
-            reg=(2, 2), height=(1, 2), dim=(3, 2), rot=(2, 2), vel=(2, 2)),
-        share_conv_channel=64,
-        bbox_coder=dict(
-            type='CenterPointBBoxCoder',
-            post_center_range=[-61.2, -61.2, -10.0, 61.2, 61.2, 10.0],
-            max_num=500,
-            score_threshold=0.1,
-            out_size_factor=4,
-            voxel_size=[0.2, 0.2],
-            pc_range=[-51.2, -51.2],
-            code_size=9),
-        separate_head=dict(
-            type='SeparateHead', init_bias=-2.19, final_kernel=3),
-        loss_cls=dict(type='GaussianFocalLoss', reduction='mean'),
-        loss_bbox=dict(type='L1Loss', reduction='mean', loss_weight=0.25),
-        norm_bbox=True),
 
     #Point Modules:
     pts_voxel_layer=dict(
-        max_num_points=20, voxel_size=[0.2, 0.2, 8], max_voxels=(30000, 60000), point_cloud_range=point_cloud_range),
+        max_num_points=20, voxel_size=[0.2, 0.2, 8], max_voxels=(30000, 40000), point_cloud_range=point_cloud_range),
     pts_voxel_encoder=dict(
         type='PillarFeatureNet',
         in_channels=5,
@@ -95,23 +67,53 @@ model = dict(
 
 
     #Fusion layer
-    fusion_module = dict(type='MultiHeadCrossAttention',embed_dim = 256, num_heads=8, dropout = 0.1, fuse_on_lidar=True),
+    fusion_module = dict(type='MultiHeadCrossAttentionV2',embed_dim = 256, num_heads=8, dropout = 0.1, fuse_on_lidar=True),
+
+    bbox_head= dict(
+        type='CenterHead',
+        in_channels=256,
+        tasks=[
+            dict(num_class=1, class_names=['car']),
+            dict(num_class=2, class_names=['truck', 'construction_vehicle']),
+            dict(num_class=2, class_names=['bus', 'trailer']),
+            dict(num_class=1, class_names=['barrier']),
+            dict(num_class=2, class_names=['motorcycle', 'bicycle']),
+            dict(num_class=2, class_names=['pedestrian', 'traffic_cone']),
+        ],
+        common_heads=dict(
+            reg=(2, 2), height=(1, 2), dim=(3, 2), rot=(2, 2), vel=(2, 2)),
+        share_conv_channel=64,
+        bbox_coder=dict(
+            type='CenterPointBBoxCoder',
+            post_center_range=[-61.2, -61.2, -10.0, 61.2, 61.2, 10.0],
+            max_num=500,
+            score_threshold=0.1,
+            out_size_factor=4,
+            voxel_size=[0.2, 0.2],
+            pc_range=[-51.2, -51.2],
+            code_size=9),
+        separate_head=dict(
+            type='SeparateHead', init_bias=-2.19, final_kernel=3),
+        loss_cls=dict(type='GaussianFocalLoss', reduction='mean'),
+        loss_bbox=dict(type='L1Loss', reduction='mean', loss_weight=0.25),
+        norm_bbox=True),
 
     
     # # #
-    n_voxels=(256, 256, 6),
-    voxel_size=[0.2, 0.2, 0.5],
-    # model training and testing settings
+    n_voxels=(256, 256, 12), # For camera features
+    voxel_size=[0.2, 0.2, 0.5], # For camera features
+
+    # model training and testing settings for the head
     train_cfg=dict(
-        pts=dict(
             grid_size=[512, 512, 1],
             voxel_size=[0.2, 0.2],
-            out_size_factor=8,
+            out_size_factor=4,
             dense_reg=1,
             gaussian_overlap=0.1,
             max_objs=500,
             min_radius=2,
-            code_weights=[1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.2, 0.2])),
+            code_weights=[1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.2, 0.2],
+            point_cloud_range = point_cloud_range),
      test_cfg=dict(
         pts=dict(
             post_center_limit_range=[-61.2, -61.2, -10.0, 61.2, 61.2, 10.0],
@@ -125,7 +127,9 @@ model = dict(
             nms_type='rotate',
             pre_max_size=1000,
             post_max_size=83,
-            nms_thr=0.2)))
+            nms_thr=0.2))
+            
+)
 
 
 
@@ -208,7 +212,7 @@ test_pipeline = [
 
 data = dict(
     samples_per_gpu=1,
-    workers_per_gpu=1,
+    workers_per_gpu=8,
     train=dict(
         type='RepeatDataset',
         times=1,

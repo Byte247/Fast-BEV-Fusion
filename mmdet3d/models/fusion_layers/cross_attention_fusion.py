@@ -38,6 +38,26 @@ class Decoder(nn.Module):
         return output
     
     def vis_attention_scores(self, weights):
+
+
+
+        # # Reshape attention weights for visualization 
+        # attention_heatmaps = weights.squeeze(0).cpu().detach().numpy()  # Remove batch dimension and convert to NumPy
+
+        # # # Aggregate attention weights across target tokens (64x64 image grid)
+        # aggregated_attention = np.mean(attention_heatmaps, axis=0)
+
+        # # Reshape aggregated attention to match the wide image grid shape (64x64)
+        # aggregated_attention = aggregated_attention.reshape((64, 64))
+        # # Plot aggregated attention heatmap
+        # plt.figure(figsize=(64, 64))
+        # plt.imshow(aggregated_attention, cmap='viridis', interpolation='nearest')
+        # plt.xlabel('Wide Image X-Axis')
+        # plt.ylabel('Wide Image Y-Axis')
+        # plt.title('Aggregated Attention Heatmap from lidar BEV Tokens to image features')
+        # plt.colorbar()
+        # plt.show(block=True)
+
          
         attention_heatmaps = weights.squeeze(0).cpu().detach().numpy()  # Remove batch dimension and convert to NumPy
 
@@ -121,7 +141,7 @@ class MultiHeadCrossAttention(nn.Module):
         self.reduce_lidar_spatialy = nn.MaxPool2d(kernel_size=2, stride=2)
         self.reduce_camera_spatialy = nn.MaxPool2d(kernel_size=2, stride=2)
 
-        self.lidar_camera_cross_attention = Decoder(self.embed_dim, hidden_dim=self.embed_dim * 2, num_heads= num_heads, dropout=dropout, show_weights=True)
+        self.lidar_camera_cross_attention = Decoder(self.embed_dim, hidden_dim=self.embed_dim * 2, num_heads= num_heads, dropout=dropout, show_weights=False)
         
         self.pos_embed_camera = nn.Parameter(torch.randn(1, self.embed_dim, 4096) * .02) #done as in ViT: https://github.com/lucidrains/vit-pytorch/blob/main/vit_pytorch/vit.py, (14 (image hight) * 25 image width * 6 images) / 16 (image patches)
         self.pos_embed_lidar = nn.Parameter(torch.randn(1, self.embed_dim, 4096) * .02) #done as in ViT: https://github.com/lucidrains/vit-pytorch/blob/main/vit_pytorch/vit.py, no reduction for now
