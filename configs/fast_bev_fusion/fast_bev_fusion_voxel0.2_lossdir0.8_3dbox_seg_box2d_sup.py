@@ -298,7 +298,7 @@ data = dict(
 
 optimizer = dict(
     type='AdamW',
-    lr=0.0001,
+    lr=0.00005,
     weight_decay=0.01,
     paramwise_cfg=dict(
         custom_keys={'backbone': dict(lr_mult=0.1, decay_mult=1.0)}))
@@ -318,7 +318,7 @@ lr_config = dict(
 total_epochs = 20
 checkpoint_config = dict(interval=1)
 log_config = dict(
-    interval=10,
+    interval=50,
     hooks=[
         dict(type='TextLoggerHook'),
         dict(type='WandbLoggerHook', init_kwargs=dict(project='3d-det')), 

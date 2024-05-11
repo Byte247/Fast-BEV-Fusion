@@ -210,8 +210,6 @@ test_pipeline = [
     dict(type='Collect3D', keys=['img','points'])]
 
 
-
-
 data = dict(
     samples_per_gpu=1,
     workers_per_gpu=8,
@@ -228,6 +226,24 @@ data = dict(
             test_mode=False,
             with_box2d=True,
             box_type_3d='LiDAR')),
+
+
+
+    # train=dict(
+    #     type='CBGSDataset',
+    #     dataset=dict(
+    #         type=dataset_type,
+    #         data_root=data_root,
+    #         ann_file=data_root + 'nuscenes_infos_train.pkl',
+    #         pipeline=train_pipeline,
+    #         classes=class_names,
+    #         modality=input_modality,
+    #         test_mode=False,
+    #         use_valid_flag=True,
+    #         with_box2d=True,
+    #         # we use box_type_3d='LiDAR' in kitti and nuscenes dataset
+    #         # and box_type_3d='Depth' in sunrgbd and scannet dataset.
+    #         box_type_3d='LiDAR')),
     val=dict(
         type=dataset_type,
         data_root=data_root,
@@ -253,7 +269,7 @@ optimizer = dict(
     lr=0.0001,
     weight_decay=0.01,
     paramwise_cfg=dict(
-        custom_keys={'backbone': dict(lr_mult=0.1, decay_mult=1.0)}))
+        custom_keys={'backbone': dict(lr_mult=0.01, decay_mult=1.0)}))
 optimizer_config = dict(grad_clip=dict(max_norm=35., norm_type=2))
 
 # learning policy

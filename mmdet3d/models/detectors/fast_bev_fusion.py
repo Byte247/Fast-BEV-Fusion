@@ -308,8 +308,9 @@ class FastBEVFusion(BaseDetector):
         features_2d: [[6, 64, 232, 400], [6, 64, 116, 200], [6, 64, 58, 100], [6, 64, 29, 50]]
         """
 
+        print(f" lidar_features: {lidar_features[0].shape}")
         #fuse lidar BEV and camera BEV features
-        feature_bev = self.fusion_module(lidar_features[0], feature_bev[0])
+        feature_bev = self.fusion_module(lidar_features[0], feature_bev[0]) # this framework requires features inside lists for some reason. 
         feature_bev =[feature_bev]
 
         assert self.bbox_head is not None or self.seg_head is not None
