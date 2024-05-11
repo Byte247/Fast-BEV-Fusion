@@ -208,8 +208,6 @@ test_pipeline = [
     dict(type='Collect3D', keys=['img','points'])]
 
 
-
-
 data = dict(
     samples_per_gpu=1,
     workers_per_gpu=8,
@@ -248,22 +246,35 @@ data = dict(
 
 optimizer = dict(
     type='AdamW',
-    lr=0.0004,
+    lr=0.0001,
     weight_decay=0.01,
     paramwise_cfg=dict(
         custom_keys={'backbone': dict(lr_mult=0.1, decay_mult=1.0)}))
 optimizer_config = dict(grad_clip=dict(max_norm=35., norm_type=2))
 
-# learning policy
+# # learning policy
+# lr_config = dict(
+#     policy='poly',
+#     warmup='linear',
+#     warmup_iters=1000,
+#     warmup_ratio=1e-6,
+#     power=1.0,
+#     min_lr=0,
+#     by_epoch=False
+#     )
+
 lr_config = dict(
-    policy='poly',
-    warmup='linear',
-    warmup_iters=1000,
-    warmup_ratio=1e-6,
-    power=1.0,
-    min_lr=0,
-    by_epoch=False
-    )
+    policy='cyclic',
+    target_ratio=(10, 1e-4),
+    cyclic_times=1,
+    step_ratio_up=0.4,
+)
+momentum_config = dict(
+    policy='cyclic',
+    target_ratio=(0.85 / 0.95, 1),
+    cyclic_times=1,
+    step_ratio_up=0.4,
+)
 
 total_epochs = 12
 checkpoint_config = dict(interval=1)
