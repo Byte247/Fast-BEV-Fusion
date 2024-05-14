@@ -2,12 +2,14 @@ import torch
 import torch.nn as nn
 import matplotlib.pyplot as plt
 import numpy as np
+from mmcv.runner import auto_fp16
+from mmcv.runner import force_fp32
 from ..builder import FUSION_LAYERS
 
 
 class Decoder(nn.Module):
 
-    def __init__(self, d_model = 256, hidden_dim = 128, num_heads = 8, dropout = 0.1,show_weights=False) -> None:
+    def __init__(self, d_model = 256, hidden_dim = 512, num_heads = 8, dropout = 0.1, show_weights=False) -> None:
         super(Decoder,self).__init__()
         
         self.show_weights = show_weights
@@ -17,7 +19,7 @@ class Decoder(nn.Module):
         self.ff = FeedForwardBlock(d_model=d_model, hidden_dim= hidden_dim, dropout=dropout)
 
         self.multiheadAttention = nn.MultiheadAttention(d_model, num_heads, dropout=dropout, batch_first=True)
-    
+    @force_fp32()
     def forward(self, query, key):
 
         query = self.norm_query(query)
@@ -38,26 +40,6 @@ class Decoder(nn.Module):
         return output
     
     def vis_attention_scores(self, weights):
-
-
-
-        # # Reshape attention weights for visualization 
-        # attention_heatmaps = weights.squeeze(0).cpu().detach().numpy()  # Remove batch dimension and convert to NumPy
-
-        # # # Aggregate attention weights across target tokens (64x64 image grid)
-        # aggregated_attention = np.mean(attention_heatmaps, axis=0)
-
-        # # Reshape aggregated attention to match the wide image grid shape (64x64)
-        # aggregated_attention = aggregated_attention.reshape((64, 64))
-        # # Plot aggregated attention heatmap
-        # plt.figure(figsize=(64, 64))
-        # plt.imshow(aggregated_attention, cmap='viridis', interpolation='nearest')
-        # plt.xlabel('Wide Image X-Axis')
-        # plt.ylabel('Wide Image Y-Axis')
-        # plt.title('Aggregated Attention Heatmap from lidar BEV Tokens to image features')
-        # plt.colorbar()
-        # plt.show(block=True)
-
          
         attention_heatmaps = weights.squeeze(0).cpu().detach().numpy()  # Remove batch dimension and convert to NumPy
 
@@ -120,7 +102,8 @@ class FeedForwardBlock(nn.Module):
 
         self.norm = nn.LayerNorm(d_model)
         self.norm_2 = nn.LayerNorm(d_model)
-    
+
+    @auto_fp16()
     def forward(self, x):
 
         return self.norm_2(self.dropout_2(self.relu_2(self.linear_2(self.dropout(self.relu(self.linear_1(self.norm(x))))))))
@@ -128,26 +111,28 @@ class FeedForwardBlock(nn.Module):
 
 @FUSION_LAYERS.register_module()
 class MultiHeadCrossAttention(nn.Module):
-    def __init__(self, embed_dim = 256, num_heads=8, dropout = 0.3, fuse_on_lidar=True):
+    def __init__(self, embed_dim = 512, num_heads=8, dropout = 0.1, fuse_on_lidar=True):
         super(MultiHeadCrossAttention, self).__init__()
 
         self.embed_dim = embed_dim
 
-        self.reduce_lidar_channel = nn.Conv2d(384, 256, kernel_size=1, stride=1)
-        self.reduce_lidar_channel_norm = nn.BatchNorm2d(256)
+        self.reduce_lidar_channel = nn.Conv2d(384, 512, kernel_size=3, stride=2, padding=1)
         self.reduce_lidar_channel_act = nn.LeakyReLU()
+        self.reduce_lidar_channel_norm = nn.BatchNorm2d(512)
         self.fuse_on_lidar = fuse_on_lidar
 
-        self.reduce_lidar_spatialy = nn.MaxPool2d(kernel_size=2, stride=2)
-        self.reduce_camera_spatialy = nn.MaxPool2d(kernel_size=2, stride=2)
+
+        self.reduce_camera_spatialy = nn.Conv2d(256, 512, kernel_size=3, stride=2, padding=1)
+        self.reduce_camera_spatialy_norm = nn.BatchNorm2d(512)
+        self.reduce_camera_spatialy_act = nn.LeakyReLU(inplace=True)
 
         self.lidar_camera_cross_attention = Decoder(self.embed_dim, hidden_dim=self.embed_dim * 2, num_heads= num_heads, dropout=dropout, show_weights=False)
         
         self.pos_embed_camera = nn.Parameter(torch.randn(1, self.embed_dim, 4096) * .02) #done as in ViT: https://github.com/lucidrains/vit-pytorch/blob/main/vit_pytorch/vit.py, (14 (image hight) * 25 image width * 6 images) / 16 (image patches)
         self.pos_embed_lidar = nn.Parameter(torch.randn(1, self.embed_dim, 4096) * .02) #done as in ViT: https://github.com/lucidrains/vit-pytorch/blob/main/vit_pytorch/vit.py, no reduction for now
 
-        self.upsample_layer = nn.ConvTranspose2d(embed_dim, embed_dim, kernel_size=2, stride=2)
-        self.upsample_layer_norm = nn.BatchNorm2d(self.embed_dim)
+        self.upsample_layer = nn.ConvTranspose2d(embed_dim, 3 * 128, kernel_size=2, stride=2) # match centerpoint
+        self.upsample_layer_norm = nn.BatchNorm2d(3 * 128)
         self.upsample_layer_act = nn.LeakyReLU(inplace=True)
 
 
@@ -181,14 +166,15 @@ class MultiHeadCrossAttention(nn.Module):
         camera_patches = camera_patches.permute(0, 2, 1)  # shape: (batch_size, sequence_length, embedding_dimension)
 
         return camera_patches
-
+    
+    @auto_fp16()
     def forward(self, lidar_bev_features, camera_bev_features):
         
+        #print(f"camera_bev_features: {camera_bev_features}")
         
         lidar_bev_features = self.reduce_lidar_channel_act(self.reduce_lidar_channel_norm(self.reduce_lidar_channel(lidar_bev_features)))
-        lidar_bev_features = self.reduce_lidar_spatialy(lidar_bev_features)
 
-        camera_bev_features = self.reduce_camera_spatialy(camera_bev_features)
+        camera_bev_features = self.reduce_camera_spatialy_act(self.reduce_camera_spatialy_norm(self.reduce_camera_spatialy(camera_bev_features)))
         
 
         # # get patch embeddings
@@ -203,6 +189,7 @@ class MultiHeadCrossAttention(nn.Module):
         # Reshape the 1d tensor back to a 2d representation used in the CenterHead
         output = cross_attention.permute(0,2,1)
         output = output.view(output.shape[0], output.shape[1], 64, 64)  # Shape: [batch * 6, 256, 64, 64]
+
 
         output = self.upsample_layer_act(self.upsample_layer_norm(self.upsample_layer(output)))
 

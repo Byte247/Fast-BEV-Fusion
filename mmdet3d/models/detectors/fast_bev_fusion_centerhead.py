@@ -132,12 +132,12 @@ class FastBEVFusionCenterhead(BaseDetector):
         img = img.reshape(
             [-1] + list(img.shape)[2:]
         )  # [1, 6, 3, 928, 1600] -> [6, 3, 928, 1600]
-        #print(f"img shape: {img.shape}")
+        
         x = self.backbone(
             img
         )  # [6, 256, 232, 400]; [6, 512, 116, 200]; [6, 1024, 58, 100]; [6, 2048, 29, 50]
 
-       
+        
 
         # use for vovnet
         if isinstance(x, dict):
@@ -213,7 +213,7 @@ class FastBEVFusionCenterhead(BaseDetector):
             volumes.append(volume)
 
         x = torch.stack(volumes)  # [1, 64, 200, 200, 12]
-
+        
         def _inner_forward(x):
             out = self.neck_3d(x)  # [[1, 256, 100, 100]]
             return out
@@ -232,6 +232,7 @@ class FastBEVFusionCenterhead(BaseDetector):
 
         voxel_features = self.pts_voxel_encoder(voxels, num_points, coors)
         batch_size = coors[-1, 0] + 1
+ 
         x = self.pts_middle_encoder(voxel_features, coors, batch_size)
         x = self.pts_backbone(x)
         
@@ -415,11 +416,13 @@ class FastBEVFusionCenterhead(BaseDetector):
             return x
 
         return x
+    
 
     def simple_test(self, img, img_metas, points):
         bbox_results = []
         feature_bev, _, features_2d = self.extract_feat(img, img_metas, "test")
 
+        print(feature_bev)
         lidar_features = self.extract_pts_feat(points)
 
         #fuse lidar BEV and camera BEV features
@@ -428,12 +431,12 @@ class FastBEVFusionCenterhead(BaseDetector):
 
 
         if self.bbox_head is not None:
-            x = self.bbox_head(feature_bev)
-            bbox_list = self.bbox_head.get_bboxes(*x, img_metas, valid=None)
-            bbox_results = [
-                bbox3d2result(det_bboxes, det_scores, det_labels)
-                for det_bboxes, det_scores, det_labels in bbox_list
-            ]
+            outs = self.bbox_head(feature_bev)
+            bbox_list = self.bbox_head.get_bboxes(outs, img_metas, rescale=True)
+                                    
+            bbox_results = [bbox3d2result(bboxes, scores, labels)for bboxes, scores, labels in bbox_list]
+            
+            
         else:
             bbox_results = [dict()]
 

@@ -33,28 +33,28 @@ model = dict(
         stride=2,
         is_transpose=False,
         norm_cfg=dict(type='BN', requires_grad=True)),
-    seg_head=dict(
-        type='BEV_FCNHead',
-        use_centerness=True,
-        is_transpose=True,
-        in_channels=256,
-        in_index=0,
-        channels=256,
-        num_convs=4,
-        concat_input=False,
-        dropout_ratio=0.1,
-        num_classes=2,
-        norm_cfg=dict(type='BN', requires_grad=True),
-        align_corners=False,
-        loss_ce=dict(type='CrossEntropyLoss',use_sigmoid=True, loss_weight=1.0),
-        loss_dice=dict(type='DiceLoss_zq', loss_weight=1.0)
-    ),
+    # seg_head=dict(
+    #     type='BEV_FCNHead',
+    #     use_centerness=True,
+    #     is_transpose=True,
+    #     in_channels=256,
+    #     in_index=0,
+    #     channels=256,
+    #     num_convs=4,
+    #     concat_input=False,
+    #     dropout_ratio=0.1,
+    #     num_classes=2,
+    #     norm_cfg=dict(type='BN', requires_grad=True),
+    #     align_corners=False,
+    #     loss_ce=dict(type='CrossEntropyLoss',use_sigmoid=True, loss_weight=1.0),
+    #     loss_dice=dict(type='DiceLoss_zq', loss_weight=1.0)
+    # ),
     bbox_head=dict(
         type='FreeAnchor3DHead',
         is_transpose=True,
         num_classes=10,
-        in_channels=256,
-        feat_channels=256,
+        in_channels= 3 * 128,
+        feat_channels=3 * 128,
         num_convs=2,
         use_direction_classifier=True,
         pre_anchor_topk=25,
@@ -137,7 +137,7 @@ model = dict(
 
 
     #Fusion layer
-    fusion_module = dict(type='MultiHeadCrossAttention',embed_dim = 256, num_heads=8, dropout = 0.1, fuse_on_lidar=True),
+    fusion_module = dict(type='MultiHeadCrossAttention',embed_dim = 512, num_heads=8, dropout = 0.1, fuse_on_lidar=True),
 
     # training and testing settings for 2d
     train_cfg_2d=dict(
@@ -158,7 +158,7 @@ model = dict(
         max_per_img=100),
     # # #
     n_voxels=(256, 256, 12),
-    voxel_size=[0.2, 0.2, 0.5],
+    voxel_size=[0.4, 0.4, 0.5],
     # model training and testing settings
     train_cfg = dict(
         assigner=dict(
@@ -298,7 +298,7 @@ data = dict(
 
 optimizer = dict(
     type='AdamW',
-    lr=0.00005,
+    lr=0.001,
     weight_decay=0.01,
     paramwise_cfg=dict(
         custom_keys={'backbone': dict(lr_mult=0.1, decay_mult=1.0)}))

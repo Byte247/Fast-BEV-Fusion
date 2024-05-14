@@ -4,7 +4,7 @@ point_cloud_range = [-51.2, -51.2, -5.0, 51.2, 51.2, 3.0]
 
 
 model = dict(
-    type='FastBEVFusionCenterhead',
+    type='FastBEVFusion',
     backbone=dict(
         type='ResNet',
         depth=50,
@@ -33,7 +33,6 @@ model = dict(
         stride=2,
         is_transpose=False,
         norm_cfg=dict(type='BN', requires_grad=True)),
-    
 
     #Point Modules:
     pts_voxel_layer=dict(
@@ -67,69 +66,109 @@ model = dict(
 
 
     #Fusion layer
-    fusion_module = dict(type='MultiHeadCrossAttentionV2',embed_dim = 256, num_heads=8, dropout = 0.1, fuse_on_lidar=True),
+    fusion_module = dict(type='MultiHeadCrossAttention',embed_dim = 512, num_heads=8, dropout = 0.1, fuse_on_lidar=False),
 
-    bbox_head= dict(
-        type='CenterHead',
-        in_channels=256,
-        tasks=[
-            dict(num_class=1, class_names=['car']),
-            dict(num_class=2, class_names=['truck', 'construction_vehicle']),
-            dict(num_class=2, class_names=['bus', 'trailer']),
-            dict(num_class=1, class_names=['barrier']),
-            dict(num_class=2, class_names=['motorcycle', 'bicycle']),
-            dict(num_class=2, class_names=['pedestrian', 'traffic_cone']),
-        ],
-        common_heads=dict(
-            reg=(2, 2), height=(1, 2), dim=(3, 2), rot=(2, 2), vel=(2, 2)),
-        share_conv_channel=64,
-        bbox_coder=dict(
-            type='CenterPointBBoxCoder',
-            post_center_range=[-61.2, -61.2, -10.0, 61.2, 61.2, 10.0],
-            max_num=500,
-            score_threshold=0.1,
-            out_size_factor=4,
-            voxel_size=[0.2, 0.2],
-            pc_range=[-51.2, -51.2],
-            code_size=9),
-        separate_head=dict(
-            type='SeparateHead', init_bias=-2.19, final_kernel=3),
-        loss_cls=dict(type='GaussianFocalLoss', reduction='mean'),
-        loss_bbox=dict(type='L1Loss', reduction='mean', loss_weight=0.25),
-        norm_bbox=True),
+
+    bbox_head=dict(
+        type='FreeAnchor3DHead',
+        is_transpose=True,
+        num_classes=10,
+        in_channels=3 * 128,
+        feat_channels=3 * 128,
+        num_convs=2,
+        use_direction_classifier=True,
+        pre_anchor_topk=25,
+        bbox_thr=0.5,
+        gamma=2.0,
+        alpha=0.5,
+        anchor_generator=dict(
+            type='AlignedAnchor3DRangeGenerator',
+            ranges=[[-51.2, -51.2, -1.8, 51.2, 51.2, -1.8]],
+            # scales=[1, 2, 4],
+            sizes=[
+                [0.8660, 2.5981, 1.],  # 1.5/sqrt(3)
+                [0.5774, 1.7321, 1.],  # 1/sqrt(3)
+                [1., 1., 1.],
+                [0.4, 0.4, 1],
+            ],
+            custom_values=[0, 0],
+            rotations=[0, 1.57],
+            reshape_out=True),
+        assigner_per_size=False,
+        diff_rad_by_sin=True,
+        dir_offset=0.7854,  # pi/4
+        dir_limit_offset=0,
+        bbox_coder=dict(type='DeltaXYZWLHRBBoxCoder', code_size=9),
+        loss_cls=dict(
+            type='FocalLoss',
+            use_sigmoid=True,
+            gamma=2.0,
+            alpha=0.25,
+            loss_weight=1.0),
+        loss_bbox=dict(type='SmoothL1Loss', beta=1.0 / 9.0, loss_weight=0.8),
+        loss_dir=dict(
+            type='CrossEntropyLoss', use_sigmoid=False, loss_weight=0.8)),
+    bbox_head_2d=dict(
+        type='FCOSHead',
+        num_classes=10,
+        in_channels=64,
+        stacked_convs=2,
+        feat_channels=32,
+        strides=[4, 8, 16, 32],
+        regress_ranges=((-1, 64), (64, 128), (128, 256), (256, 1e8)),
+        loss_cls=dict(
+            type='FocalLoss',
+            use_sigmoid=True,
+            gamma=2.0,
+            alpha=0.25,
+            loss_weight=1.0),
+        loss_bbox=dict(type='IoULoss', loss_weight=1.0),
+        loss_centerness=dict(type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0)),
 
     
-    # # #
-    n_voxels=(256, 256, 12), # For camera features
-    voxel_size=[0.2, 0.2, 0.5], # For camera features
 
-    # model training and testing settings for the head
-    train_cfg=dict(
-            grid_size=[512, 512, 1],
-            voxel_size=[0.2, 0.2],
-            out_size_factor=4,
-            dense_reg=1,
-            gaussian_overlap=0.1,
-            max_objs=500,
-            min_radius=2,
-            code_weights=[1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.2, 0.2],
-            point_cloud_range = point_cloud_range),
-     test_cfg=dict(
-        pts=dict(
-            post_center_limit_range=[-61.2, -61.2, -10.0, 61.2, 61.2, 10.0],
-            max_per_img=500,
-            max_pool_nms=False,
-            min_radius=[4, 12, 10, 1, 0.85, 0.175],
-            score_threshold=0.1,
-            pc_range=[-51.2, -51.2],
-            out_size_factor=4,
-            voxel_size=[0.2, 0.2],
-            nms_type='rotate',
-            pre_max_size=1000,
-            post_max_size=83,
-            nms_thr=0.2))
-            
-)
+    # training and testing settings for 2d
+    train_cfg_2d=dict(
+        assigner=dict(
+            type='MaxIoUAssigner',
+            pos_iou_thr=0.5,
+            neg_iou_thr=0.4,
+            min_pos_iou=0,
+            ignore_iof_thr=-1),
+        allowed_border=-1,
+        pos_weight=-1,
+        debug=False),
+    test_cfg_2d=dict(
+        nms_pre=1000,
+        min_bbox_size=0,
+        score_thr=0.05,
+        nms=dict(type='nms', iou_threshold=0.5),
+        max_per_img=100),
+    # # #
+    n_voxels=(256, 256, 12),
+    voxel_size=[0.4, 0.4, 0.5],
+    # model training and testing settings
+    train_cfg = dict(
+        assigner=dict(
+            type='MaxIoUAssigner',
+                iou_calculator=dict(type='BboxOverlapsNearest3D'),
+                pos_iou_thr=0.6,
+                neg_iou_thr=0.3,
+                min_pos_iou=0.3,
+                ignore_iof_thr=-1),
+            allowed_border=0,
+            code_weight=[1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.2, 0.2],
+            pos_weight=-1,
+            debug=False),
+    test_cfg = dict(
+        use_rotate_nms=True,
+        nms_across_levels=False,
+        nms_pre=1000,
+        nms_thr=0.2,
+        score_thr=0.05,
+        min_bbox_size=0,
+        max_num=500))
+
 
 
 
@@ -202,10 +241,11 @@ test_pipeline = [
             dict(type='Resize', img_scale=(1600, 900), keep_ratio=True),
             dict(type='Normalize', **img_norm_cfg),
             dict(type='Pad', size_divisor=32)]),
-    dict(type='ObjectRangeFilter', point_cloud_range=point_cloud_range),
     dict(type='KittiSetOrigin', point_cloud_range=point_cloud_range),
     dict(type='DefaultFormatBundle3D', class_names=class_names, with_label=False),
     dict(type='Collect3D', keys=['img','points'])]
+
+
 
 
 data = dict(
@@ -246,40 +286,26 @@ data = dict(
 
 optimizer = dict(
     type='AdamW',
-    lr=0.0001,
+    lr=0.001,
     weight_decay=0.01,
     paramwise_cfg=dict(
         custom_keys={'backbone': dict(lr_mult=0.1, decay_mult=1.0)}))
 optimizer_config = dict(grad_clip=dict(max_norm=35., norm_type=2))
-
-# # learning policy
-# lr_config = dict(
-#     policy='poly',
-#     warmup='linear',
-#     warmup_iters=1000,
-#     warmup_ratio=1e-6,
-#     power=1.0,
-#     min_lr=0,
-#     by_epoch=False
-#     )
-
+# learning policy
 lr_config = dict(
-    policy='cyclic',
-    target_ratio=(10, 1e-4),
-    cyclic_times=1,
-    step_ratio_up=0.4,
-)
-momentum_config = dict(
-    policy='cyclic',
-    target_ratio=(0.85 / 0.95, 1),
-    cyclic_times=1,
-    step_ratio_up=0.4,
-)
+    policy='poly',
+    warmup='linear',
+    warmup_iters=1000,
+    warmup_ratio=1e-6,
+    power=1.0,
+    min_lr=0,
+    by_epoch=False
+    )
 
-total_epochs = 12
+total_epochs = 20
 checkpoint_config = dict(interval=1)
 log_config = dict(
-    interval=10,
+    interval=50,
     hooks=[
         dict(type='TextLoggerHook'),
         dict(type='WandbLoggerHook', init_kwargs=dict(project='3d-det')), 

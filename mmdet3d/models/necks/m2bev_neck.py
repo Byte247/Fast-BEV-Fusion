@@ -30,7 +30,6 @@ class ResModule2D(nn.Module):
             norm_cfg=norm_cfg,
             act_cfg=None)
         self.activation = nn.ReLU(inplace=True)
-
     @auto_fp16()
     def forward(self, x):
         """Forward function.

@@ -38,8 +38,8 @@ model = dict(
         type='FreeAnchor3DHead',
         is_transpose=True,
         num_classes=10,
-        in_channels=256,
-        feat_channels=256,
+        in_channels=3 * 128,
+        feat_channels=3 * 128,
         num_convs=0,
         use_direction_classifier=True,
         pre_anchor_topk=25,
@@ -250,7 +250,7 @@ data = dict(
 
 optimizer = dict(
     type='AdamW',
-    lr=0.0001,
+    lr=0.001,
     weight_decay=0.01,
     paramwise_cfg=dict(
         custom_keys={'backbone': dict(lr_mult=0.1, decay_mult=1.0)}))
@@ -267,7 +267,7 @@ lr_config = dict(
     by_epoch=False
     )
 
-total_epochs = 12
+total_epochs = 20
 checkpoint_config = dict(interval=1)
 log_config = dict(
     interval=10,

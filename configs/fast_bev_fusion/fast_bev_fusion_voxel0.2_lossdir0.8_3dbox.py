@@ -38,8 +38,8 @@ model = dict(
         type='FreeAnchor3DHead',
         is_transpose=True,
         num_classes=10,
-        in_channels=256,
-        feat_channels=256,
+        in_channels=3 * 128,
+        feat_channels=3 * 128,
         num_convs=0,
         use_direction_classifier=True,
         pre_anchor_topk=25,
@@ -106,11 +106,11 @@ model = dict(
 
 
     #Fusion layer
-    fusion_module = dict(type='MultiHeadCrossAttentionV2',embed_dim = 256, num_heads=8, dropout = 0.1, fuse_on_lidar=True),
+    fusion_module = dict(type='MultiHeadCrossAttention',embed_dim = 512, num_heads=8, dropout = 0.1, fuse_on_lidar=True),
 
     # # #
     n_voxels=(256, 256, 12),
-    voxel_size=[0.2, 0.2, 0.5],
+    voxel_size=[0.4, 0.4, 0.5],
     # model training and testing settings
     train_cfg = dict(
         assigner=dict(
