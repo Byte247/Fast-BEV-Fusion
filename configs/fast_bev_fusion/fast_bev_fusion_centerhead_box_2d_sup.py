@@ -67,7 +67,7 @@ model = dict(
 
 
     #Fusion layer
-    fusion_module = dict(type='MultiHeadCrossAttentionV2',embed_dim = 256, num_heads=8, dropout = 0.1, fuse_on_lidar=True),
+    fusion_module = dict(type='MultiHeadCrossAttention',embed_dim = 512, num_heads=8, dropout = 0.1, fuse_on_lidar=True),
 
     bbox_head= dict(
         type='CenterHead',
@@ -280,7 +280,7 @@ data = dict(
 
 optimizer = dict(
     type='AdamW',
-    lr=0.001,
+    lr=0.0001,
     weight_decay=0.01,
     paramwise_cfg=dict(
         custom_keys={'backbone': dict(lr_mult=0.1, decay_mult=1.0)}))
