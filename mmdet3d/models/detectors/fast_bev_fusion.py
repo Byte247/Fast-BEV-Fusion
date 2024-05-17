@@ -349,7 +349,7 @@ class FastBEVFusion(BaseDetector):
                 img_metas_2d.append(tmp_dict)
 
             rank, world_size = get_dist_info()
-            print(f"features_2d: {features_2d}")
+           
             loss_2d = self.bbox_head_2d.forward_train(
                 features_2d, img_metas_2d, gt_bboxes, gt_labels
             )
