@@ -33,14 +33,14 @@ model = dict(
         stride=2,
         is_transpose=False,
         norm_cfg=dict(type='BN', requires_grad=True)),
-    
+
     bbox_head=dict(
         type='FreeAnchor3DHead',
         is_transpose=True,
         num_classes=10,
-        in_channels=3 * 128,
+        in_channels= 3 * 128,
         feat_channels=3 * 128,
-        num_convs=0,
+        num_convs=2,
         use_direction_classifier=True,
         pre_anchor_topk=25,
         bbox_thr=0.5,
@@ -48,7 +48,7 @@ model = dict(
         alpha=0.5,
         anchor_generator=dict(
             type='AlignedAnchor3DRangeGenerator',
-            ranges=[point_cloud_range],
+            ranges=[[-51.2, -51.2, -1.8, 51.2, 51.2, -1.8]],
             # scales=[1, 2, 4],
             sizes=[
                 [0.8660, 2.5981, 1.],  # 1.5/sqrt(3)
@@ -76,7 +76,7 @@ model = dict(
 
     #Point Modules:
     pts_voxel_layer=dict(
-        max_num_points=20, voxel_size=[0.2, 0.2, 8], max_voxels=(30000, 60000), point_cloud_range=point_cloud_range),
+        max_num_points=20, voxel_size=[0.2, 0.2, 8], max_voxels=(30000, 40000), point_cloud_range=point_cloud_range),
     pts_voxel_encoder=dict(
         type='PillarFeatureNet',
         in_channels=5,
@@ -170,7 +170,6 @@ train_pipeline = [
         use_dim=[0, 1, 2, 3, 4],
         pad_empty_sweeps=True,
         remove_close=True),
-    
     dict(
         type='MultiViewPipeline',
         n_images=6,
@@ -211,8 +210,10 @@ test_pipeline = [
     dict(type='Collect3D', keys=['img','points'])]
 
 
+
+
 data = dict(
-    samples_per_gpu=1,
+    samples_per_gpu=2,
     workers_per_gpu=8,
     train=dict(
         type='RepeatDataset',
@@ -227,24 +228,6 @@ data = dict(
             test_mode=False,
             with_box2d=True,
             box_type_3d='LiDAR')),
-
-
-
-    # train=dict(
-    #     type='CBGSDataset',
-    #     dataset=dict(
-    #         type=dataset_type,
-    #         data_root=data_root,
-    #         ann_file=data_root + 'nuscenes_infos_train.pkl',
-    #         pipeline=train_pipeline,
-    #         classes=class_names,
-    #         modality=input_modality,
-    #         test_mode=False,
-    #         use_valid_flag=True,
-    #         with_box2d=True,
-    #         # we use box_type_3d='LiDAR' in kitti and nuscenes dataset
-    #         # and box_type_3d='Depth' in sunrgbd and scannet dataset.
-    #         box_type_3d='LiDAR')),
     val=dict(
         type=dataset_type,
         data_root=data_root,
@@ -284,10 +267,10 @@ lr_config = dict(
     by_epoch=False
     )
 
-total_epochs = 12
+total_epochs = 20
 checkpoint_config = dict(interval=1)
 log_config = dict(
-    interval=10,
+    interval=100,
     hooks=[
         dict(type='TextLoggerHook'),
         dict(type='WandbLoggerHook', init_kwargs=dict(project='3d-det')), 
