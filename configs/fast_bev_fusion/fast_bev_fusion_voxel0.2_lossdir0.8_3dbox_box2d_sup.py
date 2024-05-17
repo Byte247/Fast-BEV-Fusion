@@ -33,14 +33,14 @@ model = dict(
         stride=2,
         is_transpose=False,
         norm_cfg=dict(type='BN', requires_grad=True)),
-    
+
     bbox_head=dict(
         type='FreeAnchor3DHead',
         is_transpose=True,
         num_classes=10,
-        in_channels=3 * 128,
+        in_channels= 3 * 128,
         feat_channels=3 * 128,
-        num_convs=0,
+        num_convs=2,
         use_direction_classifier=True,
         pre_anchor_topk=25,
         bbox_thr=0.5,
@@ -48,7 +48,7 @@ model = dict(
         alpha=0.5,
         anchor_generator=dict(
             type='AlignedAnchor3DRangeGenerator',
-            ranges=[point_cloud_range],
+            ranges=[[-51.2, -51.2, -1.8, 51.2, 51.2, -1.8]],
             # scales=[1, 2, 4],
             sizes=[
                 [0.8660, 2.5981, 1.],  # 1.5/sqrt(3)
@@ -73,6 +73,23 @@ model = dict(
         loss_bbox=dict(type='SmoothL1Loss', beta=1.0 / 9.0, loss_weight=0.8),
         loss_dir=dict(
             type='CrossEntropyLoss', use_sigmoid=False, loss_weight=0.8)),
+
+    bbox_head_2d=dict(
+        type='FCOSHead',
+        num_classes=10,
+        in_channels=64,
+        stacked_convs=2,
+        feat_channels=32,
+        strides=[4, 8, 16, 32],
+        regress_ranges=((-1, 64), (64, 128), (128, 256), (256, 1e8)),
+        loss_cls=dict(
+            type='FocalLoss',
+            use_sigmoid=True,
+            gamma=2.0,
+            alpha=0.25,
+            loss_weight=1.0),
+        loss_bbox=dict(type='IoULoss', loss_weight=1.0),
+        loss_centerness=dict(type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0)),
 
     #Point Modules:
     pts_voxel_layer=dict(
@@ -106,12 +123,31 @@ model = dict(
 
 
     #Fusion layer
-    fusion_module = dict(type='ConcatFusion'),
+    fusion_module = dict(type='MultiHeadCrossAttention',embed_dim = 512, num_heads=8, dropout = 0.1, fuse_on_lidar=True),
 
     # # #
     n_voxels=(256, 256, 12),
     voxel_size=[0.4, 0.4, 0.5],
     # model training and testing settings
+
+    # training and testing settings for 2d
+    train_cfg_2d=dict(
+        assigner=dict(
+            type='MaxIoUAssigner',
+            pos_iou_thr=0.5,
+            neg_iou_thr=0.4,
+            min_pos_iou=0,
+            ignore_iof_thr=-1),
+        allowed_border=-1,
+        pos_weight=-1,
+        debug=False),
+    test_cfg_2d=dict(
+        nms_pre=1000,
+        min_bbox_size=0,
+        score_thr=0.05,
+        nms=dict(type='nms', iou_threshold=0.5),
+        max_per_img=100),
+
     train_cfg = dict(
         assigner=dict(
             type='MaxIoUAssigner',
@@ -132,6 +168,8 @@ model = dict(
         score_thr=0.05,
         min_bbox_size=0,
         max_num=500))
+
+    
 
 
 
@@ -170,7 +208,6 @@ train_pipeline = [
         use_dim=[0, 1, 2, 3, 4],
         pad_empty_sweeps=True,
         remove_close=True),
-    
     dict(
         type='MultiViewPipeline',
         n_images=6,
@@ -255,7 +292,7 @@ optimizer = dict(
     weight_decay=0.01,
     paramwise_cfg=dict(
         custom_keys={'backbone': dict(lr_mult=0.1, decay_mult=1.0)}))
-optimizer_config = dict(grad_clip=dict(max_norm=35., norm_type=2))
+optimizer_config = dict(grad_clip=dict(max_norm=20., norm_type=2))
 
 # learning policy
 lr_config = dict(
@@ -271,7 +308,7 @@ lr_config = dict(
 total_epochs = 20
 checkpoint_config = dict(interval=1)
 log_config = dict(
-    interval=10,
+    interval=100,
     hooks=[
         dict(type='TextLoggerHook'),
         dict(type='WandbLoggerHook', init_kwargs=dict(project='3d-det')), 
