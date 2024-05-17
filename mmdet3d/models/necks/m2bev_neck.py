@@ -110,7 +110,9 @@ class M2BevNeck(nn.Module):
         """
 
         def _inner_forward(x):
+            print(f"before neck: {x}")
             out = self.model.forward(x)
+            print(f"after neck: {out}")
             return out
 
         if bool(os.getenv("DEPLOY", False)):
