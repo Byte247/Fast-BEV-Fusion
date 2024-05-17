@@ -11,7 +11,7 @@ model = dict(
         num_stages=4,
         out_indices=(0, 1, 2, 3),
         frozen_stages=1,
-        norm_cfg=dict(type='BN', requires_grad=True),
+        norm_cfg=dict(type='SyncBN', requires_grad=True),
         norm_eval=True,
         init_cfg=dict(type='Pretrained', checkpoint='torchvision://resnet50'),
         style='pytorch',
@@ -20,7 +20,7 @@ model = dict(
     ),
     neck=dict(
         type='FPN',
-        norm_cfg=dict(type='BN', requires_grad=True),
+        norm_cfg=dict(type='SyncBN', requires_grad=True),
         in_channels=[256, 512, 1024, 2048],
         out_channels=64,
         num_outs=4),
@@ -32,7 +32,7 @@ model = dict(
         num_layers=6,
         stride=2,
         is_transpose=False,
-        norm_cfg=dict(type='BN', requires_grad=True)),
+        norm_cfg=dict(type='SyncBN', requires_grad=True)),
 
     bbox_head=dict(
         type='FreeAnchor3DHead',
@@ -72,7 +72,9 @@ model = dict(
             loss_weight=1.0),
         loss_bbox=dict(type='SmoothL1Loss', beta=1.0 / 9.0, loss_weight=0.8),
         loss_dir=dict(
-            type='CrossEntropyLoss', use_sigmoid=False, loss_weight=0.8)),
+            type='CrossEntropyLoss', use_sigmoid=False, loss_weight=0.8),
+        norm_cfg=dict(type='SyncBN', requires_grad=True)
+        ),
 
     bbox_head_2d=dict(
         type='FCOSHead',
@@ -100,7 +102,7 @@ model = dict(
         feat_channels=[64],
         with_distance=False,
         voxel_size=(0.2, 0.2, 8),
-        norm_cfg=dict(type='BN1d', eps=1e-3, momentum=0.01),
+        norm_cfg=dict(type='SyncBN', eps=1e-3, momentum=0.01),
         legacy=False),
     pts_middle_encoder=dict(
         type='PointPillarsScatter', in_channels=64, output_shape=(512, 512)),
@@ -110,14 +112,14 @@ model = dict(
         out_channels=[64, 128, 256],
         layer_nums=[3, 5, 5],
         layer_strides=[2, 2, 2],
-        norm_cfg=dict(type='BN', eps=1e-3, momentum=0.01),
+        norm_cfg=dict(type='SyncBN', eps=1e-3, momentum=0.01),
         conv_cfg=dict(type='Conv2d', bias=False)),
     pts_neck=dict(
         type='SECONDFPN',
         in_channels=[64, 128, 256],
         out_channels=[128, 128, 128],
         upsample_strides=[0.5, 1, 2],
-        norm_cfg=dict(type='BN', eps=1e-3, momentum=0.01),
+        norm_cfg=dict(type='SyncBN', eps=1e-3, momentum=0.01),
         upsample_cfg=dict(type='deconv', bias=False),
         use_conv_for_no_stride=True),
 
