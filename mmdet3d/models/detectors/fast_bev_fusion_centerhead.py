@@ -422,7 +422,6 @@ class FastBEVFusionCenterhead(BaseDetector):
         bbox_results = []
         feature_bev, _, features_2d = self.extract_feat(img, img_metas, "test")
 
-        print(feature_bev)
         lidar_features = self.extract_pts_feat(points)
 
         #fuse lidar BEV and camera BEV features

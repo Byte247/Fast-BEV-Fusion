@@ -206,7 +206,7 @@ test_pipeline = [
 
 
 data = dict(
-    samples_per_gpu=2,
+    samples_per_gpu=1,
     workers_per_gpu=8,
     train=dict(
         type='RepeatDataset',
@@ -246,7 +246,8 @@ optimizer = dict(
     lr=0.0001,
     weight_decay=0.01,
     paramwise_cfg=dict(
-        custom_keys={'backbone': dict(lr_mult=0.1, decay_mult=1.0)}))
+        custom_keys={'backbone': dict(lr_mult=0.1, decay_mult=1.0),
+                     'neck_3d': dict(lr_mult=0.1, decay_mult=1.0)}))
 optimizer_config = dict(grad_clip=dict(max_norm=35., norm_type=2))
 
 # learning policy

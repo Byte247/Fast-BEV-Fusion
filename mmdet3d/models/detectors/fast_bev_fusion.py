@@ -423,7 +423,6 @@ class FastBEVFusion(BaseDetector):
         feature_bev = self.fusion_module(lidar_features[0], feature_bev[0])
         feature_bev =[feature_bev]
 
-
         if self.bbox_head is not None:
             x = self.bbox_head(feature_bev)
             bbox_list = self.bbox_head.get_bboxes(*x, img_metas, valid=None)
