@@ -106,7 +106,7 @@ model = dict(
 
 
     #Fusion layer
-    fusion_module = dict(type='ConcatFusion'),
+    fusion_module = dict(type='ConcatFusion', out_channels = 384),
 
     # # #
     n_voxels=(256, 256, 12),

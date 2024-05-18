@@ -8,7 +8,7 @@ class ConcatFusion(nn.Module):
     """
     Simple and direct fusion of lidar and camera features. This module is intended as a naive baseline approach
     """
-    def __init__(self):
+    def __init__(self,out_channels = 256):
         super(ConcatFusion, self).__init__()
 
         self.downsample = nn.Conv2d(384 + 256, 512, kernel_size=3, stride=2, padding=1)
@@ -19,8 +19,8 @@ class ConcatFusion(nn.Module):
         self.conv_norm = nn.BatchNorm2d(512)
         self.conv_act = nn.LeakyReLU()
 
-        self.upsample = nn.ConvTranspose2d(512, 256, kernel_size=2, stride=2)
-        self.upsample_norm = nn.BatchNorm2d(256)
+        self.upsample = nn.ConvTranspose2d(512, out_channels, kernel_size=2, stride=2)
+        self.upsample_norm = nn.BatchNorm2d(out_channels)
         self.upsample_act = nn.LeakyReLU()
 
     def forward(self, lidar_features, camera_features):
