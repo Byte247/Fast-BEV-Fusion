@@ -206,7 +206,7 @@ test_pipeline = [
 
 
 data = dict(
-    samples_per_gpu=1,
+    samples_per_gpu=2,
     workers_per_gpu=8,
     train=dict(
         type='RepeatDataset',
@@ -248,7 +248,7 @@ optimizer = dict(
     paramwise_cfg=dict(
         custom_keys={'backbone': dict(lr_mult=0.1, decay_mult=1.0),
                      'neck_3d': dict(lr_mult=0.1, decay_mult=1.0)}))
-optimizer_config = dict(grad_clip=dict(max_norm=35., norm_type=2))
+optimizer_config = dict(grad_clip=dict(max_norm=20., norm_type=2))
 
 # learning policy
 lr_config = dict(
@@ -260,19 +260,6 @@ lr_config = dict(
     min_lr=0,
     by_epoch=False
     )
-
-# lr_config = dict(
-#     policy='cyclic',
-#     target_ratio=(10, 1e-4),
-#     cyclic_times=1,
-#     step_ratio_up=0.4,
-# )
-# momentum_config = dict(
-#     policy='cyclic',
-#     target_ratio=(0.85 / 0.95, 1),
-#     cyclic_times=1,
-#     step_ratio_up=0.4,
-# )
 
 total_epochs = 20
 checkpoint_config = dict(interval=1)

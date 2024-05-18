@@ -170,14 +170,15 @@ class MultiHeadCrossAttention(nn.Module):
     
     def forward(self, lidar_bev_features, camera_bev_features):
         
-        #print(f"camera_bev_features: {camera_bev_features}")
+        # Make a copy of the tensor and convert it to CPU
+        camera_bev_features_cpu = camera_bev_features.clone().cpu()
 
         # Check for NaN values
-        if torch.isnan(camera_bev_features).any():
+        if torch.isnan(camera_bev_features_cpu).any():
             print("Camera Tensor contains NaN values.")
 
         # Check for Inf values
-        if torch.isinf(camera_bev_features).any():
+        if torch.isinf(camera_bev_features_cpu).any():
             print("Camera Tensor contains Inf values.")
         
         lidar_bev_features = self.reduce_lidar_channel_act(self.reduce_lidar_channel_norm(self.reduce_lidar_channel(lidar_bev_features)))

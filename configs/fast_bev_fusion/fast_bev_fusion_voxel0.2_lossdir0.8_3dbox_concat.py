@@ -214,7 +214,7 @@ test_pipeline = [
 
 
 data = dict(
-    samples_per_gpu=1,
+    samples_per_gpu=2,
     workers_per_gpu=8,
     train=dict(
         type='RepeatDataset',
@@ -254,8 +254,9 @@ optimizer = dict(
     lr=0.0001,
     weight_decay=0.01,
     paramwise_cfg=dict(
-        custom_keys={'backbone': dict(lr_mult=0.1, decay_mult=1.0)}))
-optimizer_config = dict(grad_clip=dict(max_norm=35., norm_type=2))
+        custom_keys={'backbone': dict(lr_mult=0.1, decay_mult=1.0),
+                     'neck_3d': dict(lr_mult=0.1, decay_mult=1.0)}))
+optimizer_config = dict(grad_clip=dict(max_norm=20., norm_type=2))
 
 # learning policy
 lr_config = dict(
@@ -271,7 +272,7 @@ lr_config = dict(
 total_epochs = 20
 checkpoint_config = dict(interval=1)
 log_config = dict(
-    interval=10,
+    interval=100,
     hooks=[
         dict(type='TextLoggerHook'),
         dict(type='WandbLoggerHook', init_kwargs=dict(project='3d-det')), 
@@ -287,4 +288,3 @@ workflow = [('train', 1)]
 
 # fp16 settings, the loss scale is specifically tuned to avoid Nan
 fp16 = dict(loss_scale='dynamic')
-
