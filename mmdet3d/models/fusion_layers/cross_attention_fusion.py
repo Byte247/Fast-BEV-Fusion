@@ -30,6 +30,7 @@ class Decoder(nn.Module):
         attention_output, attn_weights = self.multiheadAttention(query=query, key=key, value=value, need_weights=self.show_weights)
         if self.show_weights:
             self.vis_attention_scores(attn_weights)
+            #self.vis_mean_attention_scores(attn_weights)
 
         add_norm_0 = torch.add(attention_output, query)
         
@@ -39,6 +40,27 @@ class Decoder(nn.Module):
         
         return output
     
+    def vis_mean_attention_scores(self, weights):
+        
+
+        attention_heatmaps = weights.squeeze(0).cpu().detach().numpy()
+
+        # Compute the mean attention heatmap over the specified range
+        mean_attention_heatmap = np.mean(attention_heatmaps, axis=0)
+
+        # Reshape the mean attention heatmap to 2D
+        mean_attention_heatmap_2d = mean_attention_heatmap.reshape((64, 64))
+
+        # Plot the mean attention heatmap
+        plt.figure(figsize=(10, 8))
+        plt.imshow(mean_attention_heatmap_2d, cmap='viridis', interpolation='nearest')
+        plt.xlabel('Wide Image Patch X-Axis')
+        plt.ylabel('Wide Image Patch Y-Axis')
+        plt.title(f'Mean Attention Heatmap for Tokens')
+        plt.colorbar(label='Attention Score')
+        plt.show()
+
+
     def vis_attention_scores(self, weights):
          
         attention_heatmaps = weights.squeeze(0).cpu().detach().numpy()  # Remove batch dimension and convert to NumPy
@@ -49,7 +71,7 @@ class Decoder(nn.Module):
         # Precompute highlighted grid outside the loop
         highlighted_grid = np.zeros((64, 64))
 
-        for i in range(2000, 4000):
+        for i in range(1, 100):
             # Clear previous plot
             axs_heatmap[0].clear()
             axs_heatmap[1].clear()
@@ -79,7 +101,7 @@ class Decoder(nn.Module):
             axs_heatmap[1].imshow(highlighted_grid, cmap='viridis', interpolation='nearest')
             axs_heatmap[1].set_xlabel('Column Index')
             axs_heatmap[1].set_ylabel('Row Index')
-            axs_heatmap[1].set_title(f'Position of Token {i} in 32x16 Grid')
+            axs_heatmap[1].set_title(f'Position of Token {i} in 64x64 Grid')
             
             # Update the plots
             fig_heatmap.canvas.draw()
