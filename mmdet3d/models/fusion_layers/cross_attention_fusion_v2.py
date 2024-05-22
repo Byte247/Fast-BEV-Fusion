@@ -225,6 +225,9 @@ class MultiHeadCrossAttentionV2(nn.Module):
         output = cross_attention.permute(0,2,1)
         output = output.view(output.shape[0], output.shape[1], 64, 64)  # Shape: [batch * 6, 256, 64, 64]
 
+        #large residual around the hole cross attention:
+        output = torch.add(output, lidar_bev_features)
+
 
         output = self.upsample_layer_act(self.upsample_layer_norm(self.upsample_layer(output)))
 
