@@ -140,14 +140,14 @@ class MultiHeadCrossAttentionV2(nn.Module):
 
         self.embed_dim = embed_dim
 
-        self.reduce_lidar_channel = nn.Conv2d(384, 512, kernel_size=3, stride=2, padding=1)
+        self.reduce_lidar_channel = nn.Conv2d(384, self.embed_dim, kernel_size=3, stride=2, padding=1)
         self.reduce_lidar_channel_act = nn.LeakyReLU()
-        self.reduce_lidar_channel_norm = nn.BatchNorm2d(512)
+        self.reduce_lidar_channel_norm = nn.BatchNorm2d(self.embed_dim)
         self.fuse_on_lidar = fuse_on_lidar
 
 
-        self.reduce_camera_spatialy = nn.Conv2d(256, 512, kernel_size=3, stride=2, padding=1)
-        self.reduce_camera_spatialy_norm = nn.BatchNorm2d(512)
+        self.reduce_camera_spatialy = nn.Conv2d(256, self.embed_dim, kernel_size=3, stride=2, padding=1)
+        self.reduce_camera_spatialy_norm = nn.BatchNorm2d(self.embed_dim)
         self.reduce_camera_spatialy_act = nn.LeakyReLU(inplace=True)
 
         self.lidar_camera_cross_attention = Decoder(self.embed_dim, hidden_dim=self.embed_dim * 2, num_heads= num_heads, dropout=dropout, show_weights=False)
@@ -158,6 +158,8 @@ class MultiHeadCrossAttentionV2(nn.Module):
         self.upsample_layer = nn.ConvTranspose2d(embed_dim, 3 * 128, kernel_size=2, stride=2) # match centerpoint
         self.upsample_layer_norm = nn.BatchNorm2d(3 * 128)
         self.upsample_layer_act = nn.LeakyReLU(inplace=True)
+
+        self.last_norm = nn.BatchNorm2d(self.embed_dim)
 
 
     def create_lidar_patches(self, lidar_tensor):
@@ -225,8 +227,9 @@ class MultiHeadCrossAttentionV2(nn.Module):
         output = cross_attention.permute(0,2,1)
         output = output.view(output.shape[0], output.shape[1], 64, 64)  # Shape: [batch * 6, 256, 64, 64]
 
-        #large residual around the hole cross attention:
-        output = torch.add(output, lidar_bev_features)
+        #large add & norm around the hole cross attention:
+        output = self.last_norm(torch.add(output, lidar_bev_features))
+        
 
 
         output = self.upsample_layer_act(self.upsample_layer_norm(self.upsample_layer(output)))
