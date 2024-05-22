@@ -57,6 +57,14 @@ class NuScenesMultiViewMultiModalDataset(MultiViewMixin, NuScenesDataset):
                 gt_labels_3d=gt_labels_3d
             )
         return new_info
+    
+    def generate_curves(self, results, *args, **kwargs):
+
+        result_dict = super().evaluate_new(results, *args, **kwargs)
+        print(result_dict)
+        return result_dict
+
+
 
     def evaluate(self, results, *args, **kwargs):
         # update boxes with zero velocity
@@ -204,6 +212,7 @@ class NuScenesMultiViewMultiModalDataset(MultiViewMixin, NuScenesDataset):
                 intrinsic = info['lidar2img']['intrinsic'][:3, :3]
                 projection = intrinsic @ extrinsic[:3]
                 if not len(result['scores_3d']):
+                    print("in pass perspecitve")
                     pass
                 else:
                     # draw pred
@@ -216,6 +225,7 @@ class NuScenesMultiViewMultiModalDataset(MultiViewMixin, NuScenesDataset):
                         try:
                             self.draw_corners(img_pred, corner, colors[label], projection)
                         except:
+                            print(f"in pass draw_corners")
                             pass
                     try:
                         # draw GT

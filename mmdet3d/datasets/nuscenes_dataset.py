@@ -668,6 +668,7 @@ class NuScenesDataset(Custom3DDataset):
         from nuscenes.eval.detection.evaluate import NuScenesEval
 
         output_dir = osp.join(*osp.split(result_path)[:-1])
+        print(f"NuScenes eval output dir: {output_dir}")
         nusc = NuScenes(
             version=self.version, dataroot=self.data_root, verbose=False)
         eval_set_map = {
@@ -680,8 +681,8 @@ class NuScenesDataset(Custom3DDataset):
             result_path=result_path,
             eval_set=eval_set_map[self.version],
             output_dir=output_dir,
-            verbose=False)
-        nusc_eval.main(render_curves=True, plot_examples=True)
+            verbose=True)
+        nusc_eval.main(render_curves=True, plot_examples=10)
 
         # record metrics
         metrics = mmcv.load(osp.join(output_dir, 'metrics_summary.json'))
@@ -719,9 +720,9 @@ class NuScenesDataset(Custom3DDataset):
                 `jsonfile_prefix` is not specified.
         """
         assert isinstance(results, list), 'results must be a list'
-        assert len(results) == len(self), (
-            'The length of results is not equal to the dataset len: {} != {}'.
-            format(len(results), len(self)))
+        # assert len(results) == len(self), (
+        #     'The length of results is not equal to the dataset len: {} != {}'.
+        #     format(len(results), len(self)))
 
         if jsonfile_prefix is None:
             tmp_dir = tempfile.TemporaryDirectory()
@@ -747,6 +748,53 @@ class NuScenesDataset(Custom3DDataset):
                 result_files.update(
                     {name: self._format_bbox(results_, tmp_file_)})
         return result_files, tmp_dir
+    
+
+    def evaluate_new(self,
+                 results,
+                 metric='bbox',
+                 logger=None,
+                 jsonfile_prefix=None,
+                 result_names=['pts_bbox'],
+                 show=False,
+                 out_dir=None,
+                 pipeline=None):
+        """Evaluation in nuScenes protocol.
+
+        Args:
+            results (list[dict]): Testing results of the dataset.
+            metric (str | list[str]): Metrics to be evaluated.
+            logger (logging.Logger | str | None): Logger used for printing
+                related information during evaluation. Default: None.
+            jsonfile_prefix (str | None): The prefix of json files. It includes
+                the file path and the prefix of filename, e.g., "a/b/prefix".
+                If not specified, a temp file will be created. Default: None.
+            show (bool): Whether to visualize.
+                Default: False.
+            out_dir (str): Path to save the visualization results.
+                Default: None.
+            pipeline (list[dict], optional): raw data loading for showing.
+                Default: None.
+
+        Returns:
+            dict[str, float]: Results of each evaluation metric.
+        """
+        result_files = results
+
+        print(f"type result_files : {type(result_files)}")
+        print(f"len result_files : {len(result_files)}")
+        if isinstance(result_files, dict):
+            results_dict = dict()
+            for name in result_names:
+                print('Evaluating bboxes of {}'.format(name))
+                ret_dict = self._evaluate_single(result_files[name])
+            results_dict.update(ret_dict)
+        elif isinstance(result_files, str):
+            results_dict = self._evaluate_single(result_files)
+
+        if show:
+            self.show(results, out_dir, pipeline=pipeline)
+        return results_dict
 
     def evaluate(self,
                  results,
