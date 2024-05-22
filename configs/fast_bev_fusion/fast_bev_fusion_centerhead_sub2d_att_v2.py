@@ -297,12 +297,12 @@ momentum_config = dict(
 )
 
 # runtime settings
-runner = dict(type='EpochBasedRunner', max_epochs=20)
+runner = dict(type='EpochBasedRunner', max_epochs=30)
 
 #total_epochs = 20
 checkpoint_config = dict(interval=1)
 log_config = dict(
-    interval=100,
+    interval=500,
     hooks=[
         dict(type='TextLoggerHook'),
         dict(type='WandbLoggerHook', init_kwargs=dict(project='3d-det')), 
