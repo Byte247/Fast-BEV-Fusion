@@ -191,7 +191,7 @@ class MultiHeadCrossAttentionV2(nn.Module):
 
         return camera_patches
     
-    
+    @auto_fp16()
     def forward(self, lidar_bev_features, camera_bev_features):
         
         # Make a copy of the tensor and convert it to CPU
