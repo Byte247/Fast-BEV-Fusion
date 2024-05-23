@@ -147,6 +147,10 @@ pretrained_models
 
 # figs
 figs
+*.pdf
+
+# workdir
+workdirs/*
 
 # mac
 .DS_Store
