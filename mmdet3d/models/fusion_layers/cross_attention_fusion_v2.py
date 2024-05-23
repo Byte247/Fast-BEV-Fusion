@@ -165,23 +165,23 @@ class MultiHeadCrossAttentionV2(nn.Module):
     def create_lidar_patches(self, lidar_tensor):
         
         #flatten all patches:   
-        lidar_tensor = lidar_tensor.view(lidar_tensor.shape[0], lidar_tensor.shape[1], -1)
+        lidar_tensor_wo_pos_embed = lidar_tensor.view(lidar_tensor.shape[0], lidar_tensor.shape[1], -1)
 
-        lidar_tensor = torch.add(lidar_tensor, self.pos_embed_lidar)
+        lidar_tensor = torch.add(lidar_tensor_wo_pos_embed, self.pos_embed_lidar)
 
         #reshape to match required nn.MultiheadAttention input format: batch, seq, feature
         lidar_tensor = lidar_tensor.permute(0, 2, 1)  # shape: (batch_size, sequence_length, embedding_dimension)
 
 
-        return lidar_tensor
+        return lidar_tensor, lidar_tensor_wo_pos_embed
     
     def create_camera_patches(self, camera_tensor):
         
         #flatten all patches:
-        camera_patches = camera_tensor.view(camera_tensor.shape[0], camera_tensor.shape[1], -1)
+        camera_patches_wo_pos_embed = camera_tensor.view(camera_tensor.shape[0], camera_tensor.shape[1], -1)
 
         #add position embedding to flattened patches
-        camera_patches = torch.add(camera_patches, self.pos_embed_camera)
+        camera_patches = torch.add(camera_patches_wo_pos_embed, self.pos_embed_camera)
 
         # if self.pos_embed_camera.grad is not None:
         #    print(f"camera.grad: {self.pos_embed_camera.grad.abs().max()}")
@@ -191,7 +191,7 @@ class MultiHeadCrossAttentionV2(nn.Module):
         #reshape to match required nn.MultiheadAttention input format: batch, seq, feature
         camera_patches = camera_patches.permute(0, 2, 1)  # shape: (batch_size, sequence_length, embedding_dimension)
 
-        return camera_patches
+        return camera_patches, camera_patches_wo_pos_embed
     
     @auto_fp16()
     def forward(self, lidar_bev_features, camera_bev_features):
@@ -213,15 +213,15 @@ class MultiHeadCrossAttentionV2(nn.Module):
         
 
         # # get patch embeddings
-        image_patch_embedding = self.create_camera_patches(camera_bev_features)
-        lidar_patch_embedding = self.create_lidar_patches(lidar_bev_features)
+        image_patch_embedding, camera_patches_wo_pos_embed = self.create_camera_patches(camera_bev_features)
+        lidar_patch_embedding, lidar_tensor_wo_pos_embed = self.create_lidar_patches(lidar_bev_features)
 
         if self.fuse_on_lidar:
             cross_attention = self.lidar_camera_cross_attention(lidar_patch_embedding, image_patch_embedding)
-            cross_attention = self.last_norm(torch.add(cross_attention, lidar_patch_embedding))
+            cross_attention = self.last_norm(torch.add(cross_attention, lidar_tensor_wo_pos_embed))
         else:
             cross_attention = self.lidar_camera_cross_attention(image_patch_embedding, lidar_patch_embedding)
-            cross_attention = self.last_norm(torch.add(cross_attention, image_patch_embedding))
+            cross_attention = self.last_norm(torch.add(cross_attention, camera_patches_wo_pos_embed))
 
         # Reshape the 1d tensor back to a 2d representation used in the CenterHead
         output = cross_attention.permute(0,2,1)
