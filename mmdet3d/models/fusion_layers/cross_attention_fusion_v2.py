@@ -140,14 +140,14 @@ class MultiHeadCrossAttentionV2(nn.Module):
 
         self.embed_dim = embed_dim
 
-        self.reduce_lidar_channel = nn.Conv2d(384, 512, kernel_size=3, stride=2, padding=1)
+        self.reduce_lidar_channel = nn.Conv2d(384, self.embed_dim, kernel_size=3, stride=2, padding=1)
         self.reduce_lidar_channel_act = nn.LeakyReLU()
-        self.reduce_lidar_channel_norm = nn.BatchNorm2d(512)
+        self.reduce_lidar_channel_norm = nn.BatchNorm2d(self.embed_dim)
         self.fuse_on_lidar = fuse_on_lidar
 
 
-        self.reduce_camera_spatialy = nn.Conv2d(256, 512, kernel_size=3, stride=2, padding=1)
-        self.reduce_camera_spatialy_norm = nn.BatchNorm2d(512)
+        self.reduce_camera_spatialy = nn.Conv2d(256, self.embed_dim, kernel_size=3, stride=2, padding=1)
+        self.reduce_camera_spatialy_norm = nn.BatchNorm2d(self.embed_dim)
         self.reduce_camera_spatialy_act = nn.LeakyReLU(inplace=True)
 
         self.lidar_camera_cross_attention = Decoder(self.embed_dim, hidden_dim=self.embed_dim * 2, num_heads= num_heads, dropout=dropout, show_weights=False)
@@ -158,6 +158,8 @@ class MultiHeadCrossAttentionV2(nn.Module):
         self.upsample_layer = nn.ConvTranspose2d(embed_dim, 3 * 128, kernel_size=2, stride=2) # match centerpoint
         self.upsample_layer_norm = nn.BatchNorm2d(3 * 128)
         self.upsample_layer_act = nn.LeakyReLU(inplace=True)
+
+        self.last_norm = nn.LayerNorm(self.embed_dim)
 
 
     def create_lidar_patches(self, lidar_tensor):
@@ -191,7 +193,7 @@ class MultiHeadCrossAttentionV2(nn.Module):
 
         return camera_patches
     
-    
+    @auto_fp16()
     def forward(self, lidar_bev_features, camera_bev_features):
         
         # Make a copy of the tensor and convert it to CPU
@@ -216,10 +218,10 @@ class MultiHeadCrossAttentionV2(nn.Module):
 
         if self.fuse_on_lidar:
             cross_attention = self.lidar_camera_cross_attention(lidar_patch_embedding, image_patch_embedding)
-            cross_attention = torch.add(cross_attention, lidar_patch_embedding)
+            cross_attention = self.last_norm(torch.add(cross_attention, image_patch_embedding))
         else:
             cross_attention = self.lidar_camera_cross_attention(image_patch_embedding, lidar_patch_embedding)
-            cross_attention = torch.add(cross_attention, image_patch_embedding)
+            cross_attention = self.last_norm(torch.add(cross_attention, lidar_patch_embedding))
 
         # Reshape the 1d tensor back to a 2d representation used in the CenterHead
         output = cross_attention.permute(0,2,1)

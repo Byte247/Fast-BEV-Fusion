@@ -58,7 +58,6 @@ class NuScenesMultiView_Map_MultiModalDataset(NuScenesMultiViewMultiModalDataset
         while True:
             data = self.prepare_train_data(idx)
             if data is None:
-                print(f"Data None. Returned random index")
                 idx = self._rand_another(idx)
                 continue
             return data
