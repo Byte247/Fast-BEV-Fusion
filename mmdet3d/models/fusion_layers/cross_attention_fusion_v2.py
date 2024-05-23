@@ -159,7 +159,7 @@ class MultiHeadCrossAttentionV2(nn.Module):
         self.upsample_layer_norm = nn.BatchNorm2d(3 * 128)
         self.upsample_layer_act = nn.LeakyReLU(inplace=True)
 
-        self.last_norm = nn.BatchNorm2d(self.embed_dim)
+        self.last_norm = nn.LayerNorm(self.embed_dim)
 
 
     def create_lidar_patches(self, lidar_tensor):
@@ -218,18 +218,14 @@ class MultiHeadCrossAttentionV2(nn.Module):
 
         if self.fuse_on_lidar:
             cross_attention = self.lidar_camera_cross_attention(lidar_patch_embedding, image_patch_embedding)
-            cross_attention = torch.add(cross_attention, lidar_patch_embedding)
+            cross_attention = self.last_norm(torch.add(cross_attention, lidar_patch_embedding))
         else:
             cross_attention = self.lidar_camera_cross_attention(image_patch_embedding, lidar_patch_embedding)
-            cross_attention = torch.add(cross_attention, image_patch_embedding)
+            cross_attention = self.last_norm(torch.add(cross_attention, image_patch_embedding))
 
         # Reshape the 1d tensor back to a 2d representation used in the CenterHead
         output = cross_attention.permute(0,2,1)
         output = output.view(output.shape[0], output.shape[1], 64, 64)  # Shape: [batch * 6, 256, 64, 64]
-
-        #large add & norm around the hole cross attention:
-        output = self.last_norm(torch.add(output, lidar_bev_features))
-        
 
 
         output = self.upsample_layer_act(self.upsample_layer_norm(self.upsample_layer(output)))
