@@ -71,7 +71,7 @@ class Decoder(nn.Module):
         # Precompute highlighted grid outside the loop
         highlighted_grid = np.zeros((64, 64))
 
-        for i in range(1, 100):
+        for i in range(2048, 2200):
             # Clear previous plot
             axs_heatmap[0].clear()
             axs_heatmap[1].clear()
