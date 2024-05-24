@@ -31,6 +31,7 @@ def parse_args():
         description='MMDet test (and eval) a model')
     parser.add_argument('config', help='test config file path')
     parser.add_argument('checkpoint', help='checkpoint file')
+    parser.add_argument('workdir', help='output dir for curves and examples')
     parser.add_argument('--out', help='output result file in pickle format')
     parser.add_argument(
         '--fuse-conv-bn',
@@ -250,7 +251,7 @@ def main():
             ]:
                 eval_kwargs.pop(key, None)
             eval_kwargs.update(dict(metric=args.eval, **kwargs))
-            print(dataset.evaluate(outputs, **eval_kwargs))
+            print(dataset.evaluate(outputs, out_dir = args.out, vis_mode=args.vis,jsonfile_prefix=args.workdir, **eval_kwargs))
 
 
 if __name__ == '__main__':

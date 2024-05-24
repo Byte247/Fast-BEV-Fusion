@@ -66,7 +66,7 @@ class NuScenesMultiViewMultiModalDataset(MultiViewMixin, NuScenesDataset):
 
 
 
-    def evaluate(self, results, *args, **kwargs):
+    def evaluate(self, results, out_dir, *args, **kwargs):
         # update boxes with zero velocity
         new_results = []
         for i in range(len(results)):
@@ -81,18 +81,23 @@ class NuScenesMultiViewMultiModalDataset(MultiViewMixin, NuScenesDataset):
             ))
         
         vis_mode = kwargs['vis_mode'] if 'vis_mode' in kwargs else False
-        if vis_mode:
-            embed(header='### vis nus test data ###')
-            print('### vis nus test data ###')
-            self.show(new_results, 'trash/test', thr=0.3)
-            print('### finish vis ###')
-            exit()
-            
+
         if 'vis_mode' in kwargs.keys():
             kwargs.pop('vis_mode')
-        
+
+        if vis_mode:
+           
+            print('### vis nus test data ###')
+            self.show(new_results, out_dir=out_dir + "/figs", thr=0.3)
+            print('### finish vis ###')
+            exit()    
+
         result_dict = super().evaluate(new_results, *args, **kwargs)
+        
         print(result_dict)
+    
+        
+            
         return result_dict
     
     @staticmethod
@@ -101,13 +106,14 @@ class NuScenesMultiViewMultiModalDataset(MultiViewMixin, NuScenesDataset):
         corners_2d_3 = corners_3d_4 @ projection.T
         z_mask = corners_2d_3[:, 2] > 0
         corners_2d = corners_2d_3[:, :2] / corners_2d_3[:, 2:]
-        corners_2d = corners_2d.astype(np.int)
+        corners_2d = corners_2d.astype(int)
         for i, j in [
             [0, 1], [1, 2], [2, 3], [3, 0],
             [4, 5], [5, 6], [6, 7], [7, 4],
             [0, 4], [1, 5], [2, 6], [3, 7]
         ]:
             if z_mask[i] and z_mask[j]:
+
                 img = cv2.line(
                     img=img,
                     pt1=tuple(corners_2d[i]),
@@ -141,7 +147,7 @@ class NuScenesMultiViewMultiModalDataset(MultiViewMixin, NuScenesDataset):
         img = cv2.polylines(img, [box], isClosed=True, color=color, thickness=2)
         return img
 
-    def show(self, results, out_dir='trash', bev_seg_results=None, thr=0.3, fps=3):
+    def show(self, results, out_dir='figs', bev_seg_results=None, thr=0.3, fps=3):
         assert out_dir is not None, 'Expect out_dir, got none.'
         colors = get_colors()
         all_img_gt, all_img_pred, all_bev_gt, all_bev_pred = [], [], [], []
@@ -210,7 +216,10 @@ class NuScenesMultiViewMultiModalDataset(MultiViewMixin, NuScenesDataset):
                 
                 extrinsic = info['lidar2img']['extrinsic'][j]
                 intrinsic = info['lidar2img']['intrinsic'][:3, :3]
+                #intrinsic = info['lidar2img']['lidar2img_aug'][j]['intrin'][:3, :3].astype(np.float32) #where original one was saved
+
                 projection = intrinsic @ extrinsic[:3]
+
                 if not len(result['scores_3d']):
                     print("in pass perspecitve")
                     pass
@@ -222,11 +231,11 @@ class NuScenesMultiViewMultiModalDataset(MultiViewMixin, NuScenesDataset):
                     for corner, score, label in zip(corners, scores, labels):
                         if score < thr:
                             continue
-                        try:
-                            self.draw_corners(img_pred, corner, colors[label], projection)
-                        except:
-                            print(f"in pass draw_corners")
-                            pass
+                        #try:
+                        self.draw_corners(img_pred, corner, colors[label], projection)
+                        #except:
+                        #    print(f"in pass draw_corners")
+                        #    pass
                     try:
                         # draw GT
                         corners = gt_bboxes['gt_bboxes_3d'].corners.numpy()
