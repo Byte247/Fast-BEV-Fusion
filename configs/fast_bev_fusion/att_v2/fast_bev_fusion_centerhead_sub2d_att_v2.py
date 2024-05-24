@@ -282,7 +282,7 @@ optimizer = dict(type='AdamW', lr=1e-4,
                  custom_keys={'backbone': dict(lr_mult=0.1, decay_mult=1.0),
                               'neck_3d': dict(lr_mult=0.1, decay_mult=1.0)}))
 # max_norm=10 is better for SECOND
-optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
+optimizer_config = dict(grad_clip=dict(max_norm=10, norm_type=2))
 lr_config = dict(
     policy='cyclic',
     target_ratio=(10, 1e-4),
