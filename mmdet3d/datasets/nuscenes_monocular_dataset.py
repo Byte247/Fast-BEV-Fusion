@@ -66,7 +66,7 @@ class NuScenesMultiViewMultiModalDataset(MultiViewMixin, NuScenesDataset):
 
 
 
-    def evaluate(self, results, out_dir, *args, **kwargs):
+    def evaluate(self, results, out_dir=None, *args, **kwargs):
         # update boxes with zero velocity
         new_results = []
         for i in range(len(results)):

@@ -275,7 +275,7 @@ class NuScenesMultiView_Map_MultiModalDataset(NuScenesMultiViewMultiModalDataset
                 result_dict[k] = bev_res_dict[k]
         # eval detection
         if eval_det:
-            result_dict = super().evaluate(new_det_results, *args, **kwargs)
+            result_dict = super().evaluate(new_det_results,*args, **kwargs)
         return result_dict
 
     def evaluate_bev(self,
