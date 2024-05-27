@@ -283,18 +283,17 @@ optimizer = dict(type='AdamW', lr=1e-4,
                               'neck_3d': dict(lr_mult=0.1, decay_mult=1.0)}))
 # max_norm=10 is better for SECOND
 optimizer_config = dict(grad_clip=dict(max_norm=10, norm_type=2))
+
+# learning policy
 lr_config = dict(
-    policy='cyclic',
-    target_ratio=(10, 1e-4),
-    cyclic_times=1,
-    step_ratio_up=0.3,
-)
-momentum_config = dict(
-    policy='cyclic',
-    target_ratio=(0.85 / 0.95, 1),
-    cyclic_times=1,
-    step_ratio_up=0.3,
-)
+    policy='poly',
+    warmup='linear',
+    warmup_iters=1000,
+    warmup_ratio=1e-6,
+    power=1.0,
+    min_lr=0,
+    by_epoch=False
+    )
 
 # runtime settings
 runner = dict(type='EpochBasedRunner', max_epochs=20)
