@@ -147,7 +147,7 @@ class MultiHeadCrossAttentionMoreCamVoxels(nn.Module):
 
 
         self.reduce_camera_spatialy = nn.Conv2d(256, 320, kernel_size=3, stride=2, padding=1)
-        self.reduce_camera_spatialy_norm = nn.BatchNorm2d(self.embed_dim)
+        self.reduce_camera_spatialy_norm = nn.BatchNorm2d(320)
         self.reduce_camera_spatialy_act = nn.LeakyReLU(inplace=True)
 
 
