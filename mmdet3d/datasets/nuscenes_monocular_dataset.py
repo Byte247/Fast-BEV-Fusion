@@ -146,27 +146,35 @@ class NuScenesMultiViewMultiModalDataset(MultiViewMixin, NuScenesDataset):
         box = np.int0(box)
         img = cv2.polylines(img, [box], isClosed=True, color=color, thickness=2)
         return img
+    
 
     def show(self, results, out_dir='figs', bev_seg_results=None, thr=0.3, fps=3):
         assert out_dir is not None, 'Expect out_dir, got none.'
         colors = get_colors()
-        all_img_gt, all_img_pred, all_bev_gt, all_bev_pred = [], [], [], []
+        img_width, img_height = 6600, 1800   # Adjust based on actual image size
+        bev_width, bev_height = 500, 500  # Adjust based on actual BEV image size
+
+        # Define the codec and create VideoWriter objects
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+        pred_video_writer = cv2.VideoWriter(os.path.join(out_dir, 'video_pred.mp4'), fourcc, fps, (img_width, img_height))
+        gt_video_writer = cv2.VideoWriter(os.path.join(out_dir, 'video_gt.mp4'), fourcc, fps, (img_width, img_height))
+
         for i, result in enumerate(results):
+            # if i == 10:
+            #     break
             info = self.get_data_info(i)
             gt_bboxes = self.get_ann_info(i)
-            print('saving image {}/{} to {}'.format(i, len(results), out_dir))
-            # draw 3d box in BEV
+            print(f'saving image {i}/{len(results)} to {out_dir}')
             scale_fac = 10
             out_file_dir = str(i)
-            ###### draw BEV pred ######
-            bev_pred_img = np.zeros((100*scale_fac, 100*scale_fac, 3))
+
+            # Process BEV predictions
+            bev_pred_img = np.zeros((100 * scale_fac, 100 * scale_fac, 3), dtype=np.uint8)
             if bev_seg_results is not None:
                 bev_pred_road, bev_pred_lane = bev_seg_results[i]['seg_pred_road'], bev_seg_results[i]['seg_pred_lane']
                 bev_pred_img = map2lssmap(bev_pred_road, bev_pred_lane)
-                bev_pred_img = mmcv.imresize(bev_pred_img,
-                                             (100*scale_fac, 100*scale_fac),
-                                             interpolation='bilinear')
-                
+                bev_pred_img = mmcv.imresize(bev_pred_img, (100 * scale_fac, 100 * scale_fac), interpolation='bilinear')
+
             scores = result['scores_3d'].numpy()
             try:
                 bev_box_pred = result['boxes_3d'].corners.numpy()[:, [0, 2, 6, 4]][..., :2][scores > thr]
@@ -174,99 +182,107 @@ class NuScenesMultiViewMultiModalDataset(MultiViewMixin, NuScenesDataset):
                 assert bev_box_pred.shape[0] == labels.shape[0]
                 for idx in range(len(labels)):
                     bev_pred_img = self.draw_bev_bbox_corner(bev_pred_img, bev_box_pred[idx], colors[labels[idx]], scale_fac)
-            except:
-                pass
-            
-            bev_pred_img = process_bev_res_in_front(bev_pred_img)
-            imsave(os.path.join(out_dir, out_file_dir, 'bev_pred.png'), mmcv.imrescale(bev_pred_img, 0.5))
+            except Exception as e:
+                print(f"Error processing BEV predictions: {e}")
 
-            bev_gt_img = np.zeros((100*scale_fac, 100*scale_fac, 3))
+            bev_pred_img = process_bev_res_in_front(bev_pred_img)
+            bev_pred_rescaled = mmcv.imrescale(bev_pred_img, 0.5)
+            imsave(os.path.join(out_dir, out_file_dir, 'bev_pred.png'), bev_pred_rescaled)
+
+            # Process BEV ground truths
+            bev_gt_img = np.zeros((100 * scale_fac, 100 * scale_fac, 3), dtype=np.uint8)
             if bev_seg_results is not None:
                 sample_token = self.get_data_info(i)['sample_idx']
                 bev_seg_gt = self._get_map_by_sample_token(sample_token).astype('uint8')
-                bev_gt_road, bev_gt_lane = bev_seg_gt[...,0], bev_seg_gt[...,1]
+                bev_gt_road, bev_gt_lane = bev_seg_gt[..., 0], bev_seg_gt[..., 1]
                 bev_seg_gt = map2lssmap(bev_gt_road, bev_gt_lane)
-                bev_gt_img = mmcv.imresize(
-                    bev_seg_gt,
-                    (100*scale_fac, 100*scale_fac),
-                    interpolation='bilinear')
+                bev_gt_img = mmcv.imrescale(bev_seg_gt, (100 * scale_fac, 100 * scale_fac), interpolation='bilinear')
             try:
-                # draw BEV GT
-                bev_gt_bboxes = gt_bboxes['gt_bboxes_3d'].corners.numpy()[:,[0,2,6,4]][..., :2]
+                bev_gt_bboxes = gt_bboxes['gt_bboxes_3d'].corners.numpy()[:, [0, 2, 6, 4]][..., :2]
                 labels_gt = gt_bboxes['gt_labels_3d']
                 for idx in range(len(labels_gt)):
                     bev_gt_img = self.draw_bev_bbox_corner(bev_gt_img, bev_gt_bboxes[idx], colors[labels_gt[idx]], scale_fac)
-            except:
-                pass
+            except Exception as e:
+                print(f"Error processing BEV ground truths: {e}")
+            
             bev_gt_img = process_bev_res_in_front(bev_gt_img)
-            imsave(os.path.join(out_dir, out_file_dir, 'bev_gt.png'), mmcv.imrescale(bev_gt_img, 0.5))
-            all_bev_gt.append(mmcv.imrescale(bev_gt_img, 0.5))
-            all_bev_pred.append(mmcv.imrescale(bev_pred_img, 0.5))
-            ###### draw BEV pred ######
-            ###### draw 3d box in image ######
+            bev_gt_rescaled = mmcv.imrescale(bev_gt_img, 0.5)
+            imsave(os.path.join(out_dir, out_file_dir, 'bev_gt.png'), bev_gt_rescaled)
+
             img_gt_list = []
             img_pred_list = []
             for j in range(len(info['img_info'])):
                 img_pred = imread(info['img_info'][j]['filename'])
+                
                 img_gt = imread(info['img_info'][j]['filename'])
-                # camera name
                 camera_name = info['img_info'][j]['filename'].split('/')[-2]
                 puttext(img_pred, camera_name)
                 puttext(img_gt, camera_name)
-                
+
                 extrinsic = info['lidar2img']['extrinsic'][j]
                 intrinsic = info['lidar2img']['intrinsic'][:3, :3]
-                #intrinsic = info['lidar2img']['lidar2img_aug'][j]['intrin'][:3, :3].astype(np.float32) #where original one was saved
-
                 projection = intrinsic @ extrinsic[:3]
 
-                if not len(result['scores_3d']):
-                    print("in pass perspecitve")
-                    pass
-                else:
-                    # draw pred
+                if len(result['scores_3d']) and len(gt_bboxes['gt_bboxes_3d']):
                     corners = result['boxes_3d'].corners.numpy()
                     scores = result['scores_3d'].numpy()
                     labels = result['labels_3d'].numpy()
                     for corner, score, label in zip(corners, scores, labels):
-                        if score < thr:
-                            continue
-                        #try:
-                        self.draw_corners(img_pred, corner, colors[label], projection)
-                        #except:
-                        #    print(f"in pass draw_corners")
-                        #    pass
-                    try:
-                        # draw GT
-                        corners = gt_bboxes['gt_bboxes_3d'].corners.numpy()
-                        labels = gt_bboxes['gt_labels_3d']
-                        for corner, label in zip(corners, labels):
-                            self.draw_corners(img_gt, corner, colors[label], projection)
-                    except:
-                        pass
-                out_file_dir = str(i)
-                mmcv.mkdir_or_exist(os.path.join(out_dir, out_file_dir))
-                # 缩小image大小 可视化方便一些
-                img_gt_pred = np.concatenate([img_gt, img_pred], 0)
-                imsave(os.path.join(out_dir, out_file_dir, '{}_gt_pred.png'.format(j)), mmcv.imrescale(img_gt_pred, 0.5))
+                        if score >= thr:
+                            try:
+                                self.draw_corners(img_pred, corner, colors[label], projection)
+                            except Exception as e:
+                                print(f"Error drawing corners on prediction: {e}")
 
-                img_gt_list.append(mmcv.imrescale(img_gt, 0.5))
-                img_pred_list.append(mmcv.imrescale(img_pred, 0.5))
-            ###### draw 3d box in image ######
-            ###### generate videos step:1 ######
-            tmp_img_up_pred = np.concatenate(sort_list(img_pred_list[0:3], sort=[2,0,1]), axis=1)
-            tmp_img_bottom_pred = np.concatenate(sort_list(img_pred_list[3:], sort=[2,0,1]) ,axis=1)
+                    corners = gt_bboxes['gt_bboxes_3d'].corners.numpy()
+                    labels = gt_bboxes['gt_labels_3d']
+                    for corner, label in zip(corners, labels):
+                        try:
+                            self.draw_corners(img_gt, corner, colors[label], projection)
+                        except Exception as e:
+                            print(f"Error drawing corners on ground truth: {e}")
+
+                img_gt_pred = np.concatenate([img_gt, img_pred], axis=0)
+                imsave(os.path.join(out_dir, out_file_dir, f'{j}_gt_pred.png'), mmcv.imrescale(img_gt_pred, 0.5))
+
+                #img_gt_list.append(mmcv.imrescale(img_gt, 0.5))
+                #img_pred_list.append(mmcv.imrescale(img_pred, 0.5))
+                img_gt_list.append(mmcv.imrescale(img_gt, 1.0))
+                img_pred_list.append(mmcv.imrescale(img_pred, 1.0))
+
+            tmp_img_up_pred = np.concatenate(sort_list(img_pred_list[0:3], sort=[2, 0, 1]), axis=1)
+            tmp_img_bottom_pred = np.concatenate(sort_list(img_pred_list[3:], sort=[2, 0, 1]), axis=1)
             tmp_img_pred = np.concatenate([tmp_img_up_pred, tmp_img_bottom_pred], axis=0)
-            all_img_pred.append(tmp_img_pred)
-            tmp_img_up_gt = np.concatenate(sort_list(img_gt_list[0:3], sort=[2,0,1]),axis=1)
-            tmp_img_bottom_gt = np.concatenate(sort_list(img_gt_list[3:], sort=[2,0,1]),axis=1)
+
+            tmp_img_up_gt = np.concatenate(sort_list(img_gt_list[0:3], sort=[2, 0, 1]), axis=1)
+            tmp_img_bottom_gt = np.concatenate(sort_list(img_gt_list[3:], sort=[2, 0, 1]), axis=1)
             tmp_img_gt = np.concatenate([tmp_img_up_gt, tmp_img_bottom_gt], axis=0)
-            all_img_gt.append(tmp_img_gt)
-            ###### generate videos step:1 ######
-        ###### generate videos step:2 ######
-        gen_video(all_img_pred, all_bev_pred, out_dir, 'pred', fps=fps)
-        gen_video(all_img_gt, all_bev_gt, out_dir, 'gt', fps=fps)
-        ###### generate videos step:2 ######
+
+            bev_pred_with_ego = draw_ego_car(bev_pred_rescaled)
+            bev_gt_with_ego = draw_ego_car(bev_gt_rescaled)
+            bev_pred_rescaled = mmcv.imrescale(bev_pred_with_ego, tmp_img_pred.shape[0] / bev_pred_with_ego.shape[0])
+            bev_gt_rescaled = mmcv.imrescale(bev_gt_with_ego, tmp_img_gt.shape[0] / bev_gt_with_ego.shape[0])
+
+            combined_pred_frame = np.concatenate([tmp_img_pred, bev_pred_rescaled], axis=1)
+            combined_gt_frame = np.concatenate([tmp_img_gt, bev_gt_rescaled], axis=1)
+
+            # Convert to uint8 and clip values to [0, 255]
+            combined_pred_frame = np.clip(combined_pred_frame, 0, 255).astype(np.uint8)
+            combined_gt_frame = np.clip(combined_gt_frame, 0, 255).astype(np.uint8)
+
+            # print(combined_pred_frame.shape)
+            #cv2.imshow("combined_pred", combined_pred_frame)
+            #cv2.waitKey(0)
+
+            pred_video_writer.write(cv2.cvtColor(combined_pred_frame, cv2.COLOR_RGB2BGR))
+            gt_video_writer.write(cv2.cvtColor(combined_gt_frame, cv2.COLOR_RGB2BGR))
+
+        pred_video_writer.release()
+        gt_video_writer.release()
+
+        print('Finished video generation.')
+        print('Pred video path:', os.path.join(out_dir, 'video_pred.mp4'))
+        print('GT video path:', os.path.join(out_dir, 'video_gt.mp4'))
 
 
 @DATASETS.register_module()

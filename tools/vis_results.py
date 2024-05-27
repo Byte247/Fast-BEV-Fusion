@@ -139,7 +139,7 @@ class Visualizer:
 
         if sensor_record['modality'] == 'camera':
             cam_intrinsic = np.array(cs_record['camera_intrinsic'])
-            cam_intrinsic[:2, :] /= 2.0
+            
             imsize = (sd_record['width'], sd_record['height'])
         else:
             cam_intrinsic = None
@@ -167,7 +167,7 @@ class Visualizer:
 
 
 
-    def lidiar_render(self, sample_token, data,out_path=None):
+    def lidiar_render(self, sample_token, data,out_path=None, id=None):
         bbox_gt_list = []
         bbox_pred_list = []
         anns = nusc.get('sample', sample_token)['anns']
@@ -209,7 +209,7 @@ class Visualizer:
         pred_annotations.add_boxes(sample_token, bbox_pred_list)
         print('green is ground truth')
         print('blue is the predited result')
-        visualize_sample(nusc, sample_token, gt_annotations, pred_annotations, savepath=out_path+'_bev_'+sample_token)
+        visualize_sample(nusc, sample_token, gt_annotations, pred_annotations, savepath=f"{out_path}_bev_{id}_{sample_token}")
 
 
     def get_color(self,category_name: str):
@@ -261,11 +261,12 @@ class Visualizer:
             verbose: bool = True,
             show_panoptic: bool = False,
             pred_data=None,
+            id = None,
         ) -> None:
         """
         Render sample data onto axis.
         """
-        self.lidiar_render(sample_token, pred_data, out_path=out_path)
+        self.lidiar_render(sample_token, pred_data, out_path=out_path, id=id)
         sample = nusc.get('sample', sample_token)
         cams = ['CAM_FRONT_LEFT', 'CAM_FRONT', 'CAM_FRONT_RIGHT', 'CAM_BACK_LEFT', 'CAM_BACK', 'CAM_BACK_RIGHT']
 
@@ -281,7 +282,7 @@ class Visualizer:
             # Load boxes and image.
             boxes = [Box(record['translation'], record['size'], Quaternion(record['rotation']),
                             name=record['detection_name'], token='predicted') for record in
-                        pred_data['results'][sample_token] if record['detection_score'] > 0.2]
+                        pred_data['results'][sample_token] if record['detection_score'] > 0.5]
             
             
             data_path, boxes_pred, camera_intrinsic = self.get_predicted_data(sample_data_token,
@@ -325,22 +326,20 @@ class Visualizer:
             ax[j + 2, ind].set_aspect('equal')
 
         if out_path is not None:
-            plt.savefig(out_path+'_camera_' + sample_token, bbox_inches='tight', pad_inches=0, dpi=400)
+            print(f"id in vis: {id}")
+            plt.savefig(f"{out_path}_{id}_camera_{sample_token}", bbox_inches='tight', pad_inches=0, dpi="figure")
         if verbose:
             plt.show()
         plt.close()
 
 
-
-
-    
-
 if __name__ == '__main__':
     nusc = NuScenes(version='v1.0-trainval', dataroot='./data/nuscenes', verbose=True)
-    bevformer_results = mmcv.load('/home/tom/ws/Fast-BEV-Fusion/work_dirs/fast_bev_fusion_centerhead_sub2d_att_v2/results_nusc.json')
+    workdir = "/home/tom/ws/Fast-BEV-Fusion/work_dirs/centerpoint_02pillar_second_secfpn_4x8_cyclic_20e_nus/pts_bbox"
+    bevformer_results = mmcv.load(f'{workdir}/results_nusc.json')
     sample_token_list = list(bevformer_results['results'].keys())
 
     vis = Visualizer()
-    for id in range(0, 100):
-       vis.render_sample_data(sample_token_list[id], pred_data=bevformer_results, out_path="/home/tom/ws/Fast-BEV-Fusion/work_dirs/fast_bev_fusion_centerhead_sub2d_att_v2/figs/", use_flat_vehicle_coordinates=False, verbose=False)
+    for id in range(49, 250):
+       vis.render_sample_data(sample_token_list[id], pred_data=bevformer_results, out_path=f"{workdir}/figs/", use_flat_vehicle_coordinates=False, verbose=False, id = id)
 

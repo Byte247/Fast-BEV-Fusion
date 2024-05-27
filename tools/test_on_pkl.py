@@ -205,6 +205,7 @@ def main():
             ]:
                 eval_kwargs.pop(key, None)
             eval_kwargs.update(dict(metric=args.eval, **kwargs))
+            print(type(dataset))
             print(dataset.evaluate(outputs, out_dir = args.workdir, vis_mode=args.vis, jsonfile_prefix=args.workdir,**eval_kwargs))
 
 
