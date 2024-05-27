@@ -140,9 +140,9 @@ class MultiHeadCrossAttentionMoreCamVoxels(nn.Module):
 
         self.embed_dim = embed_dim
 
-        # self.reduce_lidar_channel = nn.Conv2d(384, self.embed_dim, kernel_size=3, stride=2, padding=1)
-        # self.reduce_lidar_channel_act = nn.LeakyReLU()
-        # self.reduce_lidar_channel_norm = nn.BatchNorm2d(self.embed_dim)
+        self.reduce_lidar_channel = nn.Conv2d(384, self.embed_dim, kernel_size=3, stride=1, padding=1)
+        self.reduce_lidar_channel_act = nn.LeakyReLU()
+        self.reduce_lidar_channel_norm = nn.BatchNorm2d(self.embed_dim)
         self.fuse_on_lidar = fuse_on_lidar
 
 
@@ -213,7 +213,7 @@ class MultiHeadCrossAttentionMoreCamVoxels(nn.Module):
         if torch.isinf(camera_bev_features_cpu).any():
             print("Camera Tensor contains Inf values.")
         
-        #lidar_bev_features = self.reduce_lidar_channel_act(self.reduce_lidar_channel_norm(self.reduce_lidar_channel(lidar_bev_features)))
+        lidar_bev_features = self.reduce_lidar_channel_act(self.reduce_lidar_channel_norm(self.reduce_lidar_channel(lidar_bev_features)))
 
         camera_bev_features = self.reduce_camera_spatialy_act(self.reduce_camera_spatialy_norm(self.reduce_camera_spatialy(camera_bev_features)))
 
