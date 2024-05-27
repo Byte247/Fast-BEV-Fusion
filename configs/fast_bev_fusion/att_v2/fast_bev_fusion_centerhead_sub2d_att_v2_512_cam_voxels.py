@@ -27,7 +27,7 @@ model = dict(
     neck_fuse=dict(in_channels=256, out_channels=64),
     neck_3d=dict(
         type='M2BevNeck',
-        in_channels=384,
+        in_channels=784,
         out_channels=256,
         num_layers=6,
         stride=2,
@@ -67,7 +67,7 @@ model = dict(
 
 
     #Fusion layer
-    fusion_module = dict(type='MultiHeadCrossAttentionV2',embed_dim = 512, num_heads=8, dropout = 0.1, fuse_on_lidar=True),
+    fusion_module = dict(type='MultiHeadCrossAttentionMoreCamVoxels',embed_dim = 512, num_heads=8, dropout = 0.1, fuse_on_lidar=True),
 
     bbox_head= dict(
         type='CenterHead',
@@ -115,8 +115,8 @@ model = dict(
         loss_bbox=dict(type='IoULoss', loss_weight=1.0),
         loss_centerness=dict(type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0)),
     
-    n_voxels=(256, 256, 6), 
-    voxel_size=[0.4, 0.4, 1],
+    n_voxels=(512, 512, 12), 
+    voxel_size=[0.2, 0.2, 0.5],
 
     # training and testing settings for 2d
     train_cfg_2d=dict(
@@ -283,7 +283,6 @@ optimizer = dict(type='AdamW', lr=1e-4,
                               'neck_3d': dict(lr_mult=0.4, decay_mult=1.0)}))
 # max_norm=10 is better for SECOND
 optimizer_config = dict(grad_clip=dict(max_norm=10, norm_type=2))
-
 # learning policy
 lr_config = dict(
     policy='poly',
