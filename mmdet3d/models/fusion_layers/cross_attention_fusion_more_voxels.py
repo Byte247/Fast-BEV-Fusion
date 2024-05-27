@@ -146,14 +146,24 @@ class MultiHeadCrossAttentionMoreCamVoxels(nn.Module):
         self.fuse_on_lidar = fuse_on_lidar
 
 
-        self.reduce_camera_spatialy = nn.Conv2d(256, 320, kernel_size=3, stride=2, padding=1)
-        self.reduce_camera_spatialy_norm = nn.BatchNorm2d(320)
+        self.reduce_camera_spatialy = nn.Conv2d(256, self.embed_dim, kernel_size=3, stride=2, padding=1)
+        self.reduce_camera_spatialy_norm = nn.BatchNorm2d(self.embed_dim)
         self.reduce_camera_spatialy_act = nn.LeakyReLU(inplace=True)
 
+        self.conv_0 = nn.Conv2d(256, self.embed_dim, kernel_size=3, stride=2, padding=1)
+        self.conv_0_norm = nn.BatchNorm2d(self.embed_dim)
+        self.conv_0_act = nn.LeakyReLU(inplace=True)
 
-        self.reduce_camera_spatialy_2 = nn.Conv2d(320, self.embed_dim, kernel_size=3, stride=2, padding=1)
+
+
+
+        self.reduce_camera_spatialy_2 = nn.Conv2d(self.embed_dim, self.embed_dim, kernel_size=3, stride=2, padding=1)
         self.reduce_camera_spatialy_norm_2 = nn.BatchNorm2d(self.embed_dim)
         self.reduce_camera_spatialy_act_2 = nn.LeakyReLU(inplace=True)
+
+        self.conv_1 = nn.Conv2d(self.embed_dim, self.embed_dim, kernel_size=3, stride=2, padding=1)
+        self.conv_1_norm = nn.BatchNorm2d(self.embed_dim)
+        self.conv_1_act = nn.LeakyReLU(inplace=True)
 
 
         self.lidar_camera_cross_attention = Decoder(self.embed_dim, hidden_dim=self.embed_dim * 2, num_heads= num_heads, dropout=dropout, show_weights=False)
@@ -216,8 +226,10 @@ class MultiHeadCrossAttentionMoreCamVoxels(nn.Module):
         lidar_bev_features = self.reduce_lidar_channel_act(self.reduce_lidar_channel_norm(self.reduce_lidar_channel(lidar_bev_features)))
 
         camera_bev_features = self.reduce_camera_spatialy_act(self.reduce_camera_spatialy_norm(self.reduce_camera_spatialy(camera_bev_features)))
+        camera_bev_features = self.conv_0_act(self.conv_0_norm(self.conv_0(camera_bev_features)))
 
-        #camera_bev_features = self.reduce_camera_spatialy_act_2(self.reduce_camera_spatialy_norm_2(self.reduce_camera_spatialy_2(camera_bev_features)))
+        camera_bev_features = self.reduce_camera_spatialy_act_2(self.reduce_camera_spatialy_norm_2(self.reduce_camera_spatialy_2(camera_bev_features)))
+        camera_bev_features = self.conv_1_act(self.conv_1_norm(self.conv_1(camera_bev_features)))
         
 
         # # get patch embeddings
@@ -233,7 +245,7 @@ class MultiHeadCrossAttentionMoreCamVoxels(nn.Module):
 
         # Reshape the 1d tensor back to a 2d representation used in the CenterHead
         output = cross_attention.permute(0,2,1)
-        output = output.view(output.shape[0], output.shape[1], 128, 128)  # Shape: [batch * 6, 256, 64, 64]
+        output = output.view(output.shape[0], output.shape[1], 64, 64)  # Shape: [batch * 6, 256, 64, 64]
 
 
         output = self.upsample_layer_act(self.upsample_layer_norm(self.upsample_layer(output)))
