@@ -103,6 +103,8 @@ eval_pipeline = [
 ]
 
 data = dict(
+    samples_per_gpu=4,
+    workers_per_gpu=8,
     train=dict(
         # type='CBGSDataset',
         # dataset=dict(
@@ -134,6 +136,14 @@ data = dict(
 
     val=dict(pipeline=test_pipeline, classes=class_names),
     test=dict(pipeline=test_pipeline, classes=class_names))
+
+
+input_modality = dict(
+    use_lidar=True,
+    use_camera=False,
+    use_radar=False,
+    use_map=False,
+    use_external=False)
 
 
 optimizer = dict(type='AdamW', lr=1e-4,
