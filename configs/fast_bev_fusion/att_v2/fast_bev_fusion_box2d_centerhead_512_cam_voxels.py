@@ -164,8 +164,6 @@ model = dict(
             
 )
 
-
-
 # For nuScenes we usually do 10-class detection
 class_names = [
     'car', 'truck', 'trailer', 'bus', 'construction_vehicle', 'bicycle',
@@ -241,7 +239,7 @@ test_pipeline = [
 
 
 data = dict(
-    samples_per_gpu=1,
+    samples_per_gpu=2,
     workers_per_gpu=8,
     train=dict(
         type='RepeatDataset',

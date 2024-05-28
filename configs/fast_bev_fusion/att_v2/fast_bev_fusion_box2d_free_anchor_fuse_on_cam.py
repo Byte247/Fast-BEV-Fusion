@@ -302,7 +302,7 @@ lr_config = dict(
     by_epoch=False
     )
 
-total_epochs = 30
+total_epochs = 20
 checkpoint_config = dict(interval=1)
 log_config = dict(
     interval=100,

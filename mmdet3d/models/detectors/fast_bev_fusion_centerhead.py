@@ -334,30 +334,54 @@ class FastBEVFusionCenterhead(BaseDetector):
 
         if self.bbox_head_2d is not None:
             
-            gt_bboxes = kwargs["gt_bboxes"][0]
-            gt_labels = kwargs["gt_labels"][0]
-            #assert len(kwargs["gt_bboxes"]) == 1 and len(kwargs["gt_labels"]) == 1
-            # hack a img_metas_2d
-            img_metas_2d = []
-            img_info = img_metas[0]["img_info"]
-            for idx, info in enumerate(img_info):
-                tmp_dict = dict(
-                    filename=info["filename"],
-                    ori_filename=info["filename"].split("/")[-1],
-                    ori_shape=img_metas[0]["ori_shape"],
-                    img_shape=img_metas[0]["img_shape"],
-                    pad_shape=img_metas[0]["pad_shape"],
-                    scale_factor=img_metas[0]["scale_factor"],
-                    flip=False,
-                    flip_direction=None,
-                )
-                img_metas_2d.append(tmp_dict)
+            batch_size = (feature_bev[0].shape)[0]
+            overall_2d_loss = dict()
 
-            rank, world_size = get_dist_info()
-            loss_2d = self.bbox_head_2d.forward_train(
-                features_2d, img_metas_2d, gt_bboxes, gt_labels
-            )
-            losses.update(loss_2d)
+            for batch_id in range(batch_size):
+
+
+                start_idx = batch_id * 6
+                end_idx = (batch_id + 1) * 6
+
+                # Extract the relevant slices for the current batch index
+                sliced_2d_features = [tensor[start_idx:end_idx] for tensor in features_2d]
+
+                gt_bboxes = kwargs["gt_bboxes"][batch_id]
+                gt_labels = kwargs["gt_labels"][batch_id]
+
+                # hack a img_metas_2d
+                img_metas_2d = []
+                img_info = img_metas[batch_id]["img_info"]
+                
+                for idx, info in enumerate(img_info):
+                    tmp_dict = dict(
+                        filename=info["filename"],
+                        ori_filename=info["filename"].split("/")[-1],
+                        ori_shape=img_metas[batch_id]["ori_shape"],
+                        img_shape=img_metas[batch_id]["img_shape"],
+                        pad_shape=img_metas[batch_id]["pad_shape"],
+                        scale_factor=img_metas[batch_id]["scale_factor"],
+                        flip=False,
+                        flip_direction=None,
+                    )
+                    img_metas_2d.append(tmp_dict)
+
+                rank, world_size = get_dist_info()
+
+
+                loss_2d = self.bbox_head_2d.forward_train(
+                    sliced_2d_features, img_metas_2d, gt_bboxes, gt_labels
+                )
+                
+                if batch_id == 0:
+                
+                    overall_2d_loss.update(loss_2d)
+                else:
+                    overall_2d_loss["loss_cls"] += loss_2d["loss_cls"]
+                    overall_2d_loss["loss_bbox"] += loss_2d["loss_bbox"]
+                    overall_2d_loss["loss_centerness"] += loss_2d["loss_centerness"]
+
+            losses.update(overall_2d_loss)
 
         return losses
 
