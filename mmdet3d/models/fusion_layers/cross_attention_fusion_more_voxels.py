@@ -135,7 +135,7 @@ Same as V1 but with an addition skip connection around the cross attention
 """
 @FUSION_LAYERS.register_module()
 class MultiHeadCrossAttentionMoreCamVoxels(nn.Module):
-    def __init__(self, embed_dim = 512, num_heads=8, dropout = 0.1, fuse_on_lidar=True):
+    def __init__(self, embed_dim = 512, num_heads=8, dropout = 0.1, fuse_on_lidar=True, batch_size = 1):
         super(MultiHeadCrossAttentionMoreCamVoxels, self).__init__()
 
         self.embed_dim = embed_dim
@@ -155,11 +155,11 @@ class MultiHeadCrossAttentionMoreCamVoxels(nn.Module):
         self.conv_0_act = nn.LeakyReLU(inplace=True)
 
 
-        self.reduce_camera_spatialy_2 = nn.Conv2d(self.embed_dim, self.embed_dim * 2, kernel_size=3, stride=2, padding=1)
-        self.reduce_camera_spatialy_norm_2 = nn.BatchNorm2d(self.embed_dim * 2)
+        self.reduce_camera_spatialy_2 = nn.Conv2d(self.embed_dim, self.embed_dim, kernel_size=3, stride=2, padding=1)
+        self.reduce_camera_spatialy_norm_2 = nn.BatchNorm2d(self.embed_dim)
         self.reduce_camera_spatialy_act_2 = nn.LeakyReLU(inplace=True)
 
-        self.conv_1 = nn.Conv2d(self.embed_dim * 2, self.embed_dim, kernel_size=3, stride=1, padding=1)
+        self.conv_1 = nn.Conv2d(self.embed_dim, self.embed_dim, kernel_size=3, stride=1, padding=1)
         self.conv_1_norm = nn.BatchNorm2d(self.embed_dim)
         self.conv_1_act = nn.LeakyReLU(inplace=True)
 
@@ -170,8 +170,8 @@ class MultiHeadCrossAttentionMoreCamVoxels(nn.Module):
 
         self.lidar_camera_cross_attention = Decoder(self.embed_dim, hidden_dim=self.embed_dim * 2, num_heads= num_heads, dropout=dropout, show_weights=False)
         
-        self.pos_embed_camera = nn.Parameter(torch.randn(1, self.embed_dim, 4096) * .02) #done as in ViT: https://github.com/lucidrains/vit-pytorch/blob/main/vit_pytorch/vit.py, (14 (image hight) * 25 image width * 6 images) / 16 (image patches)
-        self.pos_embed_lidar = nn.Parameter(torch.randn(1, self.embed_dim, 4096) * .02) #done as in ViT: https://github.com/lucidrains/vit-pytorch/blob/main/vit_pytorch/vit.py, no reduction for now
+        self.pos_embed_camera = nn.Parameter(torch.randn(batch_size, self.embed_dim, 4096) * .02) #done as in ViT: https://github.com/lucidrains/vit-pytorch/blob/main/vit_pytorch/vit.py, (14 (image hight) * 25 image width * 6 images) / 16 (image patches)
+        self.pos_embed_lidar = nn.Parameter(torch.randn(batch_size, self.embed_dim, 4096) * .02) #done as in ViT: https://github.com/lucidrains/vit-pytorch/blob/main/vit_pytorch/vit.py, no reduction for now
 
         self.upsample_layer = nn.ConvTranspose2d(embed_dim, 3 * 128, kernel_size=2, stride=2) # match centerpoint
         self.upsample_layer_norm = nn.BatchNorm2d(3 * 128)
