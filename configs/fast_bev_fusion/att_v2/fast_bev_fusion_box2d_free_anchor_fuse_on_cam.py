@@ -2,6 +2,7 @@
 # If point cloud range is changed, the models should also change their point cloud range accordingly
 point_cloud_range = [-51.2, -51.2, -5.0, 51.2, 51.2, 3.0]
 
+batch_size = 4
 
 model = dict(
     type='FastBEVFusion',
@@ -66,7 +67,7 @@ model = dict(
 
 
     #Fusion layer
-    fusion_module = dict(type='MultiHeadCrossAttentionV2',embed_dim = 512, num_heads=8, dropout = 0.1, fuse_on_lidar=True),
+    fusion_module = dict(type='MultiHeadCrossAttentionV2',embed_dim = 512, num_heads=8, dropout = 0.1, fuse_on_lidar=True,batch_size=batch_size),
 
 
     bbox_head=dict(
@@ -249,7 +250,7 @@ test_pipeline = [
 
 
 data = dict(
-    samples_per_gpu=1,
+    samples_per_gpu=batch_size,
     workers_per_gpu=8,
     train=dict(
         type='RepeatDataset',
