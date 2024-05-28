@@ -244,10 +244,10 @@ class MultiHeadCrossAttentionMoreCamVoxels(nn.Module):
 
         if self.fuse_on_lidar:
             cross_attention = self.lidar_camera_cross_attention(lidar_patch_embedding, image_patch_embedding)
-            cross_attention = self.last_norm(torch.add(cross_attention, image_patch_embedding))
+            cross_attention = self.last_norm(torch.add(cross_attention, lidar_patch_embedding))
         else:
             cross_attention = self.lidar_camera_cross_attention(image_patch_embedding, lidar_patch_embedding)
-            cross_attention = self.last_norm(torch.add(cross_attention, lidar_patch_embedding))
+            cross_attention = self.last_norm(torch.add(cross_attention, image_patch_embedding))
 
         # Reshape the 1d tensor back to a 2d representation used in the CenterHead
         output = cross_attention.permute(0,2,1)
