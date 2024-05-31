@@ -240,7 +240,7 @@ test_pipeline = [
 
 
 data = dict(
-    samples_per_gpu=4,
+    samples_per_gpu=2,
     workers_per_gpu=8,
     train=dict(
         type='RepeatDataset',
@@ -304,6 +304,7 @@ log_config = dict(
     hooks=[
         dict(type='TextLoggerHook'),
         dict(type='WandbLoggerHook', init_kwargs=dict(project='3d-det')), 
+        dict(type='TensorboardLoggerHook'),
     ])
 evaluation = dict(interval=1)
 dist_params = dict(backend='nccl')
