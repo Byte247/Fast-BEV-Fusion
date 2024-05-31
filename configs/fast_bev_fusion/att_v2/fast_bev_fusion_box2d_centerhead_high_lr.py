@@ -275,11 +275,11 @@ data = dict(
         test_mode=True,
         box_type_3d='LiDAR'))
 
-optimizer = dict(type='AdamW', lr=0.0004, 
+optimizer = dict(type='AdamW', lr=0.0001, 
                  weight_decay=0.01,
                  paramwise_cfg=dict(
                  custom_keys={'backbone': dict(lr_mult=0.1, decay_mult=1.0),
-                              'neck_3d': dict(lr_mult=0.1, decay_mult=1.0)}))
+                              'neck_3d': dict(lr_mult=0.4, decay_mult=1.0)}))
 # max_norm=10 is better for SECOND
 optimizer_config = dict(grad_clip=dict(max_norm=10, norm_type=2))
 
@@ -287,7 +287,7 @@ optimizer_config = dict(grad_clip=dict(max_norm=10, norm_type=2))
 lr_config = dict(
     policy='poly',
     warmup='linear',
-    warmup_iters=1000,
+    warmup_iters=42000, # after roughly 6 epochs, reach the 0.0001 lr 
     warmup_ratio=1e-6,
     power=1.0,
     min_lr=0,
@@ -304,7 +304,6 @@ log_config = dict(
     hooks=[
         dict(type='TextLoggerHook'),
         dict(type='TensorboardLoggerHook'),
-        dict(type='WandbLoggerHook', init_kwargs=dict(project='3d-det')), 
     ])
 evaluation = dict(interval=1)
 dist_params = dict(backend='nccl')
