@@ -381,6 +381,11 @@ class FastBEVFusionCenterhead(BaseDetector):
                     overall_2d_loss["loss_bbox"] += loss_2d["loss_bbox"]
                     overall_2d_loss["loss_centerness"] += loss_2d["loss_centerness"]
 
+                # Normalize the loss by batch size
+                overall_2d_loss["loss_cls"] /= batch_size
+                overall_2d_loss["loss_bbox"] /= batch_size
+                overall_2d_loss["loss_centerness"] /= batch_size
+
             losses.update(overall_2d_loss)
 
         return losses
