@@ -6,21 +6,19 @@ model = dict(
     type='FastBEVFusionCenterhead',
     backbone=dict(
         type='ResNet',
-        depth=50,
+        depth=18,
         num_stages=4,
         out_indices=(0, 1, 2, 3),
         frozen_stages=1,
         norm_cfg=dict(type='BN', requires_grad=True),
         norm_eval=True,
-        init_cfg=dict(type='Pretrained', checkpoint='torchvision://resnet50'),
-        style='pytorch',
-        dcn=dict(type='DCN', deform_groups=1, fallback_on_stride=False),
-        stage_with_dcn=(False, True, True, True)
+        init_cfg=dict(type='Pretrained', checkpoint='torchvision://resnet18'),
+        style='pytorch'
     ),
     neck=dict(
         type='FPN',
         norm_cfg=dict(type='BN', requires_grad=True),
-        in_channels=[256, 512, 1024, 2048],
+        in_channels=[64, 128, 256, 512],
         out_channels=64,
         num_outs=4),
     neck_fuse=dict(in_channels=256, out_channels=64),
@@ -28,12 +26,11 @@ model = dict(
         type='M2BevNeck',
         in_channels=384,
         out_channels=256,
-        num_layers=6,
+        num_layers=2,
         stride=2,
         is_transpose=False,
         norm_cfg=dict(type='BN', requires_grad=True)),
     
-
     #Point Modules:
     pts_voxel_layer=dict(
         max_num_points=20, voxel_size=[0.2, 0.2, 8], max_voxels=(30000, 40000), point_cloud_range=point_cloud_range),
@@ -205,7 +202,7 @@ train_pipeline = [
         n_images=6,
         transforms=[
             dict(type='LoadImageFromFile'),
-            dict(type='Resize', img_scale=(1600, 900), keep_ratio=True),
+            dict(type='Resize', img_scale=(800, 450), keep_ratio=True),
             dict(type='Normalize', **img_norm_cfg),
             dict(type='Pad', size_divisor=32)]),
     dict(type='ObjectRangeFilter', point_cloud_range=point_cloud_range),
@@ -231,7 +228,7 @@ test_pipeline = [
         n_images=6,
         transforms=[
             dict(type='LoadImageFromFile'),
-            dict(type='Resize', img_scale=(1600, 900), keep_ratio=True),
+            dict(type='Resize', img_scale=(800, 450), keep_ratio=True),
             dict(type='Normalize', **img_norm_cfg),
             dict(type='Pad', size_divisor=32)]),
     dict(type='KittiSetOrigin', point_cloud_range=point_cloud_range),
@@ -240,8 +237,8 @@ test_pipeline = [
 
 
 data = dict(
-    samples_per_gpu=4,
-    workers_per_gpu=8,
+    samples_per_gpu=1,
+    workers_per_gpu=4,
     train=dict(
         type='RepeatDataset',
         times=1,
@@ -275,11 +272,10 @@ data = dict(
         test_mode=True,
         box_type_3d='LiDAR'))
 
-optimizer = dict(type='AdamW', lr=1e-4,
+optimizer = dict(type='AdamW', lr=0.0001, 
                  weight_decay=0.01,
                  paramwise_cfg=dict(
-                 custom_keys={'backbone': dict(lr_mult=0.1, decay_mult=1.0),
-                              'neck_3d': dict(lr_mult=0.4, decay_mult=1.0)}))
+                 custom_keys={'backbone': dict(lr_mult=0.1, decay_mult=1.0)}))
 # max_norm=10 is better for SECOND
 optimizer_config = dict(grad_clip=dict(max_norm=10, norm_type=2))
 
@@ -287,7 +283,7 @@ optimizer_config = dict(grad_clip=dict(max_norm=10, norm_type=2))
 lr_config = dict(
     policy='poly',
     warmup='linear',
-    warmup_iters=1000,
+    warmup_iters=42000, # after roughly 6 epochs, reach the 0.0001 lr 
     warmup_ratio=1e-6,
     power=1.0,
     min_lr=0,
@@ -309,8 +305,8 @@ evaluation = dict(interval=1)
 dist_params = dict(backend='nccl')
 find_unused_parameters = True  # todo: fix number of FPN outputs
 log_level = 'INFO'
-# load_from = None
-load_from = 'https://download.openmmlab.com/mmdetection3d/v0.1.0_models/nuimages_semseg/cascade_mask_rcnn_r50_fpn_coco-20e_20e_nuim/cascade_mask_rcnn_r50_fpn_coco-20e_20e_nuim_20201009_124951-40963960.pth'
+
+load_from = '/home/tom/ws/pretrained_models/cascade_mask_rcnn_r18_fpn_coco-mstrain_3x_20e_nuim_bbox_mAP_0.5110_segm_mAP_0.4070.pth'
 resume_from = None
 workflow = [('train', 1)]
 
