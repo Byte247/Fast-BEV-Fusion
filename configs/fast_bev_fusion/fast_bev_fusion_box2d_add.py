@@ -303,7 +303,6 @@ log_config = dict(
     interval=100,
     hooks=[
         dict(type='TextLoggerHook'),
-        dict(type='WandbLoggerHook', init_kwargs=dict(project='3d-det')), 
         dict(type='TensorboardLoggerHook'),
     ])
 evaluation = dict(interval=1)
