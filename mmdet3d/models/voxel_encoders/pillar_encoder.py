@@ -47,7 +47,8 @@ class PillarFeatureNet(nn.Module):
                  point_cloud_range=(0, -40, -3, 70.4, 40, 1),
                  norm_cfg=dict(type='BN1d', eps=1e-3, momentum=0.01),
                  mode='max',
-                 legacy=True):
+                 legacy=True,
+                 freeze_layers = False):
         super(PillarFeatureNet, self).__init__()
         assert len(feat_channels) > 0
         self.legacy = legacy
@@ -87,6 +88,14 @@ class PillarFeatureNet(nn.Module):
         self.x_offset = self.vx / 2 + point_cloud_range[0]
         self.y_offset = self.vy / 2 + point_cloud_range[1]
         self.point_cloud_range = point_cloud_range
+
+        self.freeze_layers = freeze_layers
+        if self.freeze_layers:
+            for param in self.parameters():
+                param.requires_grad = False
+    
+
+        
 
     @force_fp32(out_fp16=True)
     def forward(self, features, num_points, coors):

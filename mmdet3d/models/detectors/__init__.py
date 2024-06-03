@@ -20,6 +20,7 @@ from .m2bevnet_ms_seq import MultiScaleM2BevNetSeq
 from .fastbev import FastBEV
 from .fast_bev_fusion import FastBEVFusion
 from .fast_bev_fusion_centerhead import FastBEVFusionCenterhead
+from .fast_bev_fusion_centerhead_pretrained import FastBEVFusionCenterheadPretrained
 
 
 __all__ = [

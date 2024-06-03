@@ -42,7 +42,7 @@ class NuScenesMultiViewMultiModalDataset(MultiViewMixin, NuScenesDataset):
             ),
             timestamp=data_info['timestamp'],
             pts_filename=data_info['pts_filename'],
-            sweeps=data_info['sweeps']
+            sweeps=data_info['sweeps'],
         )
         if 'ann_info' in data_info:
             gt_bboxes_3d = data_info['ann_info']['gt_bboxes_3d']

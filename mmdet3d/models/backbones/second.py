@@ -28,7 +28,8 @@ class SECOND(BaseModule):
                  norm_cfg=dict(type='BN', eps=1e-3, momentum=0.01),
                  conv_cfg=dict(type='Conv2d', bias=False),
                  init_cfg=None,
-                 pretrained=None):
+                 pretrained=None,
+                 freeze_layers=False):
         super(SECOND, self).__init__(init_cfg=init_cfg)
         assert len(layer_strides) == len(layer_nums)
         assert len(out_channels) == len(layer_nums)
@@ -73,6 +74,11 @@ class SECOND(BaseModule):
             self.init_cfg = dict(type='Pretrained', checkpoint=pretrained)
         else:
             self.init_cfg = dict(type='Kaiming', layer='Conv2d')
+
+        if freeze_layers:
+            print("Freeze Second layers")
+            for param in self.parameters():
+                param.requires_grad = False
 
     def forward(self, x):
         """Forward function.

@@ -31,7 +31,8 @@ class SECONDFPN(BaseModule):
                  upsample_cfg=dict(type='deconv', bias=False),
                  conv_cfg=dict(type='Conv2d', bias=False),
                  use_conv_for_no_stride=False,
-                 init_cfg=None):
+                 init_cfg=None,
+                 freeze_layers=False):
         # if for GroupNorm,
         # cfg is dict(type='GN', num_groups=num_groups, eps=1e-3, affine=True)
         super(SECONDFPN, self).__init__(init_cfg=init_cfg)
@@ -70,6 +71,11 @@ class SECONDFPN(BaseModule):
                 dict(type='Kaiming', layer='ConvTranspose2d'),
                 dict(type='Constant', layer='NaiveSyncBatchNorm2d', val=1.0)
             ]
+
+        if freeze_layers:
+            print("Freeze Second FPN layers")
+            for param in self.parameters():
+                param.requires_grad = False
 
     @auto_fp16()
     def forward(self, x):
