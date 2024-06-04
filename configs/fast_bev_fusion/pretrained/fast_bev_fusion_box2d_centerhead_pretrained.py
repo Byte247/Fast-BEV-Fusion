@@ -4,7 +4,7 @@ point_cloud_range = [-51.2, -51.2, -5.0, 51.2, 51.2, 3.0]
 
 model = dict(
     type='FastBEVFusionCenterheadPretrained',
-    second_stage=False,
+    second_stage=True,
     backbone=dict(
         type='ResNet',
         depth=50,
