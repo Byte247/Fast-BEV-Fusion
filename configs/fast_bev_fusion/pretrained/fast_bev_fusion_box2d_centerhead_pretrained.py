@@ -243,12 +243,12 @@ train_pipeline = [
         remove_close=True),
 
     dict(type='LoadAnnotations3D', with_bbox_3d=True, with_label_3d=True),
-    dict(type='ObjectSample', db_sampler=db_sampler),
-    dict(
-        type='GlobalRotScaleTrans',
-        rot_range=[-0.3925, 0.3925],
-        scale_ratio_range=[0.95, 1.05],
-        translation_std=[0, 0, 0]),
+    #dict(type='ObjectSample', db_sampler=db_sampler),
+    #dict(
+    #    type='GlobalRotScaleTrans',
+    #    rot_range=[-0.3925, 0.3925],
+    #    scale_ratio_range=[0.95, 1.05],
+    #    translation_std=[0, 0, 0]),
 
     dict(type='PointsRangeFilter', point_cloud_range=point_cloud_range),
     dict(
@@ -261,7 +261,7 @@ train_pipeline = [
             dict(type='Pad', size_divisor=32)]),
     dict(type='ObjectRangeFilter', point_cloud_range=point_cloud_range),
     dict(type='KittiSetOrigin', point_cloud_range=point_cloud_range),
-    dict(type='PointShuffle'),
+    #dict(type='PointShuffle'),
     dict(type='DefaultFormatBundle3D', class_names=class_names),
     dict(type='Collect3D', keys=['img', 'gt_bboxes', 'gt_labels', 
                                  'gt_bboxes_3d', 'gt_labels_3d',
