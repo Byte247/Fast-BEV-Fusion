@@ -48,7 +48,7 @@ model = dict(
         legacy=False,
         freeze_layers=True),
     pts_middle_encoder=dict(
-        type='PointPillarsScatter', in_channels=64, output_shape=(512, 512)),
+        type='PointPillarsScatter', in_channels=64, output_shape=(512, 512), freeze_layers=True),
     pts_backbone=dict(
         type='SECOND',
         in_channels=64,
