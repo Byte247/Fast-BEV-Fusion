@@ -9,6 +9,7 @@ from .cross_attention_fusion import MultiHeadCrossAttention
 from .cross_attention_fusion_v2 import MultiHeadCrossAttentionV2
 from .cross_attention_fusion_more_voxels import MultiHeadCrossAttentionMoreCamVoxels
 from .cross_attention_fusion_v3 import MultiHeadCrossAttentionV3
+from .cross_attention_fusion_flipped_attention import MultiHeadCrossAttentionFlipped
 
 __all__ = [
     'PointFusion', 'VoteFusion', 'apply_3d_transformation',
@@ -16,5 +17,6 @@ __all__ = [
     "MultiHeadCrossAttention", "MultiHeadCrossAttentionV2",
     "MultiHeadCrossAttentionMoreCamVoxels",
     "AddFusion",
-    "MultiHeadCrossAttentionV3"
+    "MultiHeadCrossAttentionV3",
+    "MultiHeadCrossAttentionFlipped"
 ]
