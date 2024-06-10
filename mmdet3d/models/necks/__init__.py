@@ -4,5 +4,6 @@ from .imvoxel_neck import *
 from .second_fpn import SECONDFPN
 from .m2bev_neck import *
 from .fpn_with_cp import *
+from .rpn import RPNV3
 
-__all__ = ['FPN', 'SECONDFPN', 'OutdoorImVoxelNeck', 'FPNWithCP']
+__all__ = ['FPN', 'SECONDFPN', 'OutdoorImVoxelNeck', 'FPNWithCP', 'RPNV3']

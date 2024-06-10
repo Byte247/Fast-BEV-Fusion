@@ -21,6 +21,7 @@ from .fastbev import FastBEV
 from .fast_bev_fusion import FastBEVFusion
 from .fast_bev_fusion_centerhead import FastBEVFusionCenterhead
 from .fast_bev_fusion_centerhead_pretrained import FastBEVFusionCenterheadPretrained
+from .fast_bev_fusion_centerhead_large import FastBEVFusionCenterheadLarge
 
 
 __all__ = [
@@ -28,5 +29,6 @@ __all__ = [
     'DynamicMVXFasterRCNN', 'MVXFasterRCNN', 'PartA2', 'VoteNet', 'H3DNet',
     'CenterPoint', 'SSD3DNet', 'ImVoteNet', 'SingleStageMono3DDetector',
     'FCOSMono3D', 'ImVoxelNet', 'GroupFree3DNet', 'M2BevNet', 'M2BevNetSeq',
-    'MultiScaleM2BevNetSeq', 'FastBEV',"FastBEVFusion", "FastBEVFusionCenterhead"
+    'MultiScaleM2BevNetSeq', 'FastBEV',"FastBEVFusion", "FastBEVFusionCenterhead",
+    'FastBEVFusionCenterheadPretrained', 'FastBEVFusionCenterheadLarge'
 ]

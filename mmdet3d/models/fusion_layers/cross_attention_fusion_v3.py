@@ -2,8 +2,6 @@ import torch
 import torch.nn as nn
 import matplotlib.pyplot as plt
 import numpy as np
-from mmcv.runner import auto_fp16
-from mmcv.runner import force_fp32
 from ..builder import FUSION_LAYERS
 
 
@@ -19,7 +17,7 @@ class Decoder(nn.Module):
         self.ff = FeedForwardBlock(d_model=d_model, hidden_dim= hidden_dim, dropout=dropout)
 
         self.multiheadAttention = nn.MultiheadAttention(d_model, num_heads, dropout=dropout, batch_first=True)
-    @force_fp32()
+
     def forward(self, query, key):
 
         query = self.norm_query(query)
@@ -29,8 +27,8 @@ class Decoder(nn.Module):
 
         attention_output, attn_weights = self.multiheadAttention(query=query, key=key, value=value, need_weights=self.show_weights)
         if self.show_weights:
-            self.vis_attention_scores(attn_weights)
-            #self.vis_mean_attention_scores(attn_weights)
+            #self.vis_attention_scores(attn_weights)
+            self.vis_mean_attention_scores(attn_weights)
 
         add_norm_0 = torch.add(attention_output, query)
         
@@ -71,7 +69,7 @@ class Decoder(nn.Module):
         # Precompute highlighted grid outside the loop
         highlighted_grid = np.zeros((64, 64))
 
-        for i in range(1000, 1250):
+        for i in range(1000, 1200):
             # Clear previous plot
             axs_heatmap[0].clear()
             axs_heatmap[1].clear()
@@ -125,7 +123,6 @@ class FeedForwardBlock(nn.Module):
         self.norm = nn.LayerNorm(d_model)
         self.norm_2 = nn.LayerNorm(d_model)
 
-    @auto_fp16()
     def forward(self, x):
 
         return self.norm_2(self.dropout_2(self.relu_2(self.linear_2(self.dropout(self.relu(self.linear_1(self.norm(x))))))))
@@ -134,15 +131,12 @@ class FeedForwardBlock(nn.Module):
 Same as V1 but with an addition skip connection around the cross attention
 """
 @FUSION_LAYERS.register_module()
-class MultiHeadCrossAttentionV2FlippedSkip(nn.Module):
+class MultiHeadCrossAttentionV3(nn.Module):
     def __init__(self, embed_dim = 512, num_heads=8, dropout = 0.1, fuse_on_lidar=True):
-        super(MultiHeadCrossAttentionV2FlippedSkip, self).__init__()
+        super(MultiHeadCrossAttentionV3, self).__init__()
 
         self.embed_dim = embed_dim
 
-        self.reduce_lidar_channel = nn.Conv2d(384, self.embed_dim, kernel_size=3, stride=2, padding=1)
-        self.reduce_lidar_channel_act = nn.LeakyReLU()
-        self.reduce_lidar_channel_norm = nn.BatchNorm2d(self.embed_dim)
         self.fuse_on_lidar = fuse_on_lidar
 
 
@@ -193,7 +187,6 @@ class MultiHeadCrossAttentionV2FlippedSkip(nn.Module):
 
         return camera_patches
     
-    @auto_fp16()
     def forward(self, lidar_bev_features, camera_bev_features):
         
         # Make a copy of the tensor and convert it to CPU
@@ -206,8 +199,7 @@ class MultiHeadCrossAttentionV2FlippedSkip(nn.Module):
         # Check for Inf values
         if torch.isinf(camera_bev_features_cpu).any():
             print("Camera Tensor contains Inf values.")
-        
-        lidar_bev_features = self.reduce_lidar_channel_act(self.reduce_lidar_channel_norm(self.reduce_lidar_channel(lidar_bev_features)))
+
 
         camera_bev_features = self.reduce_camera_spatialy_act(self.reduce_camera_spatialy_norm(self.reduce_camera_spatialy(camera_bev_features)))
         
@@ -218,10 +210,10 @@ class MultiHeadCrossAttentionV2FlippedSkip(nn.Module):
 
         if self.fuse_on_lidar:
             cross_attention = self.lidar_camera_cross_attention(lidar_patch_embedding, image_patch_embedding)
-            cross_attention = self.last_norm(torch.add(cross_attention, image_patch_embedding))
+            cross_attention = self.last_norm(torch.add(cross_attention, lidar_patch_embedding))
         else:
             cross_attention = self.lidar_camera_cross_attention(image_patch_embedding, lidar_patch_embedding)
-            cross_attention = self.last_norm(torch.add(cross_attention, lidar_patch_embedding))
+            cross_attention = self.last_norm(torch.add(cross_attention, image_patch_embedding))
 
         # Reshape the 1d tensor back to a 2d representation used in the CenterHead
         output = cross_attention.permute(0,2,1)

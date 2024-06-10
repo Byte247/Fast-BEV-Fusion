@@ -3,7 +3,7 @@
 point_cloud_range = [-51.2, -51.2, -5.0, 51.2, 51.2, 3.0]
 
 model = dict(
-    type='FastBEVFusionCenterhead',
+    type='FastBEVFusionCenterheadLarge',
     backbone=dict(
         type='ResNet',
         depth=50,
@@ -40,33 +40,47 @@ model = dict(
     pts_voxel_encoder=dict(
         type='PillarFeatureNet',
         in_channels=5,
-        feat_channels=[64],
+        feat_channels=[64, 64],
         with_distance=False,
         voxel_size=(0.2, 0.2, 8),
         norm_cfg=dict(type='BN1d', eps=1e-3, momentum=0.01),
         legacy=False),
     pts_middle_encoder=dict(
         type='PointPillarsScatter', in_channels=64, output_shape=(512, 512)),
-    pts_backbone=dict(
-        type='SECOND',
-        in_channels=64,
-        out_channels=[64, 128, 256],
-        layer_nums=[3, 5, 5],
-        layer_strides=[2, 2, 2],
-        norm_cfg=dict(type='BN', eps=1e-3, momentum=0.01),
-        conv_cfg=dict(type='Conv2d', bias=False)),
+
+    pts_backbone=dict(type="PointResNet34V2",first_max_pool=False, freeze_layers = False),
+    # pts_backbone=dict(
+    #     type='SECOND',
+    #     in_channels=64,
+    #     out_channels=[64, 128, 256],
+    #     layer_nums=[3, 5, 5],
+    #     layer_strides=[2, 2, 2],
+    #     norm_cfg=dict(type='BN', eps=1e-3, momentum=0.01),
+    #     conv_cfg=dict(type='Conv2d', bias=False)),
+    # pts_neck=dict(
+    #     type='SECONDFPN',
+    #     in_channels=[64, 128, 256],
+    #     out_channels=[128, 128, 128],
+    #     upsample_strides=[0.5, 1, 2],
+    #     norm_cfg=dict(type='BN', eps=1e-3, momentum=0.01),
+    #     upsample_cfg=dict(type='deconv', bias=False),
+    #     use_conv_for_no_stride=True),
+
+
     pts_neck=dict(
-        type='SECONDFPN',
-        in_channels=[64, 128, 256],
-        out_channels=[128, 128, 128],
-        upsample_strides=[0.5, 1, 2],
-        norm_cfg=dict(type='BN', eps=1e-3, momentum=0.01),
-        upsample_cfg=dict(type='deconv', bias=False),
-        use_conv_for_no_stride=True),
+        type="RPNV3",
+        layer_nums=[5, 5],
+        ds_layer_strides=[1, 2],
+        ds_num_filters=[256, 256],
+        us_layer_strides=[1, 2],
+        us_num_filters=[128, 128], # default 128x128
+        num_input_features=[256,256], #num features in the feature maps block 4 and 5 that are feed into the structure similar to "FPN"
+        freeze_layers = False,
+    ),
 
 
     #Fusion layer
-    fusion_module = dict(type='MultiHeadCrossAttentionV2FlippedSkip',embed_dim = 512, num_heads=8, dropout = 0.1, fuse_on_lidar=True),
+    fusion_module = dict(type='MultiHeadCrossAttentionV3',embed_dim = 512, num_heads=8, dropout = 0.1, fuse_on_lidar=True),
 
     bbox_head= dict(
         type='CenterHead',
@@ -240,8 +254,8 @@ test_pipeline = [
 
 
 data = dict(
-    samples_per_gpu=2,
-    workers_per_gpu=8,
+    samples_per_gpu=1,
+    workers_per_gpu=4,
     train=dict(
         type='RepeatDataset',
         times=1,
@@ -275,11 +289,10 @@ data = dict(
         test_mode=True,
         box_type_3d='LiDAR'))
 
-optimizer = dict(type='AdamW', lr=0.0002,
+optimizer = dict(type='AdamW', lr=1e-4,
                  weight_decay=0.01,
                  paramwise_cfg=dict(
-                 custom_keys={'backbone': dict(lr_mult=0.1, decay_mult=1.0),
-                              'neck_3d': dict(lr_mult=0.4, decay_mult=1.0)}))
+                 custom_keys={'backbone': dict(lr_mult=0.1, decay_mult=1.0)}))
 # max_norm=10 is better for SECOND
 optimizer_config = dict(grad_clip=dict(max_norm=10, norm_type=2))
 
@@ -300,7 +313,7 @@ runner = dict(type='EpochBasedRunner', max_epochs=20)
 #total_epochs = 20
 checkpoint_config = dict(interval=1)
 log_config = dict(
-    interval=100,
+    interval=50,
     hooks=[
         dict(type='TextLoggerHook'),
         dict(type='TensorboardLoggerHook'),
