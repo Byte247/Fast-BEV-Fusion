@@ -46,9 +46,9 @@ model = dict(
         voxel_size=(0.2, 0.2, 8),
         norm_cfg=dict(type='BN1d', eps=1e-3, momentum=0.01),
         legacy=False,
-        freeze_layers=True),
+        freeze_layers=False),
     pts_middle_encoder=dict(
-        type='PointPillarsScatter', in_channels=64, output_shape=(512, 512), freeze_layers=True),
+        type='PointPillarsScatter', in_channels=64, output_shape=(512, 512), freeze_layers=False),
     pts_backbone=dict(
         type='SECOND',
         in_channels=64,
@@ -57,7 +57,7 @@ model = dict(
         layer_strides=[2, 2, 2],
         norm_cfg=dict(type='BN', eps=1e-3, momentum=0.01),
         conv_cfg=dict(type='Conv2d', bias=False),
-        freeze_layers=True),
+        freeze_layers=False),
     pts_neck=dict(
         type='SECONDFPN',
         in_channels=[64, 128, 256],
@@ -66,7 +66,7 @@ model = dict(
         norm_cfg=dict(type='BN', eps=1e-3, momentum=0.01),
         upsample_cfg=dict(type='deconv', bias=False),
         use_conv_for_no_stride=True,
-        freeze_layers=True),
+        freeze_layers=False),
 
 
     #Fusion layer
@@ -368,10 +368,15 @@ data = dict(
         test_mode=True,
         box_type_3d='LiDAR'))
 
-optimizer = dict(type='AdamW', lr=1e-4,
+optimizer = dict(type='AdamW', lr=0.0001,
                  weight_decay=0.01,
                  paramwise_cfg=dict(
-                 custom_keys={'backbone': dict(lr_mult=0.1, decay_mult=1.0)}))
+                 custom_keys={'backbone': dict(lr_mult=0.1, decay_mult=1.0),
+                              'pts_voxel_encoder': dict(lr_mult=0.1, decay_mult=1.0),
+                              'pts_middle_encoder': dict(lr_mult=0.1, decay_mult=1.0),
+                              'pts_backbone': dict(lr_mult=0.1, decay_mult=1.0),
+                              'pts_neck': dict(lr_mult=0.1, decay_mult=1.0),
+                              'bbox_head': dict(lr_mult=0.1, decay_mult=1.0)}))
 # max_norm=10 is better for SECOND
 optimizer_config = dict(grad_clip=dict(max_norm=10, norm_type=2))
 
@@ -387,7 +392,7 @@ lr_config = dict(
     )
 
 # runtime settings
-runner = dict(type='EpochBasedRunner', max_epochs=20)
+runner = dict(type='EpochBasedRunner', max_epochs=10)
 
 #total_epochs = 20
 checkpoint_config = dict(interval=1)
