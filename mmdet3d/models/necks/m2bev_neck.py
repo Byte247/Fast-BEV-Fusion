@@ -30,7 +30,7 @@ class ResModule2D(nn.Module):
             norm_cfg=norm_cfg,
             act_cfg=None)
         self.activation = nn.ReLU(inplace=True)
-    @auto_fp16()
+        
     def forward(self, x):
         """Forward function.
 
@@ -98,7 +98,6 @@ class M2BevNeck(nn.Module):
                 act_cfg=dict(type='ReLU', inplace=True)))
         self.model = nn.Sequential(*model)
 
-    @auto_fp16()
     def forward(self, x):
         """Forward function.
 
