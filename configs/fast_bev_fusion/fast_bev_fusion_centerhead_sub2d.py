@@ -2,7 +2,6 @@
 # If point cloud range is changed, the models should also change their point cloud range accordingly
 point_cloud_range = [-51.2, -51.2, -5.0, 51.2, 51.2, 3.0]
 
-
 model = dict(
     type='FastBEVFusionCenterhead',
     backbone=dict(
@@ -27,7 +26,7 @@ model = dict(
     neck_fuse=dict(in_channels=256, out_channels=64),
     neck_3d=dict(
         type='M2BevNeck',
-        in_channels=768,
+        in_channels=384,
         out_channels=256,
         num_layers=6,
         stride=2,
@@ -115,8 +114,8 @@ model = dict(
         loss_bbox=dict(type='IoULoss', loss_weight=1.0),
         loss_centerness=dict(type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0)),
     
-    n_voxels=(256, 256, 12), 
-    voxel_size=[0.4, 0.4, 0.5],
+    n_voxels=(256, 256, 6), 
+    voxel_size=[0.4, 0.4, 1],
 
     # training and testing settings for 2d
     train_cfg_2d=dict(
@@ -242,7 +241,7 @@ test_pipeline = [
 
 data = dict(
     samples_per_gpu=1,
-    workers_per_gpu=8,
+    workers_per_gpu=4,
     train=dict(
         type='RepeatDataset',
         times=1,
@@ -279,22 +278,20 @@ data = dict(
 optimizer = dict(type='AdamW', lr=1e-4,
                  weight_decay=0.01,
                  paramwise_cfg=dict(
-                 custom_keys={'backbone': dict(lr_mult=0.1, decay_mult=1.0),
-                              'neck_3d': dict(lr_mult=0.1, decay_mult=1.0)}))
+                 custom_keys={'backbone': dict(lr_mult=0.1, decay_mult=1.0)}))
 # max_norm=10 is better for SECOND
-optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
+optimizer_config = dict(grad_clip=dict(max_norm=10, norm_type=2))
+
+# learning policy
 lr_config = dict(
-    policy='cyclic',
-    target_ratio=(10, 1e-4),
-    cyclic_times=1,
-    step_ratio_up=0.4,
-)
-momentum_config = dict(
-    policy='cyclic',
-    target_ratio=(0.85 / 0.95, 1),
-    cyclic_times=1,
-    step_ratio_up=0.4,
-)
+    policy='poly',
+    warmup='linear',
+    warmup_iters=1000,
+    warmup_ratio=1e-6,
+    power=1.0,
+    min_lr=0,
+    by_epoch=False
+    )
 
 # runtime settings
 runner = dict(type='EpochBasedRunner', max_epochs=20)
@@ -302,7 +299,7 @@ runner = dict(type='EpochBasedRunner', max_epochs=20)
 #total_epochs = 20
 checkpoint_config = dict(interval=1)
 log_config = dict(
-    interval=100,
+    interval=200,
     hooks=[
         dict(type='TextLoggerHook'),
         dict(type='TensorboardLoggerHook'),

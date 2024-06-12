@@ -2,8 +2,6 @@ import torch
 import torch.nn as nn
 import matplotlib.pyplot as plt
 import numpy as np
-from mmcv.runner import auto_fp16
-from mmcv.runner import force_fp32
 from ..builder import FUSION_LAYERS
 
 
@@ -19,7 +17,7 @@ class Decoder(nn.Module):
         self.ff = FeedForwardBlock(d_model=d_model, hidden_dim= hidden_dim, dropout=dropout)
 
         self.multiheadAttention = nn.MultiheadAttention(d_model, num_heads, dropout=dropout, batch_first=True)
-    @force_fp32()
+
     def forward(self, query, key):
 
         query = self.norm_query(query)
@@ -29,8 +27,8 @@ class Decoder(nn.Module):
 
         attention_output, attn_weights = self.multiheadAttention(query=query, key=key, value=value, need_weights=self.show_weights)
         if self.show_weights:
-            self.vis_attention_scores(attn_weights)
-            #self.vis_mean_attention_scores(attn_weights)
+            #self.vis_attention_scores(attn_weights)
+            self.vis_mean_attention_scores(attn_weights)
 
         add_norm_0 = torch.add(attention_output, query)
         
@@ -71,7 +69,7 @@ class Decoder(nn.Module):
         # Precompute highlighted grid outside the loop
         highlighted_grid = np.zeros((64, 64))
 
-        for i in range(1000, 1250):
+        for i in range(1000, 1200):
             # Clear previous plot
             axs_heatmap[0].clear()
             axs_heatmap[1].clear()
@@ -125,7 +123,6 @@ class FeedForwardBlock(nn.Module):
         self.norm = nn.LayerNorm(d_model)
         self.norm_2 = nn.LayerNorm(d_model)
 
-    @auto_fp16()
     def forward(self, x):
 
         return self.norm_2(self.dropout_2(self.relu_2(self.linear_2(self.dropout(self.relu(self.linear_1(self.norm(x))))))))
@@ -193,7 +190,6 @@ class MultiHeadCrossAttentionV2(nn.Module):
 
         return camera_patches
     
-    @auto_fp16()
     def forward(self, lidar_bev_features, camera_bev_features):
         
         # Make a copy of the tensor and convert it to CPU
