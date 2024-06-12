@@ -28,8 +28,8 @@ class FastBEVFusion(BaseDetector):
         neck_fuse,
         neck_3d,
         bbox_head,
-        n_voxels,
-        voxel_size,
+        camera_n_voxels,
+        camera_voxel_size,
         pts_voxel_layer,
         seg_head=None,
         pts_voxel_encoder=None,
@@ -78,7 +78,7 @@ class FastBEVFusion(BaseDetector):
             bbox_head.update(train_cfg=train_cfg)
             bbox_head.update(test_cfg=test_cfg)
             self.bbox_head = builder.build_head(bbox_head)
-            self.bbox_head.voxel_size = voxel_size
+            self.bbox_head.voxel_size = camera_voxel_size
         else:
             self.bbox_head = None
 
@@ -94,8 +94,8 @@ class FastBEVFusion(BaseDetector):
         else:
             self.bbox_head_2d = None
 
-        self.n_voxels = n_voxels
-        self.voxel_size = voxel_size
+        self.camera_n_voxels = camera_n_voxels
+        self.camera_voxel_size = camera_voxel_size
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
 
@@ -201,8 +201,8 @@ class FastBEVFusion(BaseDetector):
             )  # [6, 3, 4]
 
             points = get_points(  # [3, 200, 200, 12]
-                n_voxels=torch.tensor(self.n_voxels),
-                voxel_size=torch.tensor(self.voxel_size),
+                n_voxels=torch.tensor(self.camera_n_voxels),
+                voxel_size=torch.tensor(self.camera_voxel_size),
                 origin=torch.tensor(img_meta["lidar2img"]["origin"]),
             ).to(x.device)
 

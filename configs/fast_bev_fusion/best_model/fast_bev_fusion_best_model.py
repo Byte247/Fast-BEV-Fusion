@@ -89,7 +89,16 @@ model = dict(
             pc_range=[-51.2, -51.2],
             code_size=9),
         separate_head=dict(
-            type='SeparateHead', init_bias=-2.19, final_kernel=3),
+            type='DCNSeparateHead',
+            dcn_config=dict(
+                type='DCN',
+                in_channels=128,
+                out_channels=128,
+                kernel_size=3,
+                padding=1,
+                groups=4),
+            init_bias=-2.19,
+            final_kernel=3),
         loss_cls=dict(type='GaussianFocalLoss', reduction='mean'),
         loss_bbox=dict(type='L1Loss', reduction='mean', loss_weight=0.25),
         norm_bbox=True),
@@ -111,8 +120,8 @@ model = dict(
         loss_bbox=dict(type='IoULoss', loss_weight=1.0),
         loss_centerness=dict(type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0)),
     
-    n_voxels=(256, 256, 6), 
-    voxel_size=[0.4, 0.4, 1],
+    camera_n_voxels=(256, 256, 6), #used for the camera features that are mapped to 3D voxels
+    camera_voxel_size=[0.4, 0.4, 1], #used for the camera features that are mapped to 3D voxels
 
     # training and testing settings for 2d
     train_cfg_2d=dict(
@@ -144,7 +153,6 @@ model = dict(
             code_weights=[1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.2, 0.2],
             point_cloud_range = point_cloud_range),
      test_cfg=dict(
-        
             post_center_limit_range=[-61.2, -61.2, -10.0, 61.2, 61.2, 10.0],
             max_per_img=500,
             max_pool_nms=False,
@@ -157,7 +165,6 @@ model = dict(
             pre_max_size=1000,
             post_max_size=83,
             nms_thr=0.2)
-            
 )
 
 
@@ -237,7 +244,7 @@ test_pipeline = [
 
 
 data = dict(
-    samples_per_gpu=2,
+    samples_per_gpu=1,
     workers_per_gpu=4,
     train=dict(
         type='CBGSDataset',
@@ -295,7 +302,7 @@ runner = dict(type='EpochBasedRunner', max_epochs=20)
 #total_epochs = 20
 checkpoint_config = dict(interval=1)
 log_config = dict(
-    interval=500,
+    interval=100,
     hooks=[
         dict(type='TextLoggerHook'),
         dict(type='TensorboardLoggerHook'),

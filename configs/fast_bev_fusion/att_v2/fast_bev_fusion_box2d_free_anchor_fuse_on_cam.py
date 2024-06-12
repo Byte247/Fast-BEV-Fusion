@@ -144,8 +144,8 @@ model = dict(
         nms=dict(type='nms', iou_threshold=0.5),
         max_per_img=100),
     # # #
-    n_voxels=(256, 256, 12),
-    voxel_size=[0.4, 0.4, 0.5],
+    camera_n_voxels=(256, 256, 12),
+    camera_voxel_size=[0.4, 0.4, 0.5],
     # model training and testing settings
     train_cfg = dict(
         assigner=dict(
@@ -249,7 +249,7 @@ test_pipeline = [
 
 data = dict(
     samples_per_gpu=2,
-    workers_per_gpu=8,
+    workers_per_gpu=4,
     train=dict(
         type='RepeatDataset',
         times=1,

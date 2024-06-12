@@ -114,8 +114,8 @@ model = dict(
         loss_bbox=dict(type='IoULoss', loss_weight=1.0),
         loss_centerness=dict(type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0)),
     
-    n_voxels=(256, 256, 6), 
-    voxel_size=[0.4, 0.4, 1],
+    camera_n_voxels=(256, 256, 6), 
+    camera_voxel_size=[0.4, 0.4, 1],
 
     # training and testing settings for 2d
     train_cfg_2d=dict(

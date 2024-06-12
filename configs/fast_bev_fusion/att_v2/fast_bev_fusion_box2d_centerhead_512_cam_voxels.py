@@ -114,8 +114,8 @@ model = dict(
         loss_bbox=dict(type='IoULoss', loss_weight=1.0),
         loss_centerness=dict(type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0)),
     
-    n_voxels=(512, 512, 12), 
-    voxel_size=[0.2, 0.2, 0.5],
+    camera_n_voxels=(512, 512, 12), 
+    camera_voxel_size=[0.2, 0.2, 0.5],
 
     # training and testing settings for 2d
     train_cfg_2d=dict(
@@ -239,7 +239,7 @@ test_pipeline = [
 
 data = dict(
     samples_per_gpu=3,
-    workers_per_gpu=8,
+    workers_per_gpu=4,
     train=dict(
         type='RepeatDataset',
         times=1,
