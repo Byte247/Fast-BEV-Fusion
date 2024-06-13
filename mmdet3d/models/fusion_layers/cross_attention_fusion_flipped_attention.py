@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import matplotlib.pyplot as plt
 import numpy as np
+from mmcv.runner import auto_fp16
 from ..builder import FUSION_LAYERS
 
 
@@ -17,7 +18,7 @@ class Decoder(nn.Module):
         self.ff = FeedForwardBlock(d_model=d_model, hidden_dim= hidden_dim, dropout=dropout)
 
         self.multiheadAttention = nn.MultiheadAttention(d_model, num_heads, dropout=dropout, batch_first=True)
-
+    @auto_fp16()
     def forward(self, query, key):
 
         query = self.norm_query(query)
@@ -122,7 +123,7 @@ class FeedForwardBlock(nn.Module):
 
         self.norm = nn.LayerNorm(d_model)
         self.norm_2 = nn.LayerNorm(d_model)
-
+    @auto_fp16()
     def forward(self, x):
 
         return self.norm_2(self.dropout_2(self.relu_2(self.linear_2(self.dropout(self.relu(self.linear_1(self.norm(x))))))))
@@ -157,7 +158,7 @@ class MultiHeadCrossAttentionFlipped(nn.Module):
 
         self.last_norm = nn.LayerNorm(self.embed_dim)
 
-
+    @auto_fp16()
     def create_lidar_patches(self, lidar_tensor):
         
         #flatten all patches:   
@@ -170,7 +171,7 @@ class MultiHeadCrossAttentionFlipped(nn.Module):
 
 
         return lidar_tensor
-    
+    @auto_fp16()
     def create_camera_patches(self, camera_tensor):
         
         #flatten all patches:
@@ -188,7 +189,7 @@ class MultiHeadCrossAttentionFlipped(nn.Module):
         camera_patches = camera_patches.permute(0, 2, 1)  # shape: (batch_size, sequence_length, embedding_dimension)
 
         return camera_patches
-    
+    @auto_fp16()
     def forward(self, lidar_bev_features, camera_bev_features):
         
         # Make a copy of the tensor and convert it to CPU
