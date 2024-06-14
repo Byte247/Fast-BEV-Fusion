@@ -238,7 +238,9 @@ train_pipeline = [
     dict(type='LoadAnnotations3D',
          with_bbox=True,
          with_label=True,
-         with_bev_seg=False),
+         with_bev_seg=False,
+         with_bbox_3d=True,
+         with_label_3d=True),
      dict(
         type='LoadPointsFromFile',
         coord_type='LIDAR',
@@ -250,7 +252,7 @@ train_pipeline = [
         use_dim=[0, 1, 2, 3, 4],
         pad_empty_sweeps=True,
         remove_close=True),
-
+    
     dict(
         type='RandomFlip3D',
         flip_2d=True,
@@ -259,16 +261,8 @@ train_pipeline = [
         flip_ratio_bev_vertical=0.5,
         update_img2lidar=True),
 
-    dict(type='LoadAnnotations3D', with_bbox_3d=True, with_label_3d=True),
     dict(type='ObjectSample', db_sampler=db_sampler),
-    dict(
-        type='GlobalRotScaleTrans',
-        rot_range=[-0.3925, 0.3925],
-        scale_ratio_range=[0.95, 1.05],
-        translation_std=[0, 0, 0],
-        update_img2lidar=True),
-
-    dict(type='PointsRangeFilter', point_cloud_range=point_cloud_range),
+    
     dict(
         type='MultiViewPipeline',
         n_images=6,
@@ -277,7 +271,15 @@ train_pipeline = [
             dict(type='Resize', img_scale=(1600, 900), keep_ratio=True),
             dict(type='Normalize', **img_norm_cfg),
             dict(type='Pad', size_divisor=32)]),
+    dict(
+        type='GlobalRotScaleTrans',
+        rot_range=[-0.3925, 0.3925],
+        scale_ratio_range=[0.95, 1.05],
+        translation_std=[0.05, 0.05, 0.05],
+        update_img2lidar=True),
+    
     dict(type='RandomAugImageMultiViewImage', data_config=data_config),
+    dict(type='PointsRangeFilter', point_cloud_range=point_cloud_range),
     dict(type='ObjectRangeFilter', point_cloud_range=point_cloud_range),
     dict(type='KittiSetOrigin', point_cloud_range=point_cloud_range),
     dict(type='PointShuffle'),
@@ -311,7 +313,7 @@ test_pipeline = [
 
 
 data = dict(
-    samples_per_gpu=2,
+    samples_per_gpu=1,
     workers_per_gpu=4,
     train=dict(
         type='CBGSDataset',
@@ -369,7 +371,7 @@ runner = dict(type='EpochBasedRunner', max_epochs=20)
 #total_epochs = 20
 checkpoint_config = dict(interval=1)
 log_config = dict(
-    interval=500,
+    interval=10,
     hooks=[
         dict(type='TextLoggerHook'),
         dict(type='TensorboardLoggerHook'),
