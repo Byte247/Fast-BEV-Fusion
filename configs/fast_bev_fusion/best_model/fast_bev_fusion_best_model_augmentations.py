@@ -89,16 +89,7 @@ model = dict(
             pc_range=[-51.2, -51.2],
             code_size=9),
         separate_head=dict(
-            type='DCNSeparateHead',
-            dcn_config=dict(
-                type='DCN',
-                in_channels=128,
-                out_channels=128,
-                kernel_size=3,
-                padding=1,
-                groups=4),
-            init_bias=-2.19,
-            final_kernel=3),
+            type='SeparateHead', init_bias=-2.19, final_kernel=3),
         loss_cls=dict(type='GaussianFocalLoss', reduction='mean'),
         loss_bbox=dict(type='L1Loss', reduction='mean', loss_weight=0.25),
         norm_bbox=True),
@@ -315,7 +306,7 @@ test_pipeline = [
 
 
 data = dict(
-    samples_per_gpu=1,
+    samples_per_gpu=2,
     workers_per_gpu=4,
     train=dict(
         type='CBGSDataset',
