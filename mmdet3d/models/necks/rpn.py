@@ -5,6 +5,7 @@ from mmcv.cnn import build_norm_layer
 from mmcv.runner import BaseModule
 import torch
 from torch import nn
+from mmcv.runner import force_fp32
 
 import inspect
 import sys
@@ -131,7 +132,7 @@ class RPNV3(BaseModule):
         print("Freeze neck layers")
         for param in self.parameters():
             param.requires_grad = False
-
+    @force_fp32()
     def forward(self, x, **kwargs):
         
         #get feature maps of last 2 resolutions 
