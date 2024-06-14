@@ -252,14 +252,6 @@ train_pipeline = [
         use_dim=[0, 1, 2, 3, 4],
         pad_empty_sweeps=True,
         remove_close=True),
-    
-    dict(
-        type='RandomFlip3D',
-        flip_2d=True,
-        sync_2d=True,
-        flip_ratio_bev_horizontal=0.5,
-        flip_ratio_bev_vertical=0.5,
-        update_img2lidar=True),
 
     dict(type='ObjectSample', db_sampler=db_sampler),
     
