@@ -228,6 +228,7 @@ class DCNSeparateHead(BaseModule):
                 -heatmap (torch.Tensor): Heatmap with the shape of \
                     [B, N, H, W].
         """
+        x = x.contiguous()
         center_feat = self.feature_adapt_cls(x)
         reg_feat = self.feature_adapt_reg(x)
 
