@@ -1702,6 +1702,18 @@ class RandomAugImageMultiViewImage(object):
                 rotate=rotate,
                 pad=pad
             )
+
+            # test_image = np.asanyarray(post_pil_img)
+
+            # print(f"test_image: {test_image.shape}")
+
+            # # # Rescale values from 0-1 to 0-255
+            # new_image =  test_image * 255
+            # new_image = new_image.astype(np.uint8)
+
+            # cv2.imshow("post_pil_img", new_image)
+            # cv2.waitKey(0)
+
             aug_imgs.append(np.asarray(post_pil_img))
             aug_extrinsics.append(
                 self.rts2proj(results['lidar2img']['lidar2img_aug'][cam_id], post_rot, post_tran)
