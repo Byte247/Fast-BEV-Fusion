@@ -262,8 +262,8 @@ train_pipeline = [
 
     dict(
         type='RandomFlip3D',
-        flip_2d=False,
-        sync_2d=False,
+        flip_2d=True,
+        sync_2d=True,
         flip_ratio_bev_horizontal=0.5,
         flip_ratio_bev_vertical=0.5,
         update_img2lidar=True),
@@ -320,7 +320,7 @@ test_pipeline = [
 
 
 data = dict(
-    samples_per_gpu=1,
+    samples_per_gpu=2,
     workers_per_gpu=4,
     train=dict(
         type='CBGSDataset',
