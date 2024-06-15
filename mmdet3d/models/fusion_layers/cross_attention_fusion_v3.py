@@ -128,7 +128,7 @@ class FeedForwardBlock(nn.Module):
         return self.norm_2(self.dropout_2(self.relu_2(self.linear_2(self.dropout(self.relu(self.linear_1(self.norm(x))))))))
 
 """
-Same as V1 but with an addition skip connection around the cross attention
+Same as V2 but designed for largest model (FastPillars point backbone)
 """
 @FUSION_LAYERS.register_module()
 class MultiHeadCrossAttentionV3(nn.Module):
