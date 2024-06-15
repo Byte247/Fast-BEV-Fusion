@@ -231,18 +231,18 @@ class MultiHeadCrossAttentionFlippedMoreDecoders(nn.Module):
         camera_self_attention = self.norm_camera_self_attention(self.camera_self_attention(image_patch_embedding, image_patch_embedding))
 
         cross_attention_0 = self.norm_lidar_camera_fusion(self.lidar_camera_fusion(lidar_patch_embedding, camera_self_attention))
-        cross_attention_1 = self.norm_1(self.decoder_1(cross_attention_0))
+        cross_attention_1 = self.norm_1(self.decoder_1(cross_attention_0, cross_attention_0))
         cross_attention_1 = torch.add(cross_attention_0, cross_attention_1)
-        cross_attention_2 = self.norm_2(self.decoder_2(cross_attention_1))
+        cross_attention_2 = self.norm_2(self.decoder_2(cross_attention_1, cross_attention_1))
         cross_attention_2 = torch.add(cross_attention_1, cross_attention_2)
-        cross_attention_3 = self.norm_3(self.decoder_3(cross_attention_2))
+        cross_attention_3 = self.norm_3(self.decoder_3(cross_attention_2, cross_attention_2))
         cross_attention_3 = torch.add(cross_attention_2, cross_attention_3)
-        cross_attention_4 = self.norm_4(self.decoder_4(cross_attention_3))
+        cross_attention_4 = self.norm_4(self.decoder_4(cross_attention_3,cross_attention_3))
         cross_attention_4 = torch.add(cross_attention_3, cross_attention_4)
-        cross_attention_5 = self.norm_5(self.decoder_5(cross_attention_4))
+        cross_attention_5 = self.norm_5(self.decoder_5(cross_attention_4,cross_attention_4))
         cross_attention_5 = torch.add(cross_attention_4, cross_attention_5)
 
-        final_cross_attention = self.norm_6(self.decoder_6(cross_attention_5))
+        final_cross_attention = self.norm_6(self.decoder_6(cross_attention_5,cross_attention_5))
         final_cross_attention = torch.add(final_cross_attention, cross_attention_5)
 
 
