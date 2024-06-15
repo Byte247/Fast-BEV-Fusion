@@ -154,18 +154,12 @@ class MultiHeadCrossAttentionFlippedMoreDecoders(nn.Module):
         self.decoder_1 = Decoder(self.embed_dim, hidden_dim=self.embed_dim * 2, num_heads= num_heads, dropout=dropout, show_weights=False)
         self.decoder_2 = Decoder(self.embed_dim, hidden_dim=self.embed_dim * 2, num_heads= num_heads, dropout=dropout, show_weights=False)
         self.decoder_3 = Decoder(self.embed_dim, hidden_dim=self.embed_dim * 2, num_heads= num_heads, dropout=dropout, show_weights=False)
-        self.decoder_4 = Decoder(self.embed_dim, hidden_dim=self.embed_dim * 2, num_heads= num_heads, dropout=dropout, show_weights=False)
-        self.decoder_5 = Decoder(self.embed_dim, hidden_dim=self.embed_dim * 2, num_heads= num_heads, dropout=dropout, show_weights=False)
-        self.decoder_6 = Decoder(self.embed_dim, hidden_dim=self.embed_dim * 2, num_heads= num_heads, dropout=dropout, show_weights=False)
 
         self.norm_camera_self_attention = nn.LayerNorm(self.embed_dim)
         self.norm_lidar_camera_fusion = nn.LayerNorm(self.embed_dim)
         self.norm_1 = nn.LayerNorm(self.embed_dim)
         self.norm_2 = nn.LayerNorm(self.embed_dim)
         self.norm_3 = nn.LayerNorm(self.embed_dim)
-        self.norm_4 = nn.LayerNorm(self.embed_dim)
-        self.norm_5 = nn.LayerNorm(self.embed_dim)
-        self.norm_6 = nn.LayerNorm(self.embed_dim)
 
         self.pos_embed_camera = nn.Parameter(torch.randn(1, self.embed_dim, 4096) * .02) #done as in ViT: https://github.com/lucidrains/vit-pytorch/blob/main/vit_pytorch/vit.py, (14 (image hight) * 25 image width * 6 images) / 16 (image patches)
         self.pos_embed_lidar = nn.Parameter(torch.randn(1, self.embed_dim, 4096) * .02) #done as in ViT: https://github.com/lucidrains/vit-pytorch/blob/main/vit_pytorch/vit.py, no reduction for now
@@ -174,7 +168,7 @@ class MultiHeadCrossAttentionFlippedMoreDecoders(nn.Module):
         self.upsample_layer_norm = nn.BatchNorm2d(3 * 128)
         self.upsample_layer_act = nn.LeakyReLU(inplace=True)
 
-    @auto_fp16()
+    
     def create_lidar_patches(self, lidar_tensor):
         
         #flatten all patches:   
@@ -187,7 +181,7 @@ class MultiHeadCrossAttentionFlippedMoreDecoders(nn.Module):
 
 
         return lidar_tensor
-    @auto_fp16()
+    
     def create_camera_patches(self, camera_tensor):
         
         #flatten all patches:
@@ -205,7 +199,7 @@ class MultiHeadCrossAttentionFlippedMoreDecoders(nn.Module):
         camera_patches = camera_patches.permute(0, 2, 1)  # shape: (batch_size, sequence_length, embedding_dimension)
 
         return camera_patches
-    @auto_fp16()
+    
     def forward(self, lidar_bev_features, camera_bev_features):
         
         # Make a copy of the tensor and convert it to CPU
@@ -236,16 +230,7 @@ class MultiHeadCrossAttentionFlippedMoreDecoders(nn.Module):
         cross_attention_2 = self.norm_2(self.decoder_2(cross_attention_1, cross_attention_1))
         cross_attention_2 = torch.add(cross_attention_1, cross_attention_2)
         cross_attention_3 = self.norm_3(self.decoder_3(cross_attention_2, cross_attention_2))
-        cross_attention_3 = torch.add(cross_attention_2, cross_attention_3)
-        cross_attention_4 = self.norm_4(self.decoder_4(cross_attention_3,cross_attention_3))
-        cross_attention_4 = torch.add(cross_attention_3, cross_attention_4)
-        cross_attention_5 = self.norm_5(self.decoder_5(cross_attention_4,cross_attention_4))
-        cross_attention_5 = torch.add(cross_attention_4, cross_attention_5)
-
-        final_cross_attention = self.norm_6(self.decoder_6(cross_attention_5,cross_attention_5))
-        final_cross_attention = torch.add(final_cross_attention, cross_attention_5)
-
-
+        final_cross_attention = torch.add(cross_attention_2, cross_attention_3)
 
 
         # Reshape the 1d tensor back to a 2d representation used in the CenterHead
