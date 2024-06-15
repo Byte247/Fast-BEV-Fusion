@@ -314,5 +314,5 @@ resume_from = None
 workflow = [('train', 1)]
 
 # fp16 settings, the loss scale is specifically tuned to avoid Nan
-# fp16 = dict(loss_scale='dynamic')
+fp16 = dict(loss_scale='dynamic')
 
