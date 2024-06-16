@@ -61,7 +61,6 @@ model = dict(
         freeze_layers = False,
     ),
 
-
     #Fusion layer
     fusion_module = dict(type='MultiHeadCrossAttentionV3',embed_dim = 512, num_heads=8, dropout = 0.1, fuse_on_lidar=True),
 
