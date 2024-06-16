@@ -57,7 +57,7 @@ model = dict(
         ds_num_filters=[256, 256],
         us_layer_strides=[1, 2],
         us_num_filters=[128, 128], # default 128x128
-        num_input_features=[256,256], #num features in the feature maps block 4 and 5 that are feed into the structure similar to "FPN"
+        num_input_features=[256,512], #num features in the feature maps block 4 and 5 that are feed into the structure similar to "FPN"
         freeze_layers = False,
     ),
 
