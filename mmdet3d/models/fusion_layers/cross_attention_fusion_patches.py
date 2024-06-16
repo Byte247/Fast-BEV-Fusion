@@ -128,18 +128,18 @@ class FeedForwardBlock(nn.Module):
         return self.norm_2(self.dropout_2(self.relu_2(self.linear_2(self.dropout(self.relu(self.linear_1(self.norm(x))))))))
 
 """
-Same as V2 but designed for largest model (FastPillars point backbone)
+Same as V1 but with an addition skip connection around the cross attention
 """
 @FUSION_LAYERS.register_module()
-class MultiHeadCrossAttentionV3(nn.Module):
+class MultiHeadCrossAttentionPatches(nn.Module):
     def __init__(self, embed_dim = 512, num_heads=8, dropout = 0.1, fuse_on_lidar=True):
-        super(MultiHeadCrossAttentionV3, self).__init__()
+        super(MultiHeadCrossAttentionPatches, self).__init__()
 
         self.embed_dim = embed_dim
 
-        self.increase_lidar_channels = nn.Conv2d(256, self.embed_dim, kernel_size=3, stride=1, padding=1)
-        self.increase_lidar_channels_act = nn.LeakyReLU()
-        self.increase_lidar_channels_norm = nn.BatchNorm2d(self.embed_dim)
+        self.reduce_lidar_channel = nn.Conv2d(384, self.embed_dim, kernel_size=3, stride=2, padding=1)
+        self.reduce_lidar_channel_act = nn.LeakyReLU()
+        self.reduce_lidar_channel_norm = nn.BatchNorm2d(self.embed_dim)
         self.fuse_on_lidar = fuse_on_lidar
 
 
@@ -158,24 +158,42 @@ class MultiHeadCrossAttentionV3(nn.Module):
 
         self.last_norm = nn.LayerNorm(self.embed_dim)
 
+        # Patch creation
+        self.lidar_patch_creation = nn.Conv2d(self.embed_dim, self.embed_dim, kernel_size=4, stride=4)
+        self.lidar_patch_creation_act = nn.LeakyReLU()
+        self.lidar_patch_creation_norm = nn.BatchNorm2d(self.embed_dim)
+
+        self.camera_patch_creation = nn.Conv2d(self.embed_dim, self.embed_dim, kernel_size=4, stride=4)
+        self.camera_patch_creation_act = nn.LeakyReLU()
+        self.camera_patch_creation_norm = nn.BatchNorm2d(self.embed_dim)
+
+        #Reverse patch creation
+        self.reverse_lidar_patch_creation = nn.ConvTranspose2d(self.embed_dim, self.embed_dim, kernel_size=4, stride=4)
+        self.reverse_lidar_patch_creation_act = nn.LeakyReLU()
+        self.reverse_lidar_patch_creation_norm = nn.BatchNorm2d(self.embed_dim)
+
 
     def create_lidar_patches(self, lidar_tensor):
+
+        lidar_patches = self.lidar_patch_creation_act(self.lidar_patch_creation_norm(self.lidar_patch_creation(lidar_tensor)))
         
         #flatten all patches:   
-        lidar_tensor = lidar_tensor.view(lidar_tensor.shape[0], lidar_tensor.shape[1], -1)
+        lidar_patches = lidar_patches.view(lidar_patches.shape[0], lidar_patches.shape[1], -1)
 
-        lidar_tensor = torch.add(lidar_tensor, self.pos_embed_lidar)
+        lidar_patches = torch.add(lidar_patches, self.pos_embed_lidar)
 
         #reshape to match required nn.MultiheadAttention input format: batch, seq, feature
-        lidar_tensor = lidar_tensor.permute(0, 2, 1)  # shape: (batch_size, sequence_length, embedding_dimension)
+        lidar_patches = lidar_patches.permute(0, 2, 1)  # shape: (batch_size, sequence_length, embedding_dimension)
 
 
-        return lidar_tensor
+        return lidar_patches
     
     def create_camera_patches(self, camera_tensor):
+
+        camera_patches = self.camera_patch_creation_act(self.camera_patch_creation_norm(self.camera_patch_creation(camera_tensor)))
         
         #flatten all patches:
-        camera_patches = camera_tensor.view(camera_tensor.shape[0], camera_tensor.shape[1], -1)
+        camera_patches = camera_patches.view(camera_patches.shape[0], camera_patches.shape[1], -1)
 
         #add position embedding to flattened patches
         camera_patches = torch.add(camera_patches, self.pos_embed_camera)
@@ -202,8 +220,8 @@ class MultiHeadCrossAttentionV3(nn.Module):
         # Check for Inf values
         if torch.isinf(camera_bev_features_cpu).any():
             print("Camera Tensor contains Inf values.")
-
-        lidar_bev_features = self.increase_lidar_channels_act(self.increase_lidar_channels_norm(self.increase_lidar_channels(lidar_bev_features)))
+        
+        lidar_bev_features = self.reduce_lidar_channel_act(self.reduce_lidar_channel_norm(self.reduce_lidar_channel(lidar_bev_features)))
 
         camera_bev_features = self.reduce_camera_spatialy_act(self.reduce_camera_spatialy_norm(self.reduce_camera_spatialy(camera_bev_features)))
         
@@ -219,11 +237,17 @@ class MultiHeadCrossAttentionV3(nn.Module):
             cross_attention = self.lidar_camera_cross_attention(image_patch_embedding, lidar_patch_embedding)
             cross_attention = self.last_norm(torch.add(cross_attention, image_patch_embedding))
 
+
+
         # Reshape the 1d tensor back to a 2d representation used in the CenterHead
         output = cross_attention.permute(0,2,1)
+
+        #Reverse the patch creation op
+        output = self.reverse_lidar_patch_creation_act(self.reverse_lidar_patch_creation_norm(self.reverse_lidar_patch_creation(output)))
+        
         output = output.view(output.shape[0], output.shape[1], 64, 64)  # Shape: [batch * 6, 256, 64, 64]
-
-
+        output = torch.add(output, lidar_bev_features)
+        #upsample to final output res
         output = self.upsample_layer_act(self.upsample_layer_norm(self.upsample_layer(output)))
 
         
