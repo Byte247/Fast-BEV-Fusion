@@ -278,7 +278,7 @@ test_pipeline = [
 
 
 data = dict(
-    samples_per_gpu=1,
+    samples_per_gpu=2,
     workers_per_gpu=4,
     train=dict(
         type='CBGSDataset',
@@ -352,5 +352,5 @@ resume_from = None
 workflow = [('train', 1)]
 
 # fp16 settings, the loss scale is specifically tuned to avoid Nan
-# fp16 = dict(loss_scale='dynamic')
+fp16 = dict(loss_scale='dynamic')
 
