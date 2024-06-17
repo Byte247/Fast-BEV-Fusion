@@ -70,7 +70,7 @@ model = dict(
 
     bbox_head= dict(
         type='CenterHead',
-        in_channels=384,
+        in_channels=512,
         tasks=[
             dict(num_class=1, class_names=['car']),
             dict(num_class=2, class_names=['truck', 'construction_vehicle']),

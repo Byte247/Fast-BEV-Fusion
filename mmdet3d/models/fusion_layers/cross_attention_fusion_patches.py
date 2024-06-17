@@ -2,7 +2,6 @@ import torch
 import torch.nn as nn
 import matplotlib.pyplot as plt
 import numpy as np
-import torch.nn.functional
 from ..builder import FUSION_LAYERS
 
 
@@ -169,9 +168,9 @@ class MultiHeadCrossAttentionPatches(nn.Module):
         self.camera_patch_creation_norm = nn.BatchNorm2d(self.embed_dim)
 
         #Reverse patch creation
-        self.reverse_lidar_patch_creation = nn.ConvTranspose2d(self.embed_dim, 3 * 128, kernel_size=4, stride=4)
+        self.reverse_lidar_patch_creation = nn.ConvTranspose2d(self.embed_dim, self.embed_dim, kernel_size=4, stride=4)
         self.reverse_lidar_patch_creation_act = nn.LeakyReLU(inplace=True)
-        self.reverse_lidar_patch_creation_norm = nn.BatchNorm2d(3 * 128)
+        self.reverse_lidar_patch_creation_norm = nn.BatchNorm2d(self.embed_dim)
 
 
     def create_lidar_patches(self, lidar_tensor):
