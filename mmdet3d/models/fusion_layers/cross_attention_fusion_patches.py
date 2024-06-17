@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import matplotlib.pyplot as plt
 import numpy as np
+import torch.nn.functional
 from ..builder import FUSION_LAYERS
 
 
@@ -137,40 +138,40 @@ class MultiHeadCrossAttentionPatches(nn.Module):
 
         self.embed_dim = embed_dim
 
-        self.reduce_lidar_channel = nn.Conv2d(384, self.embed_dim, kernel_size=3, stride=2, padding=1)
-        self.reduce_lidar_channel_act = nn.LeakyReLU()
-        self.reduce_lidar_channel_norm = nn.BatchNorm2d(self.embed_dim)
+        self.increase_lidar_features = nn.Conv2d(384, self.embed_dim, kernel_size=3, stride=1, padding=1)
+        self.increase_lidar_features_act = nn.LeakyReLU(inplace=True)
+        self.increase_lidar_features_norm = nn.BatchNorm2d(self.embed_dim)
         self.fuse_on_lidar = fuse_on_lidar
 
 
-        self.reduce_camera_spatialy = nn.Conv2d(256, self.embed_dim, kernel_size=3, stride=2, padding=1)
-        self.reduce_camera_spatialy_norm = nn.BatchNorm2d(self.embed_dim)
-        self.reduce_camera_spatialy_act = nn.LeakyReLU(inplace=True)
+        self.increase_camera_features = nn.Conv2d(256, self.embed_dim, kernel_size=3, stride=1, padding=1)
+        self.increase_camera_features_norm = nn.BatchNorm2d(self.embed_dim)
+        self.increase_camera_features_act = nn.LeakyReLU(inplace=True)
 
         self.lidar_camera_cross_attention = Decoder(self.embed_dim, hidden_dim=self.embed_dim * 2, num_heads= num_heads, dropout=dropout, show_weights=False)
         
-        self.pos_embed_camera = nn.Parameter(torch.randn(1, self.embed_dim, 256) * .02) #done as in ViT: https://github.com/lucidrains/vit-pytorch/blob/main/vit_pytorch/vit.py, (14 (image hight) * 25 image width * 6 images) / 16 (image patches)
-        self.pos_embed_lidar = nn.Parameter(torch.randn(1, self.embed_dim, 256) * .02) #done as in ViT: https://github.com/lucidrains/vit-pytorch/blob/main/vit_pytorch/vit.py, no reduction for now
+        self.pos_embed_camera = nn.Parameter(torch.randn(1, self.embed_dim, 1024) * .02) #done as in ViT: https://github.com/lucidrains/vit-pytorch/blob/main/vit_pytorch/vit.py, (14 (image hight) * 25 image width * 6 images) / 16 (image patches)
+        self.pos_embed_lidar = nn.Parameter(torch.randn(1, self.embed_dim, 1024) * .02) #done as in ViT: https://github.com/lucidrains/vit-pytorch/blob/main/vit_pytorch/vit.py, no reduction for now
 
-        self.upsample_layer = nn.ConvTranspose2d(embed_dim, 3 * 128, kernel_size=2, stride=2) # match centerpoint
-        self.upsample_layer_norm = nn.BatchNorm2d(3 * 128)
-        self.upsample_layer_act = nn.LeakyReLU(inplace=True)
+        #self.upsample_layer = nn.ConvTranspose2d(embed_dim, 3 * 128, kernel_size=2, stride=2) # match centerpoint
+        #self.upsample_layer_norm = nn.BatchNorm2d(3 * 128)
+        #self.upsample_layer_act = nn.LeakyReLU(inplace=True)
 
         self.last_norm = nn.LayerNorm(self.embed_dim)
 
         # Patch creation
         self.lidar_patch_creation = nn.Conv2d(self.embed_dim, self.embed_dim, kernel_size=4, stride=4)
-        self.lidar_patch_creation_act = nn.LeakyReLU()
+        self.lidar_patch_creation_act = nn.LeakyReLU(inplace=True)
         self.lidar_patch_creation_norm = nn.BatchNorm2d(self.embed_dim)
 
         self.camera_patch_creation = nn.Conv2d(self.embed_dim, self.embed_dim, kernel_size=4, stride=4)
-        self.camera_patch_creation_act = nn.LeakyReLU()
+        self.camera_patch_creation_act = nn.LeakyReLU(inplace=True)
         self.camera_patch_creation_norm = nn.BatchNorm2d(self.embed_dim)
 
         #Reverse patch creation
-        self.reverse_lidar_patch_creation = nn.ConvTranspose2d(self.embed_dim, self.embed_dim, kernel_size=4, stride=4)
-        self.reverse_lidar_patch_creation_act = nn.LeakyReLU()
-        self.reverse_lidar_patch_creation_norm = nn.BatchNorm2d(self.embed_dim)
+        self.reverse_lidar_patch_creation = nn.ConvTranspose2d(self.embed_dim, 3 * 128, kernel_size=4, stride=4)
+        self.reverse_lidar_patch_creation_act = nn.LeakyReLU(inplace=True)
+        self.reverse_lidar_patch_creation_norm = nn.BatchNorm2d(3 * 128)
 
 
     def create_lidar_patches(self, lidar_tensor):
@@ -221,9 +222,9 @@ class MultiHeadCrossAttentionPatches(nn.Module):
         if torch.isinf(camera_bev_features_cpu).any():
             print("Camera Tensor contains Inf values.")
         
-        lidar_bev_features = self.reduce_lidar_channel_act(self.reduce_lidar_channel_norm(self.reduce_lidar_channel(lidar_bev_features)))
+        lidar_bev_features = self.increase_lidar_features_act(self.increase_lidar_features_norm(self.increase_lidar_features(lidar_bev_features)))
 
-        camera_bev_features = self.reduce_camera_spatialy_act(self.reduce_camera_spatialy_norm(self.reduce_camera_spatialy(camera_bev_features)))
+        camera_bev_features = self.increase_camera_features_act(self.increase_camera_features_norm(self.increase_camera_features(camera_bev_features)))
         
 
         # # get patch embeddings
@@ -232,24 +233,22 @@ class MultiHeadCrossAttentionPatches(nn.Module):
 
         if self.fuse_on_lidar:
             cross_attention = self.lidar_camera_cross_attention(lidar_patch_embedding, image_patch_embedding)
-            cross_attention = self.last_norm(torch.add(cross_attention, lidar_patch_embedding))
+            # cross_attention = self.last_norm(torch.add(cross_attention, lidar_patch_embedding)) # not required as there is already a residual later
         else:
             cross_attention = self.lidar_camera_cross_attention(image_patch_embedding, lidar_patch_embedding)
-            cross_attention = self.last_norm(torch.add(cross_attention, image_patch_embedding))
+            # cross_attention = self.last_norm(torch.add(cross_attention, image_patch_embedding))
 
 
 
         # Reshape the 1d tensor back to a 2d representation used in the CenterHead
         output = cross_attention.permute(0,2,1)
-        output = output.view(output.shape[0], output.shape[1], 16, 16)  # Shape: [batch * 6, 256, 64, 64]
+        output = output.view(output.shape[0], output.shape[1], 32, 32)  # Shape: [batch * 6, 256, 64, 64]
 
         #Reverse the patch creation op
         output = self.reverse_lidar_patch_creation_act(self.reverse_lidar_patch_creation_norm(self.reverse_lidar_patch_creation(output)))
         
-        
         output = torch.add(output, lidar_bev_features)
-        #upsample to final output res
-        output = self.upsample_layer_act(self.upsample_layer_norm(self.upsample_layer(output)))
+
 
         
         return output
