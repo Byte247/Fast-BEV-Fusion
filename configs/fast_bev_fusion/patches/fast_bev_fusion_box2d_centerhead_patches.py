@@ -275,16 +275,14 @@ data = dict(
         test_mode=True,
         box_type_3d='LiDAR'))
 
-optimizer = dict(type='AdamW', lr=1e-4,
-                 weight_decay=0.01,
-                 paramwise_cfg=dict(
-                 custom_keys={'backbone': dict(lr_mult=0.1, decay_mult=1.0)}))
-# max_norm=10 is better for SECOND
+
 optimizer = dict(type='AdamW', lr=1e-4,
                  weight_decay=0.01,
                  paramwise_cfg=dict(
                  custom_keys={'backbone': dict(lr_mult=0.1, decay_mult=1.0),
                               'neck_3d': dict(lr_mult=0.05, decay_mult=1.0)})) #try to combat nan even more
+# max_norm=10 is better for SECOND
+optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
 
 # learning policy
 lr_config = dict(
