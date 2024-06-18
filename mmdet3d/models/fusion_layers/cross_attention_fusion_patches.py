@@ -27,8 +27,8 @@ class Decoder(nn.Module):
 
         attention_output, attn_weights = self.multiheadAttention(query=query, key=key, value=value, need_weights=self.show_weights)
         if self.show_weights:
-            #self.vis_attention_scores(attn_weights)
-            self.vis_mean_attention_scores(attn_weights)
+            self.vis_attention_scores(attn_weights)
+            #self.vis_mean_attention_scores(attn_weights)
 
         add_norm_0 = torch.add(attention_output, query)
         
@@ -47,7 +47,7 @@ class Decoder(nn.Module):
         mean_attention_heatmap = np.mean(attention_heatmaps, axis=0)
 
         # Reshape the mean attention heatmap to 2D
-        mean_attention_heatmap_2d = mean_attention_heatmap.reshape((64, 64))
+        mean_attention_heatmap_2d = mean_attention_heatmap.reshape((32, 32))
 
         # Plot the mean attention heatmap
         plt.figure(figsize=(10, 8))
@@ -67,9 +67,9 @@ class Decoder(nn.Module):
         fig_heatmap, axs_heatmap = plt.subplots(2)
 
         # Precompute highlighted grid outside the loop
-        highlighted_grid = np.zeros((64, 64))
+        highlighted_grid = np.zeros((32, 32))
 
-        for i in range(1000, 1200):
+        for i in range(800, 900):
             # Clear previous plot
             axs_heatmap[0].clear()
             axs_heatmap[1].clear()
@@ -77,18 +77,18 @@ class Decoder(nn.Module):
             # Reset previously highlighted point
             if i > 0:
                 prev_i = i - 1
-                prev_row_index = prev_i // 64
-                prev_col_index = prev_i % 64
+                prev_row_index = prev_i // 32
+                prev_col_index = prev_i % 32
                 highlighted_grid[prev_row_index, prev_col_index] = 0
             
             # Update highlighted grid
-            row_index = i // 64
-            col_index = i % 64
+            row_index = i // 32
+            col_index = i % 32
             highlighted_grid[row_index, col_index] = 1
             
             # Plot attention heatmap
             attention_heatmap = attention_heatmaps[i]
-            attention_heatmap_2d = attention_heatmap.reshape((64, 64))
+            attention_heatmap_2d = attention_heatmap.reshape((32, 32))
             
             axs_heatmap[0].imshow(attention_heatmap_2d, cmap='viridis', interpolation='nearest')
             axs_heatmap[0].set_xlabel('Wide Image Patch X-Axis')
@@ -99,7 +99,7 @@ class Decoder(nn.Module):
             axs_heatmap[1].imshow(highlighted_grid, cmap='viridis', interpolation='nearest')
             axs_heatmap[1].set_xlabel('Column Index')
             axs_heatmap[1].set_ylabel('Row Index')
-            axs_heatmap[1].set_title(f'Position of Token {i} in 64x64 Grid')
+            axs_heatmap[1].set_title(f'Position of Token {i} in 32x32 Grid')
             
             # Update the plots
             fig_heatmap.canvas.draw()
