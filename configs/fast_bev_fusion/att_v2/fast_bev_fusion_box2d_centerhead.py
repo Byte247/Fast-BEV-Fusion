@@ -240,7 +240,7 @@ test_pipeline = [
 
 
 data = dict(
-    samples_per_gpu=1,
+    samples_per_gpu=2,
     workers_per_gpu=4,
     train=dict(
         type='RepeatDataset',
@@ -278,15 +278,16 @@ data = dict(
 optimizer = dict(type='AdamW', lr=1e-4,
                  weight_decay=0.01,
                  paramwise_cfg=dict(
-                 custom_keys={'backbone': dict(lr_mult=0.1, decay_mult=1.0)}))
+                 custom_keys={'backbone': dict(lr_mult=0.1, decay_mult=1.0),
+                              'neck_3d': dict(lr_mult=0.05, decay_mult=1.0)})) #try to combat nan even more
 # max_norm=10 is better for SECOND
-optimizer_config = dict(grad_clip=dict(max_norm=10, norm_type=2))
+optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
 
 # learning policy
 lr_config = dict(
     policy='poly',
     warmup='linear',
-    warmup_iters=1000,
+    warmup_iters=5000,
     warmup_ratio=1e-6,
     power=1.0,
     min_lr=0,
@@ -314,5 +315,5 @@ resume_from = None
 workflow = [('train', 1)]
 
 # fp16 settings, the loss scale is specifically tuned to avoid Nan
-#fp16 = dict(loss_scale='dynamic')
+fp16 = dict(loss_scale='dynamic')
 

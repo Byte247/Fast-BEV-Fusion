@@ -27,8 +27,8 @@ class Decoder(nn.Module):
 
         attention_output, attn_weights = self.multiheadAttention(query=query, key=key, value=value, need_weights=self.show_weights)
         if self.show_weights:
-            self.vis_attention_scores(attn_weights)
-            #self.vis_mean_attention_scores(attn_weights)
+            #self.vis_attention_scores(attn_weights)
+            self.vis_mean_attention_scores(attn_weights)
 
         add_norm_0 = torch.add(attention_output, query)
         
@@ -47,7 +47,7 @@ class Decoder(nn.Module):
         mean_attention_heatmap = np.mean(attention_heatmaps, axis=0)
 
         # Reshape the mean attention heatmap to 2D
-        mean_attention_heatmap_2d = mean_attention_heatmap.reshape((32, 32))
+        mean_attention_heatmap_2d = mean_attention_heatmap.reshape((32, 32)).T
 
         # Plot the mean attention heatmap
         plt.figure(figsize=(10, 8))
@@ -69,7 +69,7 @@ class Decoder(nn.Module):
         # Precompute highlighted grid outside the loop
         highlighted_grid = np.zeros((32, 32))
 
-        for i in range(800, 900):
+        for i in range(128, 200):
             # Clear previous plot
             axs_heatmap[0].clear()
             axs_heatmap[1].clear()
@@ -88,7 +88,7 @@ class Decoder(nn.Module):
             
             # Plot attention heatmap
             attention_heatmap = attention_heatmaps[i]
-            attention_heatmap_2d = attention_heatmap.reshape((32, 32))
+            attention_heatmap_2d = attention_heatmap.reshape((32, 32)).T
             
             axs_heatmap[0].imshow(attention_heatmap_2d, cmap='viridis', interpolation='nearest')
             axs_heatmap[0].set_xlabel('Wide Image Patch X-Axis')
