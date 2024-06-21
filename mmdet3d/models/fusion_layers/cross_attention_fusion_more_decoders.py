@@ -48,7 +48,7 @@ class Decoder(nn.Module):
         mean_attention_heatmap = np.mean(attention_heatmaps, axis=0)
 
         # Reshape the mean attention heatmap to 2D
-        mean_attention_heatmap_2d = mean_attention_heatmap.reshape((64, 64))
+        mean_attention_heatmap_2d = mean_attention_heatmap.reshape((64, 64)).T
 
         # Plot the mean attention heatmap
         plt.figure(figsize=(10, 8))
@@ -89,7 +89,7 @@ class Decoder(nn.Module):
             
             # Plot attention heatmap
             attention_heatmap = attention_heatmaps[i]
-            attention_heatmap_2d = attention_heatmap.reshape((64, 64))
+            attention_heatmap_2d = attention_heatmap.reshape((64, 64)).T
             
             axs_heatmap[0].imshow(attention_heatmap_2d, cmap='viridis', interpolation='nearest')
             axs_heatmap[0].set_xlabel('Wide Image Patch X-Axis')
