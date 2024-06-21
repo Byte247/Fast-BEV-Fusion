@@ -226,5 +226,4 @@ class MultiHeadCrossAttentionV3(nn.Module):
 
         output = self.upsample_layer_act(self.upsample_layer_norm(self.upsample_layer(output)))
 
-        print(output.shape)
         return output
