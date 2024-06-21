@@ -97,6 +97,10 @@ model = dict(
         loss_bbox=dict(type='L1Loss', reduction='mean', loss_weight=0.25),
         norm_bbox=True),
     
+
+    camera_n_voxels=(256, 256, 6), 
+    camera_voxel_size=[0.4, 0.4, 1],
+
     bbox_head_2d=dict(
         type='FCOSHead',
         num_classes=10,
@@ -113,9 +117,6 @@ model = dict(
             loss_weight=1.0),
         loss_bbox=dict(type='IoULoss', loss_weight=1.0),
         loss_centerness=dict(type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0)),
-    
-    camera_n_voxels=(256, 256, 6), 
-    camera_voxel_size=[0.4, 0.4, 1],
 
     # training and testing settings for 2d
     train_cfg_2d=dict(
@@ -134,6 +135,7 @@ model = dict(
         score_thr=0.05,
         nms=dict(type='nms', iou_threshold=0.5),
         max_per_img=100),
+
 
     # model training and testing settings for the head
     train_cfg=dict(
@@ -276,7 +278,7 @@ data = dict(
         box_type_3d='LiDAR'))
 
 
-optimizer = dict(type='AdamW', lr=1e-4,
+optimizer = dict(type='AdamW', lr=1e-3,
                  weight_decay=0.01,
                  paramwise_cfg=dict(
                  custom_keys={'backbone': dict(lr_mult=0.1, decay_mult=1.0),

@@ -212,19 +212,18 @@ class MultiHeadCrossAttentionV3(nn.Module):
         image_patch_embedding = self.create_camera_patches(camera_bev_features)
         lidar_patch_embedding = self.create_lidar_patches(lidar_bev_features)
 
-        if self.fuse_on_lidar:
-            cross_attention = self.lidar_camera_cross_attention(lidar_patch_embedding, image_patch_embedding)
-            cross_attention = self.last_norm(torch.add(cross_attention, lidar_patch_embedding))
-        else:
-            cross_attention = self.lidar_camera_cross_attention(image_patch_embedding, lidar_patch_embedding)
-            cross_attention = self.last_norm(torch.add(cross_attention, image_patch_embedding))
+
+        cross_attention = self.lidar_camera_cross_attention(lidar_patch_embedding, image_patch_embedding)
+
 
         # Reshape the 1d tensor back to a 2d representation used in the CenterHead
         output = cross_attention.permute(0,2,1)
         output = output.view(output.shape[0], output.shape[1], 64, 64)  # Shape: [batch * 6, 256, 64, 64]
 
+        #residual around fusion
+        output = torch.add(output, lidar_bev_features)
+
 
         output = self.upsample_layer_act(self.upsample_layer_norm(self.upsample_layer(output)))
 
-        
         return output

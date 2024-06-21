@@ -103,6 +103,9 @@ model = dict(
         loss_bbox=dict(type='L1Loss', reduction='mean', loss_weight=0.25),
         norm_bbox=True),
     
+    camera_n_voxels=(256, 256, 6), #used for the camera features that are mapped to 3D voxels
+    camera_voxel_size=[0.4, 0.4, 1], #used for the camera features that are mapped to 3D voxels
+
     bbox_head_2d=dict(
         type='FCOSHead',
         num_classes=10,
@@ -119,9 +122,6 @@ model = dict(
             loss_weight=1.0),
         loss_bbox=dict(type='IoULoss', loss_weight=1.0),
         loss_centerness=dict(type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0)),
-    
-    camera_n_voxels=(256, 256, 6), #used for the camera features that are mapped to 3D voxels
-    camera_voxel_size=[0.4, 0.4, 1], #used for the camera features that are mapped to 3D voxels
 
     # training and testing settings for 2d
     train_cfg_2d=dict(
@@ -356,11 +356,11 @@ data = dict(
         test_mode=True,
         box_type_3d='LiDAR'))
 
-optimizer = dict(type='AdamW', lr=1e-4,
+optimizer = dict(type='AdamW', lr=1e-3,
                  weight_decay=0.01,
                  paramwise_cfg=dict(
                  custom_keys={'backbone': dict(lr_mult=0.1, decay_mult=1.0),
-                              'neck_3d': dict(lr_mult=0.05, decay_mult=0.5)})) #try to combat nan even more
+                              'neck_3d': dict(lr_mult=0.05, decay_mult=1.0)})) #try to combat nan even more
 # max_norm=10 is better for SECOND
 optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
 
@@ -368,7 +368,7 @@ optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
 lr_config = dict(
     policy='poly',
     warmup='linear',
-    warmup_iters=5000,
+    warmup_iters=1000,
     warmup_ratio=1e-6,
     power=1.0,
     min_lr=0,
