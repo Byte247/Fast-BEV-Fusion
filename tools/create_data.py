@@ -80,7 +80,7 @@ def nuscenes_data_prep(root_path,
     nuscenes_converter.export_2d_annotation(
         root_path, info_val_path, version=version)
     create_groundtruth_database(dataset_name, root_path, info_prefix,
-                                f'{out_dir}/{info_prefix}_infos_train.pkl', with_mask=True, mask_anno_path='instances_train.json')
+                                f'{out_dir}/{info_prefix}_infos_train.pkl', with_mask=True, mask_anno_path=f'{root_path}/nuscenes_infos_val_mono3d.coco.json')
 
 
 def lyft_data_prep(root_path, info_prefix, version, max_sweeps=10):
