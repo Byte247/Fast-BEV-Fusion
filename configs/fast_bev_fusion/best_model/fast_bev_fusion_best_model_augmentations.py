@@ -209,48 +209,6 @@ data_config = {
 
 file_client_args = dict(backend='disk')
 
-db_sampler = dict(
-    type="MMDataBaseSampler",
-    data_root=data_root,
-    info_path=data_root + 'nuscenes_dbinfos_train.pkl',
-    rate=1.0,
-    blending_type=['box', 'gaussian', 'poisson'],
-    depth_consistent=True,
-    check_2D_collision=True,
-    collision_thr=[0, 0.3, 0.5, 0.7],
-     prepare=dict(
-         filter_by_difficulty=[-1],
-         filter_by_min_points=dict(
-             car=5,
-             truck=5,
-             bus=5,
-             trailer=5,
-             construction_vehicle=5,
-             traffic_cone=5,
-             barrier=5,
-             motorcycle=5,
-             bicycle=5,
-             pedestrian=5)),
-     classes=class_names,
-     sample_groups=dict(
-         car=2,
-         truck=3,
-         construction_vehicle=7,
-         bus=4,
-         trailer=6,
-         barrier=2,
-         motorcycle=6,
-         bicycle=6,
-         pedestrian=2,
-         traffic_cone=2),
-     points_loader=dict(
-         type='LoadPointsFromFile',
-         coord_type='LIDAR',
-         load_dim=5,
-         use_dim=[0, 1, 2, 3, 4],
-         file_client_args=file_client_args))
-
-
 
 train_pipeline = [
     dict(type='LoadAnnotations3D',
@@ -278,7 +236,6 @@ train_pipeline = [
             dict(type='Resize', img_scale=(1600, 900), keep_ratio=True),
             dict(type='Normalize', **img_norm_cfg),
             dict(type='Pad', size_divisor=32)]),
-    dict(type='ObjectSample', db_sampler=db_sampler, sample_2d=True),
     dict(
         type='GlobalRotScaleTrans',
         rot_range=[-0.3925, 0.3925],
@@ -356,7 +313,7 @@ data = dict(
         test_mode=True,
         box_type_3d='LiDAR'))
 
-optimizer = dict(type='AdamW', lr=1e-3,
+optimizer = dict(type='AdamW', lr=1e-4,
                  weight_decay=0.01,
                  paramwise_cfg=dict(
                  custom_keys={'backbone': dict(lr_mult=0.1, decay_mult=1.0),
