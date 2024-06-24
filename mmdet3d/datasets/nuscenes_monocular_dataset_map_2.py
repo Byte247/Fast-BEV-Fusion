@@ -66,6 +66,7 @@ class NuScenesMultiView_Map_MultiModalDataset(NuScenesMultiViewMultiModalDataset
         data_info = super().get_data_info(index)
         sample_token = data_info['sample_idx']
 
+
         if 'ann_info' in data_info:
             # get bev segm map
             bev_seg_gt = self._get_map_by_sample_token(sample_token)  # 200, 200, 2

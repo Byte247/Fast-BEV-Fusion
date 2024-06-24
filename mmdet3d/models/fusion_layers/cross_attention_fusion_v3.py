@@ -27,8 +27,8 @@ class Decoder(nn.Module):
 
         attention_output, attn_weights = self.multiheadAttention(query=query, key=key, value=value, need_weights=self.show_weights)
         if self.show_weights:
-            #self.vis_attention_scores(attn_weights)
-            self.vis_mean_attention_scores(attn_weights)
+            self.vis_attention_scores(attn_weights)
+            #self.vis_mean_attention_scores(attn_weights)
 
         add_norm_0 = torch.add(attention_output, query)
         
