@@ -200,7 +200,7 @@ def main():
 
     # log some basic info
     logger.info(f'Distributed training: {distributed}')
-    logger.info(f'Config:\n{cfg.pretty_text}')
+    #logger.info(f'Config:\n{cfg.pretty_text}')
 
     # set random seeds
     if args.seed is not None:
@@ -216,17 +216,17 @@ def main():
         train_cfg=cfg.get('train_cfg'),
         test_cfg=cfg.get('test_cfg'))
     model.init_weights()
-    logger.info(f'Model:\n{model}')
+    # logger.info(f'Model:\n{model}')
     
-    frozen_det = cfg.get('frozen_det', False)
-    if frozen_det:
-        print('### freeze detection branch ###')
-        model.neck.eval()
-        model.neck_fuse.eval()
-        model.neck_3d.eval()
-        for name, param in model.named_parameters():
-            if not 'seg' in name:
-                param.requires_grad = False
+    # frozen_det = cfg.get('frozen_det', False)
+    # if frozen_det:
+    #     print('### freeze detection branch ###')
+    #     model.neck.eval()
+    #     model.neck_fuse.eval()
+    #     model.neck_3d.eval()
+    #     for name, param in model.named_parameters():
+    #         if not 'seg' in name:
+    #             param.requires_grad = False
 
     datasets = [build_dataset(cfg.data.train)]
     if args.debug:

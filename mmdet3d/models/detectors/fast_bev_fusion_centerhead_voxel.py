@@ -6,7 +6,7 @@ import torch.utils.checkpoint as cp
 
 from mmdet.models import DETECTORS
 from mmseg.models import build_head as build_seg_head
-from mmdet.models.detectors import BaseDetector
+from .mvx_two_stage import MVXTwoStageDetector
 from mmdet3d.core import bbox3d2result
 from mmseg.ops import resize
 from mmcv.runner import get_dist_info, auto_fp16
@@ -20,7 +20,7 @@ import ipdb  # noqa
 
 
 @DETECTORS.register_module()
-class FastBEVFusionCenterhead(BaseDetector):
+class FastBEVFusionCenterheadVoxel(MVXTwoStageDetector):
     def __init__(
         self,
         backbone,
@@ -128,6 +128,8 @@ class FastBEVFusionCenterhead(BaseDetector):
         return torch.stack(projection)
 
     def extract_feat(self, img, img_metas, mode):
+
+        print(f"img: {img}")
         batch_size = img.shape[0]
         img = img.reshape(
             [-1] + list(img.shape)[2:]
@@ -311,7 +313,7 @@ class FastBEVFusionCenterhead(BaseDetector):
 
         
         #fuse lidar BEV and camera BEV features
-        feature_bev = self.fusion_module(lidar_features[0], feature_bev[0]) # this framework requires features inside lists for some reason. 
+        feature_bev = self.fusion_module(lidar_features, feature_bev[0]) # this framework requires features inside lists for some reason. 
         feature_bev =[feature_bev]
 
         assert self.bbox_head is not None or self.seg_head is not None
@@ -454,7 +456,7 @@ class FastBEVFusionCenterhead(BaseDetector):
         lidar_features = self.extract_pts_feat(points)
 
         #fuse lidar BEV and camera BEV features
-        feature_bev = self.fusion_module(lidar_features[0], feature_bev[0])
+        feature_bev = self.fusion_module(lidar_features, feature_bev[0])
         feature_bev =[feature_bev]
 
 

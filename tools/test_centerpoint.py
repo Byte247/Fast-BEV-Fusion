@@ -201,7 +201,7 @@ def main():
             print('### test camera extrinsic robustness ###')
         cfg.model.extrinsic_noise = args.extrinsic_noise
 
-    cfg.model.train_cfg = None
+    #cfg.model.train_cfg = None
     model = build_model(cfg.model, test_cfg=cfg.get('test_cfg'))
     fp16_cfg = cfg.get('fp16', None)
     if fp16_cfg is not None:

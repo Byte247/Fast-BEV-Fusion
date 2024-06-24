@@ -128,6 +128,8 @@ class FastBEVFusionCenterheadLarge(BaseDetector):
         return torch.stack(projection)
 
     def extract_feat(self, img, img_metas, mode):
+
+        print(f"img: {img}")
         batch_size = img.shape[0]
         img = img.reshape(
             [-1] + list(img.shape)[2:]
@@ -269,7 +271,7 @@ class FastBEVFusionCenterheadLarge(BaseDetector):
 
 
 
-    @auto_fp16(apply_to=('img', ))
+    @auto_fp16(apply_to=('img', 'points'))
     def forward(self, img, img_metas, return_loss=True, **kwargs):
         """Calls either :func:`forward_train` or :func:`forward_test` depending
         on whether ``return_loss`` is ``True``.
