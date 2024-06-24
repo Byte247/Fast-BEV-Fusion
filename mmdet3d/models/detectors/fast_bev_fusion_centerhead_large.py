@@ -128,8 +128,7 @@ class FastBEVFusionCenterheadLarge(BaseDetector):
         return torch.stack(projection)
 
     def extract_feat(self, img, img_metas, mode):
-
-        print(f"img: {img}")
+        
         batch_size = img.shape[0]
         img = img.reshape(
             [-1] + list(img.shape)[2:]
