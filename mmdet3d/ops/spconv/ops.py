@@ -112,6 +112,10 @@ def indice_conv(features,
                 num_activate_out,
                 inverse=False,
                 subm=False):
+
+    if features.dtype == torch.float16:
+        filters = filters.to(torch.float16)
+
     if filters.dtype == torch.float32:
         return sparse_conv_ext.indice_conv_fp32(features, filters,
                                                 indice_pairs, indice_pair_num,

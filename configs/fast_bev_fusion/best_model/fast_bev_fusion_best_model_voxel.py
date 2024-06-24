@@ -40,49 +40,23 @@ model = dict(
         max_num_points=10, voxel_size=voxel_size, max_voxels=(90000, 120000), point_cloud_range=point_cloud_range),
     pts_voxel_encoder=dict(type='HardSimpleVFE', num_features=5),
     pts_middle_encoder=dict(
-        type='SparseEncoder',
+        type='SpMiddleResNetFHD',
         in_channels=5,
-        sparse_shape=[41, 1024, 1024],
-        output_channels=128,
-        order=('conv', 'norm', 'act'),
-        encoder_channels=((16, 16, 32), (32, 32, 64), (64, 64, 128), (128,
-                                                                      128)),
-        encoder_paddings=((0, 0, 1), (0, 0, 1), (0, 0, [0, 1, 1]), (0, 0)),
-        block_type='basicblock'),
+        sparse_shape=[41, 1024, 1024]),
 
-    pts_backbone=dict(
-        type='SECOND',
-        in_channels=256,
-        out_channels=[128, 256],
-        layer_nums=[5, 5],
-        layer_strides=[1, 2],
-        norm_cfg=dict(type='BN', eps=1e-3, momentum=0.01),
-        conv_cfg=dict(type='Conv2d', bias=False)),
     pts_neck=dict(
-        type='SECONDFPN',
-        in_channels=[128, 256],
-        out_channels=[256, 256],
-        upsample_strides=[1, 2],
-        norm_cfg=dict(type='BN', eps=1e-3, momentum=0.01),
-        upsample_cfg=dict(type='deconv', bias=False),
-        use_conv_for_no_stride=True),
-
-    # pts_backbone=dict(type="PointResNet34V3",first_max_pool=False, in_channels = 256),
-
-    # pts_neck=dict(
-    #     type="RPNV3",
-    #     layer_nums=[5, 5],
-    #     ds_layer_strides=[1, 2],
-    #     ds_num_filters=[256, 256],
-    #     us_layer_strides=[1, 2],
-    #     us_num_filters=[128, 128], # default 128x128
-    #     num_input_features=[256,512], #num features in the feature maps block 4 and 5 that are feed into the structure similar to "FPN"
-    #     freeze_layers = False,
-    # ),
+        type="RPNV4",
+        layer_nums=[5, 5],
+        ds_layer_strides=[1, 2],
+        ds_num_filters=[128, 256],
+        us_layer_strides=[1, 2],
+        us_num_filters=[128, 256],
+        num_input_features=256,
+    ),
 
 
     #Fusion layer
-    fusion_module = dict(type='MultiHeadCrossAttentionV3',embed_dim = 512, num_heads=8, dropout = 0.1, fuse_on_lidar=True),
+    fusion_module = dict(type='MultiHeadCrossAttentionVoxel',embed_dim = 512, num_heads=8, dropout = 0.1),
 
     bbox_head= dict(
         type='CenterHead',
@@ -164,7 +138,7 @@ model = dict(
     train_cfg=dict(
             grid_size=[1024, 1024, 40],
             voxel_size=voxel_size,
-            out_size_factor=8,
+            out_size_factor=4,
             dense_reg=1,
             gaussian_overlap=0.1,
             max_objs=500,
@@ -178,7 +152,7 @@ model = dict(
             min_radius=[4, 12, 10, 1, 0.85, 0.175],
             score_threshold=0.1,
             pc_range=[-51.2, -51.2],
-            out_size_factor=8,
+            out_size_factor=4,
             voxel_size=voxel_size[:2],
             nms_type='rotate',
             pre_max_size=1000,
@@ -208,15 +182,15 @@ file_client_args = dict(backend='disk')
 
 
 data_config = {
-    'src_size': (900, 1600),
-    'input_size': (900, 1600),
+    'src_size': (450, 800),
+    'input_size': (450, 800),
     # train-aug
     'resize': (-0.06, 0.11),
     'crop': (-0.05, 0.05),
     'rot': (-5.4, 5.4),
     'flip': True,
     # test-aug
-    'test_input_size': (900, 1600),
+    'test_input_size': (450, 800),
     'test_resize': 0.0,
     'test_rotate': 0.0,
     'test_flip': False,
@@ -252,7 +226,7 @@ train_pipeline = [
         n_images=6,
         transforms=[
             dict(type='LoadImageFromFile'),
-            dict(type='Resize', img_scale=(1600, 900), keep_ratio=True),
+            dict(type='Resize', img_scale=(800, 450), keep_ratio=True),
             dict(type='Normalize', **img_norm_cfg),
             dict(type='Pad', size_divisor=32)]),
     dict(
@@ -335,8 +309,8 @@ data = dict(
 optimizer = dict(type='AdamW', lr=1e-4,
                  weight_decay=0.01,
                  paramwise_cfg=dict(
-                 custom_keys={'backbone': dict(lr_mult=0.1, decay_mult=1.0),
-                              'neck_3d': dict(lr_mult=0.1, decay_mult=1.0)})) #try to combat nan even more
+                 custom_keys={'backbone': dict(lr_mult=0.1, decay_mult=1.0)}))
+
 # max_norm=10 is better for SECOND
 optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
 
@@ -357,7 +331,7 @@ runner = dict(type='EpochBasedRunner', max_epochs=20)
 #total_epochs = 20
 checkpoint_config = dict(interval=1)
 log_config = dict(
-    interval=500,
+    interval=10,
     hooks=[
         dict(type='TextLoggerHook'),
         dict(type='TensorboardLoggerHook'),

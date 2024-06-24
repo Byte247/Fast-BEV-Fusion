@@ -6,7 +6,7 @@ import torch.utils.checkpoint as cp
 
 from mmdet.models import DETECTORS
 from mmseg.models import build_head as build_seg_head
-from .mvx_two_stage import MVXTwoStageDetector
+from mmdet.models.detectors import BaseDetector
 from mmdet3d.core import bbox3d2result
 from mmseg.ops import resize
 from mmcv.runner import get_dist_info, auto_fp16
@@ -20,7 +20,7 @@ import ipdb  # noqa
 
 
 @DETECTORS.register_module()
-class FastBEVFusionCenterheadVoxel(MVXTwoStageDetector):
+class FastBEVFusionCenterheadVoxel(BaseDetector):
     def __init__(
         self,
         backbone,
@@ -34,7 +34,6 @@ class FastBEVFusionCenterheadVoxel(MVXTwoStageDetector):
         seg_head=None,
         pts_voxel_encoder=None,
         pts_middle_encoder=None,
-        pts_backbone=None,
         pts_neck=None,
         fusion_module=None,
         bbox_head_2d=None,
@@ -55,7 +54,6 @@ class FastBEVFusionCenterheadVoxel(MVXTwoStageDetector):
         self.pts_voxel_encoder = builder.build_voxel_encoder(pts_voxel_encoder)
         self.pts_middle_encoder= builder.build_middle_encoder(
                 pts_middle_encoder)
-        self.pts_backbone = builder.build_backbone(pts_backbone)
         self.pts_neck = builder.build_neck(pts_neck)
 
         #Fusion
@@ -129,7 +127,6 @@ class FastBEVFusionCenterheadVoxel(MVXTwoStageDetector):
 
     def extract_feat(self, img, img_metas, mode):
 
-        print(f"img: {img}")
         batch_size = img.shape[0]
         img = img.reshape(
             [-1] + list(img.shape)[2:]
@@ -227,6 +224,7 @@ class FastBEVFusionCenterheadVoxel(MVXTwoStageDetector):
 
         return x, None, features_2d
     
+    @auto_fp16(apply_to=('pts'))
     def extract_pts_feat(self, pts):
         """Extract features of points."""
 
@@ -236,8 +234,8 @@ class FastBEVFusionCenterheadVoxel(MVXTwoStageDetector):
         batch_size = coors[-1, 0] + 1
  
         x = self.pts_middle_encoder(voxel_features, coors, batch_size)
-        x = self.pts_backbone(x)
-        
+        #after this again dense tensor
+    
         x = self.pts_neck(x)
 
         return x
@@ -294,16 +292,15 @@ class FastBEVFusionCenterheadVoxel(MVXTwoStageDetector):
             return self.forward_train(img, img_metas, **kwargs)
         else:
             return self.forward_test(img, img_metas, **kwargs)
-
+    
+    @auto_fp16(apply_to=('img', 'points'))
     def forward_train(
         self, img, img_metas, gt_bboxes_3d, gt_labels_3d, gt_bev_seg=None, points=None, **kwargs
     ):  
         
-        
         lidar_features = self.extract_pts_feat(points)
 
         feature_bev, valids, features_2d = self.extract_feat(img, img_metas, "train")
-
 
         """
         feature_bev: [(1, 256, 100, 100)]
