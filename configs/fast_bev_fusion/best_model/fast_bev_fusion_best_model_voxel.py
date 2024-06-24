@@ -50,7 +50,7 @@ model = dict(
         ds_layer_strides=[1, 2],
         ds_num_filters=[128, 256],
         us_layer_strides=[1, 2],
-        us_num_filters=[128, 256],
+        us_num_filters=[256, 256],
         num_input_features=256,
     ),
 
@@ -182,15 +182,15 @@ file_client_args = dict(backend='disk')
 
 
 data_config = {
-    'src_size': (450, 800),
-    'input_size': (450, 800),
+    'src_size': (900, 1600),
+    'input_size': (900, 1600),
     # train-aug
     'resize': (-0.06, 0.11),
     'crop': (-0.05, 0.05),
     'rot': (-5.4, 5.4),
     'flip': True,
     # test-aug
-    'test_input_size': (450, 800),
+    'test_input_size': (900, 1600),
     'test_resize': 0.0,
     'test_rotate': 0.0,
     'test_flip': False,
@@ -226,7 +226,7 @@ train_pipeline = [
         n_images=6,
         transforms=[
             dict(type='LoadImageFromFile'),
-            dict(type='Resize', img_scale=(800, 450), keep_ratio=True),
+            dict(type='Resize', img_scale=(1600, 900), keep_ratio=True),
             dict(type='Normalize', **img_norm_cfg),
             dict(type='Pad', size_divisor=32)]),
     dict(
@@ -272,7 +272,7 @@ test_pipeline = [
 
 
 data = dict(
-    samples_per_gpu=1,
+    samples_per_gpu=4,
     workers_per_gpu=4,
     train=dict(
         type='CBGSDataset',
@@ -331,7 +331,7 @@ runner = dict(type='EpochBasedRunner', max_epochs=20)
 #total_epochs = 20
 checkpoint_config = dict(interval=1)
 log_config = dict(
-    interval=10,
+    interval=500,
     hooks=[
         dict(type='TextLoggerHook'),
         dict(type='TensorboardLoggerHook'),

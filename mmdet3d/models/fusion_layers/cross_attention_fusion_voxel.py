@@ -141,7 +141,7 @@ class MultiHeadCrossAttentionVoxel(nn.Module):
         self.reduce_camera_spatialy_norm = nn.BatchNorm2d(self.embed_dim)
         self.reduce_camera_spatialy_act = nn.LeakyReLU(inplace=True)
 
-        self.reduce_lidar_spatially = nn.Conv2d(384, 512, kernel_size=3, stride=2, padding=1)
+        self.reduce_lidar_spatially = nn.Conv2d(512, 512, kernel_size=3, stride=2, padding=1)
         self.reduce_lidar_spatially_norm = nn.BatchNorm2d(512)
         self.reduce_lidar_spatially_act = nn.LeakyReLU()
 
