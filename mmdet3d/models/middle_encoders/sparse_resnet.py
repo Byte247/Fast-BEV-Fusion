@@ -163,6 +163,11 @@ class SpMiddleResNetFHD(nn.Module):
         x_conv3 = self.conv3(x_conv2)
         x_conv4 = self.conv4(x_conv3)
 
+
+        second_output = x_conv3.dense()
+        N, C, D, H, W = second_output.shape
+        second_output = second_output.view(N, C * D, H, W)
+
         ret = self.extra_conv(x_conv4)
 
         ret = ret.dense()
@@ -177,4 +182,4 @@ class SpMiddleResNetFHD(nn.Module):
         #     'conv4': x_conv4,
         # }
 
-        return ret #, multi_scale_voxel_features
+        return [ret, second_output] #, multi_scale_voxel_features

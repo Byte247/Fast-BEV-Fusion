@@ -141,9 +141,18 @@ class MultiHeadCrossAttentionVoxel(nn.Module):
         self.reduce_camera_spatialy_norm = nn.BatchNorm2d(self.embed_dim)
         self.reduce_camera_spatialy_act = nn.LeakyReLU(inplace=True)
 
-        self.reduce_lidar_spatially = nn.Conv2d(512, 512, kernel_size=3, stride=2, padding=1)
+        self.reduce_lidar_spatially = nn.Conv2d(384, self.embed_dim, kernel_size=3, stride=2, padding=1)
         self.reduce_lidar_spatially_norm = nn.BatchNorm2d(512)
         self.reduce_lidar_spatially_act = nn.LeakyReLU()
+
+
+        self.lidar_conv_0 = nn.Conv2d(self.embed_dim, self.embed_dim, kernel_size=3, stride=1, padding=1)
+        self.lidar_conv_0_norm = nn.BatchNorm2d(self.embed_dim)
+        self.lidar_conv_0_act = nn.LeakyReLU()
+
+        self.reduce_lidar_2 = nn.Conv2d(self.embed_dim, self.embed_dim, kernel_size=3, stride=2, padding=1)
+        self.reduce_lidar_2_act = nn.LeakyReLU()
+        self.reduce_lidar_2_norm = nn.BatchNorm2d(self.embed_dim)
 
         self.lidar_camera_cross_attention = Decoder(self.embed_dim, hidden_dim=self.embed_dim * 2, num_heads= num_heads, dropout=dropout, show_weights=False)
         
@@ -159,7 +168,6 @@ class MultiHeadCrossAttentionVoxel(nn.Module):
         self.upsample_layer_norm_2 = nn.BatchNorm2d(384)
         self.upsample_layer_act_2 = nn.LeakyReLU(inplace=True)
 
-        self.last_norm = nn.LayerNorm(self.embed_dim)
 
 
     def create_lidar_patches(self, lidar_tensor):
@@ -208,28 +216,33 @@ class MultiHeadCrossAttentionVoxel(nn.Module):
 
         camera_bev_features = self.reduce_camera_spatialy_act(self.reduce_camera_spatialy_norm(self.reduce_camera_spatialy(camera_bev_features)))
 
-        
         reduced_lidar_bev_features = self.reduce_lidar_spatially_act(self.reduce_lidar_spatially_norm(self.reduce_lidar_spatially(lidar_bev_features)))
+
+        reduced_lidar_bev_features = self.lidar_conv_0_act(self.lidar_conv_0_norm(self.lidar_conv_0(reduced_lidar_bev_features)))
+
+        reduce_lidar_twice_bev_features = self.reduce_lidar_2_act(self.reduce_lidar_2_norm(self.reduce_lidar_2(reduced_lidar_bev_features)))
+
+        
 
         # # get patch embeddings
         image_patch_embedding = self.create_camera_patches(camera_bev_features)
-        lidar_patch_embedding = self.create_lidar_patches(reduced_lidar_bev_features)
+        lidar_patch_embedding = self.create_lidar_patches(reduce_lidar_twice_bev_features)
 
 
         cross_attention = self.lidar_camera_cross_attention(lidar_patch_embedding, image_patch_embedding)
 
 
         # Reshape the 1d tensor back to a 2d representation used in the CenterHead
-        output = cross_attention.permute(0,2,1)
-        output = output.view(output.shape[0], output.shape[1], 64, 64)  # Shape: [batch * 6, 256, 64, 64]
+        cross_attention = cross_attention.permute(0,2,1)
+        cross_attention = cross_attention.view(cross_attention.shape[0], cross_attention.shape[1], 64, 64)  # Shape: [batch * 6, 256, 64, 64]
 
 
-        upsampled_once = self.upsample_layer_act(self.upsample_layer_norm(self.upsample_layer(output)))
+        upsampled_once = self.upsample_layer_act(self.upsample_layer_norm(self.upsample_layer(cross_attention)))
 
         #residual around fusion
-        upsampled_once = torch.add(upsampled_once, lidar_bev_features)
+        upsampled_once = torch.add(upsampled_once, reduced_lidar_bev_features)
 
         output = self.upsample_layer_act_2(self.upsample_layer_norm_2(self.upsample_layer_2(upsampled_once)))
-
+        output = torch.add(output, lidar_bev_features)
 
         return output

@@ -44,14 +44,24 @@ model = dict(
         in_channels=5,
         sparse_shape=[41, 1024, 1024]),
 
+    # pts_neck=dict(
+    #     type="RPNV4",
+    #     layer_nums=[5, 5],
+    #     ds_layer_strides=[1, 2],
+    #     ds_num_filters=[128, 256],
+    #     us_layer_strides=[1, 2],
+    #     us_num_filters=[256, 256],
+    #     num_input_features=256,
+    # ),
+
     pts_neck=dict(
-        type="RPNV4",
+        type="RPNV3",
         layer_nums=[5, 5],
         ds_layer_strides=[1, 2],
-        ds_num_filters=[128, 256],
+        ds_num_filters=[256, 256],
         us_layer_strides=[1, 2],
-        us_num_filters=[256, 256],
-        num_input_features=256,
+        us_num_filters=[256, 128], # default 128x128
+        num_input_features=[704,256], #num features in the feature maps blocks that are feed into the structure similar to "FPN"
     ),
 
 
@@ -181,27 +191,6 @@ img_norm_cfg = dict(mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375],
 file_client_args = dict(backend='disk')
 
 
-data_config = {
-    'src_size': (900, 1600),
-    'input_size': (900, 1600),
-    # train-aug
-    'resize': (-0.06, 0.11),
-    'crop': (-0.05, 0.05),
-    'rot': (-5.4, 5.4),
-    'flip': True,
-    # test-aug
-    'test_input_size': (900, 1600),
-    'test_resize': 0.0,
-    'test_rotate': 0.0,
-    'test_flip': False,
-    # top, right, bottom, left
-    'pad': (0, 0, 0, 0),
-    'pad_divisor': 32,
-    'pad_color': (0, 0, 0),
-}
-
-file_client_args = dict(backend='disk')
-
 
 train_pipeline = [
     dict(type='LoadAnnotations3D',
@@ -222,6 +211,13 @@ train_pipeline = [
         pad_empty_sweeps=True,
         remove_close=True),
     dict(
+        type='GlobalRotScaleTrans',
+        rot_range=[-0.3925, 0.3925],
+        scale_ratio_range=[0.95, 1.05],
+        translation_std=[0.05, 0.05, 0.05],
+        update_img2lidar=True),
+
+    dict(
         type='MultiViewPipeline',
         n_images=6,
         transforms=[
@@ -229,19 +225,12 @@ train_pipeline = [
             dict(type='Resize', img_scale=(1600, 900), keep_ratio=True),
             dict(type='Normalize', **img_norm_cfg),
             dict(type='Pad', size_divisor=32)]),
-    dict(
-        type='GlobalRotScaleTrans',
-        rot_range=[-0.3925, 0.3925],
-        scale_ratio_range=[0.95, 1.05],
-        translation_std=[0.05, 0.05, 0.05],
-        update_img2lidar=True),
     
-    dict(type='RandomAugImageMultiViewImage', data_config=data_config),
+    dict(type='PointShuffle'),
     dict(type='PointsRangeFilter', point_cloud_range=point_cloud_range),
     dict(type='ObjectRangeFilter', point_cloud_range=point_cloud_range),
     dict(type='ObjectNameFilter', classes=class_names),
     dict(type='KittiSetOrigin', point_cloud_range=point_cloud_range),
-    dict(type='PointShuffle'),
     dict(type='DefaultFormatBundle3D', class_names=class_names),
     dict(type='Collect3D', keys=['img', 'gt_bboxes', 'gt_labels', 
                                  'gt_bboxes_3d', 'gt_labels_3d',
@@ -272,7 +261,7 @@ test_pipeline = [
 
 
 data = dict(
-    samples_per_gpu=4,
+    samples_per_gpu=1,
     workers_per_gpu=4,
     train=dict(
         type='CBGSDataset',
@@ -331,7 +320,7 @@ runner = dict(type='EpochBasedRunner', max_epochs=20)
 #total_epochs = 20
 checkpoint_config = dict(interval=1)
 log_config = dict(
-    interval=500,
+    interval=10,
     hooks=[
         dict(type='TextLoggerHook'),
         dict(type='TensorboardLoggerHook'),
