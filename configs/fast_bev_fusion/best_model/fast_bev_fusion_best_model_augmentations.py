@@ -61,7 +61,6 @@ model = dict(
         freeze_layers = False,
     ),
 
-
     #Fusion layer
     fusion_module = dict(type='MultiHeadCrossAttentionV3',embed_dim = 512, num_heads=8, dropout = 0.1, fuse_on_lidar=True),
 
@@ -141,6 +140,7 @@ model = dict(
         nms=dict(type='nms', iou_threshold=0.5),
         max_per_img=100),
 
+
     # model training and testing settings for the head
     train_cfg=dict(
             grid_size=[512, 512, 1],
@@ -167,6 +167,8 @@ model = dict(
             nms_thr=0.2)
 )
 
+
+
 # For nuScenes we usually do 10-class detection
 class_names = [
     'car', 'truck', 'trailer', 'bus', 'construction_vehicle', 'bicycle',
@@ -185,19 +187,16 @@ input_modality = dict(
 
 img_norm_cfg = dict(mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 
-file_client_args = dict(backend='disk')
-
-
 data_config = {
-    'src_size': (900, 1600),
-    'input_size': (900, 1600),
+    'src_size': (1600, 900),
+    'input_size': (1600, 900),
     # train-aug
     'resize': (-0.06, 0.11),
     'crop': (-0.05, 0.05),
     'rot': (-5.4, 5.4),
     'flip': True,
     # test-aug
-    'test_input_size': (900, 1600),
+    'test_input_size': (1600, 900),
     'test_resize': 0.0,
     'test_rotate': 0.0,
     'test_flip': False,
@@ -207,16 +206,11 @@ data_config = {
     'pad_color': (0, 0, 0),
 }
 
-file_client_args = dict(backend='disk')
-
-
 train_pipeline = [
     dict(type='LoadAnnotations3D',
          with_bbox=True,
          with_label=True,
-         with_bev_seg=False,
-         with_bbox_3d=True,
-         with_label_3d=True),
+         with_bev_seg=False),
      dict(
         type='LoadPointsFromFile',
         coord_type='LIDAR',
@@ -228,6 +222,14 @@ train_pipeline = [
         use_dim=[0, 1, 2, 3, 4],
         pad_empty_sweeps=True,
         remove_close=True),
+    dict(type='PointsRangeFilter', point_cloud_range=point_cloud_range),
+    dict(type='PointShuffle'),
+    dict(
+        type='GlobalRotScaleTrans',
+        rot_range=[-0.3925, 0.3925],
+        scale_ratio_range=[0.95, 1.05],
+        translation_std=[0.05, 0.05, 0.05],
+        update_img2lidar=True),
     dict(
         type='MultiViewPipeline',
         n_images=6,
@@ -236,19 +238,10 @@ train_pipeline = [
             dict(type='Resize', img_scale=(1600, 900), keep_ratio=True),
             dict(type='Normalize', **img_norm_cfg),
             dict(type='Pad', size_divisor=32)]),
-    dict(
-        type='GlobalRotScaleTrans',
-        rot_range=[-0.3925, 0.3925],
-        scale_ratio_range=[0.95, 1.05],
-        translation_std=[0.05, 0.05, 0.05],
-        update_img2lidar=True),
-    
     dict(type='RandomAugImageMultiViewImage', data_config=data_config),
-    dict(type='PointsRangeFilter', point_cloud_range=point_cloud_range),
     dict(type='ObjectRangeFilter', point_cloud_range=point_cloud_range),
     dict(type='ObjectNameFilter', classes=class_names),
     dict(type='KittiSetOrigin', point_cloud_range=point_cloud_range),
-    dict(type='PointShuffle'),
     dict(type='DefaultFormatBundle3D', class_names=class_names),
     dict(type='Collect3D', keys=['img', 'gt_bboxes', 'gt_labels', 
                                  'gt_bboxes_3d', 'gt_labels_3d',
@@ -316,8 +309,7 @@ data = dict(
 optimizer = dict(type='AdamW', lr=1e-4,
                  weight_decay=0.01,
                  paramwise_cfg=dict(
-                 custom_keys={'backbone': dict(lr_mult=0.1, decay_mult=1.0),
-                              'neck_3d': dict(lr_mult=0.1, decay_mult=1.0)})) #try to combat nan even more
+                 custom_keys={'backbone': dict(lr_mult=0.1, decay_mult=1.0)})) #try to combat nan even more
 # max_norm=10 is better for SECOND
 optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
 
@@ -325,7 +317,7 @@ optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
 lr_config = dict(
     policy='poly',
     warmup='linear',
-    warmup_iters=2000,
+    warmup_iters=1000,
     warmup_ratio=1e-6,
     power=1.0,
     min_lr=0,
@@ -338,7 +330,7 @@ runner = dict(type='EpochBasedRunner', max_epochs=20)
 #total_epochs = 20
 checkpoint_config = dict(interval=1)
 log_config = dict(
-    interval=500,
+    interval=10,
     hooks=[
         dict(type='TextLoggerHook'),
         dict(type='TensorboardLoggerHook'),
