@@ -98,7 +98,7 @@ class M2BevNeck(nn.Module):
                 norm_cfg=norm_cfg,
                 act_cfg=dict(type='ReLU', inplace=True)))
         self.model = nn.Sequential(*model)
-    @force_fp32()
+    @auto_fp16()
     def forward(self, x):
         """Forward function.
 
