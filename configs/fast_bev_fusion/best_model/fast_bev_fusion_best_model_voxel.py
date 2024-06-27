@@ -56,7 +56,7 @@ model = dict(
 
     pts_neck=dict(
         type="RPNV3",
-        layer_nums=[5, 5],
+        layer_nums=[2, 2],
         ds_layer_strides=[1, 2],
         ds_num_filters=[256, 256],
         us_layer_strides=[1, 2],
