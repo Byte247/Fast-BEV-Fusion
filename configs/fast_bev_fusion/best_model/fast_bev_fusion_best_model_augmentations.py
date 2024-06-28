@@ -291,7 +291,7 @@ optimizer = dict(type='AdamW', lr=1e-4,
                  weight_decay=0.05,
                  paramwise_cfg=dict(
                  custom_keys={'backbone': dict(lr_mult=0.1, decay_mult=1.0),
-                              'neck_3d': dict(lr_mult=0.5, decay_mult=0.5)})) #try to combat nan even more
+                              'neck_3d': dict(lr_mult=1.0, decay_mult=0.5)})) #try to combat nan even more
 # max_norm=10 is better for SECOND
 optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
 
@@ -299,7 +299,7 @@ optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
 lr_config = dict(
     policy='poly',
     warmup='linear',
-    warmup_iters=1000,
+    warmup_iters=2000,
     warmup_ratio=1e-6,
     power=1.0,
     min_lr=0,
