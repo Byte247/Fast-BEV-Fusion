@@ -29,7 +29,7 @@ model = dict(
 
     neck_3d=dict(
         type='M2BevNeckLeakyRelu',
-        in_channels=96*12,
+        in_channels=576,
         out_channels=256,
         num_layers=6,
         stride=2,
