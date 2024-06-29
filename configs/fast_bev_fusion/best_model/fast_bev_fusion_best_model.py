@@ -25,7 +25,7 @@ model = dict(
         num_outs=4),
     neck_fuse=dict(in_channels=256, out_channels=64),
     neck_3d=dict(
-        type='M2BevNeck',
+        type='M2BevNeckLeakyRelu',
         in_channels=384,
         out_channels=256,
         num_layers=6,
@@ -279,10 +279,12 @@ data = dict(
         test_mode=True,
         box_type_3d='LiDAR'))
 
-optimizer = dict(type='AdamW', lr=1e-4,
+optimizer = dict(type='AdamW', lr=1e-3,
                  weight_decay=0.05,
                  paramwise_cfg=dict(
-                 custom_keys={'backbone': dict(lr_mult=0.1, decay_mult=1.0)})) #try to combat nan even more
+                 custom_keys={'backbone': dict(lr_mult=0.1, decay_mult=1.0),
+                              'pos_embed_camera': dict(lr_mult= 1.0, decay_mult=0.),
+                              'pos_embed_lidar': dict(lr_mult= 1.0, decay_mult=0.)})) #try to combat nan even more
 # max_norm=10 is better for SECOND
 optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
 
