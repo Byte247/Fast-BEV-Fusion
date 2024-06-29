@@ -175,11 +175,5 @@ class SpMiddleResNetFHD(nn.Module):
         N, C, D, H, W = ret.shape
         ret = ret.view(N, C * D, H, W)
 
-        # multi_scale_voxel_features = {
-        #     'conv1': x_conv1,
-        #     'conv2': x_conv2,
-        #     'conv3': x_conv3,
-        #     'conv4': x_conv4,
-        # }
 
         return [ret, second_output] #, multi_scale_voxel_features
