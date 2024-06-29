@@ -372,21 +372,34 @@ class FastBEVFusionCenterheadVoxel(BaseDetector):
                     sliced_2d_features, img_metas_2d, gt_bboxes, gt_labels
                 )
                 
+                # Check for NaN in loss_2d and handle it
+                for key, value in loss_2d.items():
+                    if torch.isnan(value).any():
+                        print(f"NaN detected in {key} for batch_id {batch_id}, replacing with zero.")
+                        loss_2d[key] = torch.zeros_like(value)
+
                 if batch_id == 0:
-                
                     overall_2d_loss.update(loss_2d)
                 else:
-                    overall_2d_loss["loss_cls"] += loss_2d["loss_cls"]
-                    overall_2d_loss["loss_bbox"] += loss_2d["loss_bbox"]
-                    overall_2d_loss["loss_centerness"] += loss_2d["loss_centerness"]
+                    for key in overall_2d_loss:
+                        overall_2d_loss[key] += loss_2d[key]
 
-                # Normalize the loss by batch size
-                overall_2d_loss["loss_cls"] /= batch_size
-                overall_2d_loss["loss_bbox"] /= batch_size
-                overall_2d_loss["loss_centerness"] /= batch_size
+            # Normalize the loss by batch size outside the loop
+            for key in overall_2d_loss:
+                if torch.isnan(overall_2d_loss[key]).any():
+                    print(f"NaN detected in overall_2d_loss before normalization in {key}, replacing with zero.")
+                    overall_2d_loss[key] = torch.zeros_like(overall_2d_loss[key])
+                overall_2d_loss[key] /= batch_size
 
+            # Check for NaN after normalization and handle it
+            for key in overall_2d_loss:
+                if torch.isnan(overall_2d_loss[key]).any():
+                    print(f"NaN detected in overall_2d_loss after normalization in {key}, replacing with zero.")
+                    overall_2d_loss[key] = torch.zeros_like(overall_2d_loss[key])
+
+            # Update losses
             losses.update(overall_2d_loss)
-
+            
         return losses
 
     def forward_test(self, img, img_metas, points,**kwargs): 
