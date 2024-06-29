@@ -126,47 +126,70 @@ class FeedForwardBlock(nn.Module):
     def forward(self, x):
 
         return self.norm_2(self.dropout_2(self.relu_2(self.linear_2(self.dropout(self.relu(self.linear_1(self.norm(x))))))))
+    
+class ConvBNReLU(nn.Module):
+    def __init__(self, in_planes, out_planes, kernel_size=3, stride=1, padding=None):
+        super(ConvBNReLU, self).__init__()
+        if padding is None:
+            padding = (kernel_size - 1) // 2
+        self.conv = nn.Conv2d(in_planes, out_planes, kernel_size, stride, padding, bias=False)
+        self.bn = nn.BatchNorm2d(out_planes)
+        self.relu = nn.LeakyReLU(inplace=True)
+
+    def forward(self, x):
+        x = self.conv(x)
+        x = self.bn(x)
+        x = self.relu(x)
+        return x
+    
+class ConvTransposeBNReLU(nn.Module):
+    def __init__(self, in_planes, out_planes, kernel_size=3, stride=1, padding=None):
+        super(ConvTransposeBNReLU, self).__init__()
+        if padding is None:
+            padding = (kernel_size - 1) // 2
+        self.conv = nn.ConvTranspose2d(in_planes, out_planes, kernel_size, stride, padding, bias=False)
+        self.bn = nn.BatchNorm2d(out_planes)
+        self.relu = nn.LeakyReLU(inplace=True)
+
+    def forward(self, x):
+        x = self.conv(x)
+        x = self.bn(x)
+        x = self.relu(x)
+        return x
 
 """
 Same as V3 but adjusted to fit sparse resnet output. Upsample 4x compared to 2x
 """
 @FUSION_LAYERS.register_module()
 class MultiHeadCrossAttentionVoxel(nn.Module):
-    def __init__(self, embed_dim = 512, num_heads=8, dropout = 0.1):
+    def __init__(self, embed_dim = 2048, num_heads=8, dropout = 0.1):
         super(MultiHeadCrossAttentionVoxel, self).__init__()
 
         self.embed_dim = embed_dim
 
-        self.reduce_camera_spatialy = nn.Conv2d(256, self.embed_dim, kernel_size=3, stride=2, padding=1)
-        self.reduce_camera_spatialy_norm = nn.BatchNorm2d(self.embed_dim)
-        self.reduce_camera_spatialy_act = nn.LeakyReLU(inplace=True)
+        self.reduce_camera_spatialy = ConvBNReLU(256, self.embed_dim, kernel_size=3, stride=2, padding=1)
 
-        self.reduce_lidar_spatially = nn.Conv2d(384, self.embed_dim, kernel_size=3, stride=2, padding=1)
-        self.reduce_lidar_spatially_norm = nn.BatchNorm2d(512)
-        self.reduce_lidar_spatially_act = nn.LeakyReLU()
+        self.reduce_lidar_spatially = ConvBNReLU(512, 1024, kernel_size=3, stride=2, padding=1)
+        self.lidar_conv_0 = ConvBNReLU(1024, 1024, kernel_size=3, stride=1, padding=1)
 
+        self.reduce_lidar_2 = ConvBNReLU(1024, self.embed_dim, kernel_size=3, stride=2, padding=1)
+        self.lidar_conv_2 = ConvBNReLU(self.embed_dim, self.embed_dim, kernel_size=3, stride=1, padding=1)
 
-        self.lidar_conv_0 = nn.Conv2d(self.embed_dim, self.embed_dim, kernel_size=3, stride=1, padding=1)
-        self.lidar_conv_0_norm = nn.BatchNorm2d(self.embed_dim)
-        self.lidar_conv_0_act = nn.LeakyReLU()
+        self.reduce_lidar_3 = ConvBNReLU(self.embed_dim, self.embed_dim, kernel_size=3, stride=2, padding=1)
+        self.lidar_conv_3 = ConvBNReLU(self.embed_dim, self.embed_dim, kernel_size=3, stride=1, padding=1)
+        self.lidar_conv_4 = ConvBNReLU(self.embed_dim, self.embed_dim, kernel_size=3, stride=1, padding=1)
 
-        self.reduce_lidar_2 = nn.Conv2d(self.embed_dim, self.embed_dim, kernel_size=3, stride=2, padding=1)
-        self.reduce_lidar_2_act = nn.LeakyReLU()
-        self.reduce_lidar_2_norm = nn.BatchNorm2d(self.embed_dim)
 
         self.lidar_camera_cross_attention = Decoder(self.embed_dim, hidden_dim=self.embed_dim * 2, num_heads= num_heads, dropout=dropout, show_weights=False)
         
         self.pos_embed_camera = nn.Parameter(torch.randn(1, self.embed_dim, 4096) * .02) #done as in ViT: https://github.com/lucidrains/vit-pytorch/blob/main/vit_pytorch/vit.py, (14 (image hight) * 25 image width * 6 images) / 16 (image patches)
         self.pos_embed_lidar = nn.Parameter(torch.randn(1, self.embed_dim, 4096) * .02) #done as in ViT: https://github.com/lucidrains/vit-pytorch/blob/main/vit_pytorch/vit.py, no reduction for now
 
-        self.upsample_layer = nn.ConvTranspose2d(embed_dim, embed_dim, kernel_size=2, stride=2)
-        self.upsample_layer_norm = nn.BatchNorm2d(embed_dim)
-        self.upsample_layer_act = nn.LeakyReLU(inplace=True)
+        self.upsample_layer = ConvTransposeBNReLU(embed_dim, 1024, kernel_size=2, stride=2)
 
 
-        self.upsample_layer_2 = nn.ConvTranspose2d(embed_dim, 384, kernel_size=2, stride=2) # match centerpoint
-        self.upsample_layer_norm_2 = nn.BatchNorm2d(384)
-        self.upsample_layer_act_2 = nn.LeakyReLU(inplace=True)
+        self.upsample_layer_2 = ConvTransposeBNReLU(1024, 512, kernel_size=2, stride=2) # match centerpoint
+
 
 
 
@@ -214,19 +237,30 @@ class MultiHeadCrossAttentionVoxel(nn.Module):
         if torch.isinf(camera_bev_features_cpu).any():
             print("Camera Tensor contains Inf values.")
 
-        camera_bev_features = self.reduce_camera_spatialy_act(self.reduce_camera_spatialy_norm(self.reduce_camera_spatialy(camera_bev_features)))
+        camera_bev_features = self.reduce_camera_spatialy(camera_bev_features)
 
-        reduced_lidar_bev_features = self.reduce_lidar_spatially_act(self.reduce_lidar_spatially_norm(self.reduce_lidar_spatially(lidar_bev_features)))
+        reduced_lidar_bev_features = self.reduce_lidar_spatially(lidar_bev_features)
+        reduced_lidar_bev_features = self.lidar_conv_0(reduced_lidar_bev_features) #180x180
 
-        reduced_lidar_bev_features = self.lidar_conv_0_act(self.lidar_conv_0_norm(self.lidar_conv_0(reduced_lidar_bev_features)))
+        reduce_lidar_twice_bev_features = self.reduce_lidar_2(reduced_lidar_bev_features)
+        reduce_lidar_twice_bev_features = self.lidar_conv_2(reduce_lidar_twice_bev_features) #90x90
 
-        reduce_lidar_twice_bev_features = self.reduce_lidar_2_act(self.reduce_lidar_2_norm(self.reduce_lidar_2(reduced_lidar_bev_features)))
+        #downsample 3. time:
+        reduce_lidar_third_bev_features = self.reduce_lidar_3(reduce_lidar_twice_bev_features) # 45x45
 
+        #interpolate 45x45 back to 64x
+        reduce_lidar_third_bev_features = nn.functional.interpolate(reduce_lidar_third_bev_features, size=(64, 64), mode='bilinear', align_corners=False)
+
+        #regain lost features
+        reduce_lidar_third_bev_features = self.lidar_conv_3(reduce_lidar_third_bev_features) #64x64
+        reduce_lidar_third_bev_features = self.lidar_conv_4(reduce_lidar_third_bev_features)
+
+        
         
 
         # # get patch embeddings
         image_patch_embedding = self.create_camera_patches(camera_bev_features)
-        lidar_patch_embedding = self.create_lidar_patches(reduce_lidar_twice_bev_features)
+        lidar_patch_embedding = self.create_lidar_patches(reduce_lidar_third_bev_features)
 
 
         cross_attention = self.lidar_camera_cross_attention(lidar_patch_embedding, image_patch_embedding)
@@ -237,12 +271,17 @@ class MultiHeadCrossAttentionVoxel(nn.Module):
         cross_attention = cross_attention.view(cross_attention.shape[0], cross_attention.shape[1], 64, 64)  # Shape: [batch * 6, 256, 64, 64]
 
 
-        upsampled_once = self.upsample_layer_act(self.upsample_layer_norm(self.upsample_layer(cross_attention)))
+        #reshape to 90x90
+
+        reshaped = nn.functional.interpolate(cross_attention, size=(90, 90), mode='bilinear', align_corners=False)
+        reshaped = torch.add(reshaped, reduce_lidar_twice_bev_features)
+
+        upsampled_once = self.upsample_layer(reshaped)
 
         #residual around fusion
         upsampled_once = torch.add(upsampled_once, reduced_lidar_bev_features)
 
-        output = self.upsample_layer_act_2(self.upsample_layer_norm_2(self.upsample_layer_2(upsampled_once)))
+        output = self.upsample_layer_2(upsampled_once)
         output = torch.add(output, lidar_bev_features)
 
         return output

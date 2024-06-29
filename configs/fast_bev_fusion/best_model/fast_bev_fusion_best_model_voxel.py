@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # If point cloud range is changed, the models should also change their point cloud range accordingly
-point_cloud_range = [-51.2, -51.2, -5.0, 51.2, 51.2, 3.0]
-voxel_size = [0.1, 0.1, 0.2]
+point_cloud_range = [-54.0, -54.0, -5.0, 54.0, 54.0, 3.0]
+voxel_size = [0.075, 0.075, 0.2]
 
 model = dict(
     type='FastBEVFusionCenterheadVoxel',
@@ -37,40 +37,31 @@ model = dict(
 
     #Point Modules:
     pts_voxel_layer=dict(
-        max_num_points=10, voxel_size=voxel_size, max_voxels=(90000, 120000), point_cloud_range=point_cloud_range),
+        max_num_points=10, voxel_size=voxel_size, max_voxels=(120000, 160000), point_cloud_range=point_cloud_range),
     pts_voxel_encoder=dict(type='HardSimpleVFE', num_features=5),
     pts_middle_encoder=dict(
         type='SpMiddleResNetFHD',
         in_channels=5,
-        sparse_shape=[41, 1024, 1024]),
+        sparse_shape=[41, 1440, 1440]),
 
-    # pts_neck=dict(
-    #     type="RPNV4",
-    #     layer_nums=[5, 5],
-    #     ds_layer_strides=[1, 2],
-    #     ds_num_filters=[128, 256],
-    #     us_layer_strides=[1, 2],
-    #     us_num_filters=[256, 256],
-    #     num_input_features=256,
-    # ),
 
     pts_neck=dict(
         type="RPNV3",
-        layer_nums=[2, 2],
+        layer_nums=[5, 5],
         ds_layer_strides=[1, 2],
         ds_num_filters=[256, 256],
         us_layer_strides=[1, 2],
-        us_num_filters=[256, 128], # default 128x128
+        us_num_filters=[256, 256], # default 128x128
         num_input_features=[704,256], #num features in the feature maps blocks that are feed into the structure similar to "FPN"
     ),
 
 
     #Fusion layer
-    fusion_module = dict(type='MultiHeadCrossAttentionVoxel',embed_dim = 512, num_heads=8, dropout = 0.1),
+    fusion_module = dict(type='MultiHeadCrossAttentionVoxel',embed_dim = 2048, num_heads=8, dropout = 0.1),
 
     bbox_head= dict(
         type='CenterHead',
-        in_channels=384,
+        in_channels=512,
         tasks=[
             dict(num_class=1, class_names=['car']),
             dict(num_class=2, class_names=['truck', 'construction_vehicle']),
@@ -89,7 +80,7 @@ model = dict(
             score_threshold=0.1,
             out_size_factor=4,
             voxel_size=voxel_size[:2],
-            pc_range=[-51.2, -51.2],
+            pc_range=[point_cloud_range[0], point_cloud_range[0]],
             code_size=9),
         separate_head=dict(
             type='DCNSeparateHead',
@@ -146,7 +137,7 @@ model = dict(
 
     # model training and testing settings for the head
     train_cfg=dict(
-            grid_size=[1024, 1024, 40],
+            grid_size=[1440, 1440, 41],
             voxel_size=voxel_size,
             out_size_factor=4,
             dense_reg=1,
@@ -161,7 +152,7 @@ model = dict(
             max_pool_nms=False,
             min_radius=[4, 12, 10, 1, 0.85, 0.175],
             score_threshold=0.1,
-            pc_range=[-51.2, -51.2],
+            pc_range=[point_cloud_range[0], point_cloud_range[0]],
             out_size_factor=4,
             voxel_size=voxel_size[:2],
             nms_type='rotate',
@@ -190,15 +181,30 @@ img_norm_cfg = dict(mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375],
 
 file_client_args = dict(backend='disk')
 
-
+data_config = {
+    'src_size': (900, 1600),
+    'input_size': (900, 1600),
+    # train-aug
+    'resize': (-0.06, 0.11),
+    'crop': (-0.05, 0.05),
+    'rot': (-5.4, 5.4),
+    'flip': True,
+    # test-aug
+    'test_input_size': (900, 1600),
+    'test_resize': 0.0,
+    'test_rotate': 0.0,
+    'test_flip': False,
+    # top, right, bottom, left
+    'pad': (0, 0, 0, 0),
+    'pad_divisor': 32,
+    'pad_color': (0, 0, 0),
+}
 
 train_pipeline = [
     dict(type='LoadAnnotations3D',
          with_bbox=True,
          with_label=True,
-         with_bev_seg=False,
-         with_bbox_3d=True,
-         with_label_3d=True),
+         with_bev_seg=False),
      dict(
         type='LoadPointsFromFile',
         coord_type='LIDAR',
@@ -211,13 +217,6 @@ train_pipeline = [
         pad_empty_sweeps=True,
         remove_close=True),
     dict(
-        type='GlobalRotScaleTrans',
-        rot_range=[-0.3925, 0.3925],
-        scale_ratio_range=[0.95, 1.05],
-        translation_std=[0.05, 0.05, 0.05],
-        update_img2lidar=True),
-
-    dict(
         type='MultiViewPipeline',
         n_images=6,
         transforms=[
@@ -225,9 +224,15 @@ train_pipeline = [
             dict(type='Resize', img_scale=(1600, 900), keep_ratio=True),
             dict(type='Normalize', **img_norm_cfg),
             dict(type='Pad', size_divisor=32)]),
-    
-    dict(type='PointShuffle'),
     dict(type='PointsRangeFilter', point_cloud_range=point_cloud_range),
+    dict(type='PointShuffle'),
+    dict(
+        type='GlobalRotScaleTrans',
+        rot_range=[-0.3925, 0.3925],
+        scale_ratio_range=[0.95, 1.05],
+        translation_std=[0.05, 0.05, 0.05],
+        update_img2lidar=True),
+    dict(type='RandomAugImageMultiViewImage', data_config=data_config),
     dict(type='ObjectRangeFilter', point_cloud_range=point_cloud_range),
     dict(type='ObjectNameFilter', classes=class_names),
     dict(type='KittiSetOrigin', point_cloud_range=point_cloud_range),
@@ -261,7 +266,7 @@ test_pipeline = [
 
 
 data = dict(
-    samples_per_gpu=4,
+    samples_per_gpu=1,
     workers_per_gpu=4,
     train=dict(
         type='CBGSDataset',
@@ -300,7 +305,7 @@ optimizer = dict(type='AdamW', lr=1e-3,
                  paramwise_cfg=dict(
                  custom_keys={'backbone': dict(lr_mult=0.1, decay_mult=1.0),
                               'pos_embed_camera': dict(lr_mult= 1.0, decay_mult=0.),
-                              'pos_embed_lidar': dict(lr_mult= 1.0, decay_mult=0.)})) #try to combat nan even more
+                              'pos_embed_lidar': dict(lr_mult= 1.0, decay_mult=0.)}))
 
 # max_norm=10 is better for SECOND
 optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
@@ -322,7 +327,7 @@ runner = dict(type='EpochBasedRunner', max_epochs=20)
 #total_epochs = 20
 checkpoint_config = dict(interval=1)
 log_config = dict(
-    interval=250,
+    interval=200,
     hooks=[
         dict(type='TextLoggerHook'),
         dict(type='TensorboardLoggerHook'),
