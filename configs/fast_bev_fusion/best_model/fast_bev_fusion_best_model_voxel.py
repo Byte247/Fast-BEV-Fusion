@@ -181,24 +181,6 @@ img_norm_cfg = dict(mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375],
 
 file_client_args = dict(backend='disk')
 
-data_config = {
-    'src_size': (900, 1600),
-    'input_size': (900, 1600),
-    # train-aug
-    'resize': (-0.06, 0.11),
-    'crop': (-0.05, 0.05),
-    'rot': (-5.4, 5.4),
-    'flip': True,
-    # test-aug
-    'test_input_size': (900, 1600),
-    'test_resize': 0.0,
-    'test_rotate': 0.0,
-    'test_flip': False,
-    # top, right, bottom, left
-    'pad': (0, 0, 0, 0),
-    'pad_divisor': 32,
-    'pad_color': (0, 0, 0),
-}
 
 train_pipeline = [
     dict(type='LoadAnnotations3D',
@@ -232,7 +214,6 @@ train_pipeline = [
         scale_ratio_range=[0.95, 1.05],
         translation_std=[0.05, 0.05, 0.05],
         update_img2lidar=True),
-    dict(type='RandomAugImageMultiViewImage', data_config=data_config),
     dict(type='ObjectRangeFilter', point_cloud_range=point_cloud_range),
     dict(type='ObjectNameFilter', classes=class_names),
     dict(type='KittiSetOrigin', point_cloud_range=point_cloud_range),
@@ -300,7 +281,7 @@ data = dict(
         test_mode=True,
         box_type_3d='LiDAR'))
 
-optimizer = dict(type='AdamW', lr=1e-3,
+optimizer = dict(type='AdamW', lr=1e-4,
                  weight_decay=0.05,
                  paramwise_cfg=dict(
                  custom_keys={'backbone': dict(lr_mult=0.1, decay_mult=1.0),
