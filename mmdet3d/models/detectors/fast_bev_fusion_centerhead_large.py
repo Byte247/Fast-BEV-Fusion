@@ -294,37 +294,25 @@ class FastBEVFusionCenterheadLarge(BaseDetector):
         else:
             return self.forward_test(img, img_metas, **kwargs)
 
-    def forward_train(
-        self, img, img_metas, gt_bboxes_3d, gt_labels_3d, gt_bev_seg=None, points=None, **kwargs
-    ):  
-        
+
+    def forward_train(self, img, img_metas, gt_bboxes_3d, gt_labels_3d, gt_bev_seg=None, points=None, **kwargs):
+
         
         lidar_features = self.extract_pts_feat(points)
-
         feature_bev, valids, features_2d = self.extract_feat(img, img_metas, "train")
 
-
-        """
-        feature_bev: [(1, 256, 100, 100)]
-        valids: (1, 1, 200, 200, 12)
-        features_2d: [[6, 64, 232, 400], [6, 64, 116, 200], [6, 64, 58, 100], [6, 64, 29, 50]]
-        """
-
-        
-        #fuse lidar BEV and camera BEV features
-        feature_bev = self.fusion_module(lidar_features, feature_bev[0]) # this framework requires features inside lists for some reason. 
-        feature_bev =[feature_bev]
+        # Fuse lidar BEV and camera BEV features
+        feature_bev = self.fusion_module(lidar_features, feature_bev[0])
+        feature_bev = [feature_bev]
 
         assert self.bbox_head is not None or self.seg_head is not None
 
         losses = dict()
         if self.bbox_head is not None:
             x = self.bbox_head(feature_bev)
-
             loss_inputs = [gt_bboxes_3d, gt_labels_3d, x]
             loss_det = self.bbox_head.loss(*loss_inputs)
             losses.update(loss_det)
-            
 
         if self.seg_head is not None:
             assert len(gt_bev_seg) == 1
@@ -334,13 +322,10 @@ class FastBEVFusionCenterheadLarge(BaseDetector):
             losses.update(loss_seg)
 
         if self.bbox_head_2d is not None:
-            
             batch_size = (feature_bev[0].shape)[0]
             overall_2d_loss = dict()
 
             for batch_id in range(batch_size):
-
-
                 start_idx = batch_id * 6
                 end_idx = (batch_id + 1) * 6
 
@@ -353,7 +338,7 @@ class FastBEVFusionCenterheadLarge(BaseDetector):
                 # hack a img_metas_2d
                 img_metas_2d = []
                 img_info = img_metas[batch_id]["img_info"]
-                
+
                 for idx, info in enumerate(img_info):
                     tmp_dict = dict(
                         filename=info["filename"],
@@ -369,11 +354,11 @@ class FastBEVFusionCenterheadLarge(BaseDetector):
 
                 rank, world_size = get_dist_info()
 
-
+                # Forward pass and loss computation
                 loss_2d = self.bbox_head_2d.forward_train(
                     sliced_2d_features, img_metas_2d, gt_bboxes, gt_labels
                 )
-                
+
                 # Check for NaN in loss_2d and handle it
                 for key, value in loss_2d.items():
                     if torch.isnan(value).any():
@@ -401,7 +386,7 @@ class FastBEVFusionCenterheadLarge(BaseDetector):
 
             # Update losses
             losses.update(overall_2d_loss)
-            
+
         return losses
 
     def forward_test(self, img, img_metas, points,**kwargs): 
