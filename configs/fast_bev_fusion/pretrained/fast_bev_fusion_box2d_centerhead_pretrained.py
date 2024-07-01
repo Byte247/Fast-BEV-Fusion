@@ -360,7 +360,7 @@ test_pipeline = [
 
 
 data = dict(
-    samples_per_gpu=24,
+    samples_per_gpu=32,
     workers_per_gpu=8,
     train=dict(
         type='CBGSDataset',
