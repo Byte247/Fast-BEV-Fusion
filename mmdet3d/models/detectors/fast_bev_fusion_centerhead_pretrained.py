@@ -315,10 +315,8 @@ class FastBEVFusionCenterheadPretrained(BaseDetector):
                 return self.forward_test_second_stage(img, img_metas, **kwargs)
             else:
                 points = kwargs.get("points")
-
-                print(points[0][0].shape)
                 
-                return self.forward_test(points[0][0], img_metas)
+                return self.forward_test(img_metas, points)
 
 
     def forward_train_second_stage(
@@ -462,7 +460,7 @@ class FastBEVFusionCenterheadPretrained(BaseDetector):
     
     def forward_test(self,img_metas, points): 
         
-        return self.simple_test(points,img_metas)
+        return self.simple_test(img_metas, points)
 
     def onnx_export_2d(self, img, img_metas):
         """
@@ -570,7 +568,7 @@ class FastBEVFusionCenterheadPretrained(BaseDetector):
 
         return bbox_results
     
-    def simple_test(self,points, img_metas):
+    def simple_test(self,img_metas, points):
         bbox_results = []
 
         lidar_features = self.extract_pts_feat(points)
