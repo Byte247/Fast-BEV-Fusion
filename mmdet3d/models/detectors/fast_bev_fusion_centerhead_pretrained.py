@@ -580,29 +580,29 @@ class FastBEVFusionCenterheadPretrained(BaseDetector):
 
         return bbox_results
     
-    def simple_test(self,img_metas, points):
-        bbox_results = []
+    # def simple_test(self,img_metas, points):
+    #     bbox_results = []
 
-        lidar_features = self.extract_pts_feat(points)
+    #     lidar_features = self.extract_pts_feat(points)
 
 
 
-        if self.bbox_head is not None:
-            outs = self.bbox_head(lidar_features)
-            bbox_list = self.bbox_head.get_bboxes(outs, img_metas, rescale=True)
+    #     if self.bbox_head is not None:
+    #         outs = self.bbox_head(lidar_features)
+    #         bbox_list = self.bbox_head.get_bboxes(outs, img_metas, rescale=True)
                                     
-            bbox_results = [bbox3d2result(bboxes, scores, labels)for bboxes, scores, labels in bbox_list]
+    #         bbox_results = [bbox3d2result(bboxes, scores, labels)for bboxes, scores, labels in bbox_list]
             
             
-        else:
-            bbox_results = [dict()]
+    #     else:
+    #         bbox_results = [dict()]
 
-        # BEV semantic seg
-        if self.seg_head is not None:
-            x_bev = self.seg_head(lidar_features)
-            bbox_results[0]['bev_seg'] = x_bev
+    #     # BEV semantic seg
+    #     if self.seg_head is not None:
+    #         x_bev = self.seg_head(lidar_features)
+    #         bbox_results[0]['bev_seg'] = x_bev
 
-        return bbox_results
+    #     return bbox_results
 
     def aug_test(self, imgs, img_metas):
         img_shape_copy = copy.deepcopy(img_metas[0]['img_shape'])
