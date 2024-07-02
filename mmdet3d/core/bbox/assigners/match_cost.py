@@ -28,15 +28,10 @@ class CrossEntropyCost:
 
     
 @MATCH_COST.register_module()
-class IoU3DCost:
-    def __init__(self, iou_mode='giou', weight=1.):
+class IoU3DCost(object):
+    def __init__(self, weight):
         self.weight = weight
-        self.iou_mode = iou_mode
 
-    def __call__(self, bboxes, gt_bboxes):
-        assert bboxes.shape[-1] == 6 and gt_bboxes.shape[-1] == 6
-        overlaps = axis_aligned_bbox_overlaps_3d(
-            bboxes, gt_bboxes, mode=self.iou_mode, is_aligned=False)
-        # The 1 is a constant that doesn't change the matching, so omitted.
-        iou_cost = -overlaps
+    def __call__(self, iou):
+        iou_cost = - iou
         return iou_cost * self.weight

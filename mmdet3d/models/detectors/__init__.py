@@ -23,6 +23,7 @@ from .fast_bev_fusion_centerhead import FastBEVFusionCenterhead
 from .fast_bev_fusion_centerhead_pretrained import FastBEVFusionCenterheadPretrained
 from .fast_bev_fusion_centerhead_large import FastBEVFusionCenterheadLarge
 from .fast_bev_fusion_centerhead_voxel import FastBEVFusionCenterheadVoxel
+from .fast_bev_fusion_transfusion_head import FastBEVFusionTransfusionhead
 
 
 __all__ = [
@@ -32,5 +33,5 @@ __all__ = [
     'FCOSMono3D', 'ImVoxelNet', 'GroupFree3DNet', 'M2BevNet', 'M2BevNetSeq',
     'MultiScaleM2BevNetSeq', 'FastBEV',"FastBEVFusion", "FastBEVFusionCenterhead",
     'FastBEVFusionCenterheadPretrained', 'FastBEVFusionCenterheadLarge',
-    "FastBEVFusionCenterheadVoxel"
+    "FastBEVFusionCenterheadVoxel", "FastBEVFusionTransfusionhead"
 ]

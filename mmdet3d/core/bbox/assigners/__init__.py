@@ -2,5 +2,6 @@
 from mmdet.core.bbox import AssignResult, BaseAssigner, MaxIoUAssigner
 #from .hungarian_assigner_3d import *
 from .match_cost import *
+from .hungarian_assigner_3d import HungarianAssigner3D
 
-__all__ = ['BaseAssigner', 'MaxIoUAssigner', 'AssignResult']
+__all__ = ['BaseAssigner', 'MaxIoUAssigner', 'AssignResult','HungarianAssigner3D']
