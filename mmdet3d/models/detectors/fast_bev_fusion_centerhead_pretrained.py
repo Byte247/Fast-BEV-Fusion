@@ -315,8 +315,10 @@ class FastBEVFusionCenterheadPretrained(BaseDetector):
                 return self.forward_test_second_stage(img, img_metas, **kwargs)
             else:
                 points = kwargs.get("points")
+
+                print(points)
                 
-                return self.forward_test(points, img_metas)
+                return self.forward_test(points[0], img_metas)
 
 
     def forward_train_second_stage(
