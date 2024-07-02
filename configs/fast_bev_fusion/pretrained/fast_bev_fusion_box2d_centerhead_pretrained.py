@@ -314,6 +314,15 @@ test_pipeline = [
         file_client_args=file_client_args),
 
     dict(
+        type='MultiViewPipeline',
+        n_images=6,
+        transforms=[
+            dict(type='LoadImageFromFile'),
+            dict(type='Resize', img_scale=(100, 60), keep_ratio=True),
+            dict(type='Normalize', **img_norm_cfg),
+            dict(type='Pad', size_divisor=32)]),
+
+    dict(
         type='MultiScaleFlipAug3D',
         img_scale=(512, 512),
         pts_scale_ratio=1,
@@ -324,7 +333,6 @@ test_pipeline = [
                 rot_range=[0, 0],
                 scale_ratio_range=[1., 1.],
                 translation_std=[0, 0, 0]),
-            #dict(type='RandomFlip3D'),
             dict(
                 type='DefaultFormatBundle3D',
                 class_names=class_names,
