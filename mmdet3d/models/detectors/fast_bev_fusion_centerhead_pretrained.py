@@ -278,159 +278,153 @@ class FastBEVFusionCenterheadPretrained(BaseDetector):
 
 
 
-    @auto_fp16()
-    def forward(self,return_loss=True, **kwargs):
-        """Calls either :func:`forward_train` or :func:`forward_test` depending
-        on whether ``return_loss`` is ``True``.
+    @auto_fp16(apply_to=('points'))
+    def forward(self, return_loss=True, **kwargs):
+        """Calls either forward_train or forward_test depending on whether
+        return_loss=True.
 
         Note this setting will change the expected inputs. When
-        ``return_loss=True``, img and img_meta are single-nested (i.e. Tensor
-        and List[dict]), and when ``resturn_loss=False``, img and img_meta
-        should be double nested (i.e.  List[Tensor], List[List[dict]]), with
-        the outer list indicating test time augmentations.
+        `return_loss=True`, img and img_metas are single-nested (i.e.
+        torch.Tensor and list[dict]), and when `resturn_loss=False`, img and
+        img_metas should be double nested (i.e.  list[torch.Tensor],
+        list[list[dict]]), with the outer list indicating test time
+        augmentations.
         """
-        # if torch.onnx.is_in_onnx_export():
-        #     if kwargs["export_2d"]:
-        #         return self.onnx_export_2d(img, img_metas)
-        #     elif kwargs["export_3d"]:
-        #         return self.onnx_export_3d(img, img_metas)
-        #     else:
-        #         raise NotImplementedError
-
-
-        img_metas = kwargs.get("img_metas")
-
         if return_loss:
-            if self.second_stage:
-
-                img = kwargs.get("img")
-                
-                return self.forward_train_second_stage(img, img_metas, **kwargs)
-            else:
-                return self.forward_train(**kwargs)
+            return self.forward_train(**kwargs)
         else:
-            if self.second_stage:
-                img = kwargs.get("img")
-                
-                return self.forward_test_second_stage(img, img_metas, **kwargs)
-            else:
-                points = kwargs.get("points")
-                
-                return self.forward_test(img_metas, points)
+            return self.forward_test(**kwargs)
+        
+    # @auto_fp16(apply_to=('img', 'points'))
+    # def forward(self, return_loss=True, **kwargs):
+    #     """Calls either forward_train or forward_test depending on whether
+    #     return_loss=True.
+
+    #     Note this setting will change the expected inputs. When
+    #     `return_loss=True`, img and img_metas are single-nested (i.e.
+    #     torch.Tensor and list[dict]), and when `resturn_loss=False`, img and
+    #     img_metas should be double nested (i.e.  list[torch.Tensor],
+    #     list[list[dict]]), with the outer list indicating test time
+    #     augmentations.
+    #     """
+    #     if return_loss:
+    #         return self.forward_train(**kwargs)
+    #     else:
+    #         return self.forward_test(**kwargs)
 
 
-    def forward_train_second_stage(
-        self, img, img_metas, gt_bboxes_3d, gt_labels_3d, gt_bev_seg=None, points=None, **kwargs
-    ):  
+    # def forward_train_second_stage(
+    #     self, img, img_metas, gt_bboxes_3d, gt_labels_3d, gt_bev_seg=None, points=None, **kwargs
+    # ):  
         
         
-        lidar_features = self.extract_pts_feat(points)
+    #     lidar_features = self.extract_pts_feat(points)
 
 
-        if self.second_stage:
-            feature_bev, valids, features_2d = self.extract_feat(img, img_metas, "train")
+    #     if self.second_stage:
+    #         feature_bev, valids, features_2d = self.extract_feat(img, img_metas, "train")
 
 
-            """
-            feature_bev: [(1, 256, 100, 100)]
-            valids: (1, 1, 200, 200, 12)
-            features_2d: [[6, 64, 232, 400], [6, 64, 116, 200], [6, 64, 58, 100], [6, 64, 29, 50]]
-            """
+    #         """
+    #         feature_bev: [(1, 256, 100, 100)]
+    #         valids: (1, 1, 200, 200, 12)
+    #         features_2d: [[6, 64, 232, 400], [6, 64, 116, 200], [6, 64, 58, 100], [6, 64, 29, 50]]
+    #         """
 
             
-            #fuse lidar BEV and camera BEV features
-            feature_bev = self.fusion_module(lidar_features[0], feature_bev[0]) # this framework requires features inside lists for some reason. 
-            feature_bev =[feature_bev]
-        else:
-            feature_bev = lidar_features
+    #         #fuse lidar BEV and camera BEV features
+    #         feature_bev = self.fusion_module(lidar_features[0], feature_bev[0]) # this framework requires features inside lists for some reason. 
+    #         feature_bev =[feature_bev]
+    #     else:
+    #         feature_bev = lidar_features
 
-        assert self.bbox_head is not None or self.seg_head is not None
+    #     assert self.bbox_head is not None or self.seg_head is not None
 
-        losses = dict()
-        if self.bbox_head is not None:
-            x = self.bbox_head(feature_bev)
+    #     losses = dict()
+    #     if self.bbox_head is not None:
+    #         x = self.bbox_head(feature_bev)
 
-            loss_inputs = [gt_bboxes_3d, gt_labels_3d, x]
-            loss_det = self.bbox_head.loss(*loss_inputs)
-            losses.update(loss_det)
+    #         loss_inputs = [gt_bboxes_3d, gt_labels_3d, x]
+    #         loss_det = self.bbox_head.loss(*loss_inputs)
+    #         losses.update(loss_det)
             
 
-        if self.seg_head is not None:
-            assert len(gt_bev_seg) == 1
-            x_bev = self.seg_head(feature_bev)
-            gt_bev = gt_bev_seg[0][None, ...].long()
-            loss_seg = self.seg_head.losses(x_bev, gt_bev)
-            losses.update(loss_seg)
+    #     if self.seg_head is not None:
+    #         assert len(gt_bev_seg) == 1
+    #         x_bev = self.seg_head(feature_bev)
+    #         gt_bev = gt_bev_seg[0][None, ...].long()
+    #         loss_seg = self.seg_head.losses(x_bev, gt_bev)
+    #         losses.update(loss_seg)
 
-        if self.second_stage:
-        # only need 2d supervision if camera features are used
-            if self.bbox_head_2d is not None:
-                batch_size = (feature_bev[0].shape)[0]
-                overall_2d_loss = dict()
+    #     if self.second_stage:
+    #     # only need 2d supervision if camera features are used
+    #         if self.bbox_head_2d is not None:
+    #             batch_size = (feature_bev[0].shape)[0]
+    #             overall_2d_loss = dict()
 
-                for batch_id in range(batch_size):
-                    start_idx = batch_id * 6
-                    end_idx = (batch_id + 1) * 6
+    #             for batch_id in range(batch_size):
+    #                 start_idx = batch_id * 6
+    #                 end_idx = (batch_id + 1) * 6
 
-                    # Extract the relevant slices for the current batch index
-                    sliced_2d_features = [tensor[start_idx:end_idx] for tensor in features_2d]
+    #                 # Extract the relevant slices for the current batch index
+    #                 sliced_2d_features = [tensor[start_idx:end_idx] for tensor in features_2d]
 
-                    gt_bboxes = kwargs["gt_bboxes"][batch_id]
-                    gt_labels = kwargs["gt_labels"][batch_id]
+    #                 gt_bboxes = kwargs["gt_bboxes"][batch_id]
+    #                 gt_labels = kwargs["gt_labels"][batch_id]
 
-                    # hack a img_metas_2d
-                    img_metas_2d = []
-                    img_info = img_metas[batch_id]["img_info"]
+    #                 # hack a img_metas_2d
+    #                 img_metas_2d = []
+    #                 img_info = img_metas[batch_id]["img_info"]
 
-                    for idx, info in enumerate(img_info):
-                        tmp_dict = dict(
-                            filename=info["filename"],
-                            ori_filename=info["filename"].split("/")[-1],
-                            ori_shape=img_metas[batch_id]["ori_shape"],
-                            img_shape=img_metas[batch_id]["img_shape"],
-                            pad_shape=img_metas[batch_id]["pad_shape"],
-                            scale_factor=img_metas[batch_id]["scale_factor"],
-                            flip=False,
-                            flip_direction=None,
-                        )
-                        img_metas_2d.append(tmp_dict)
+    #                 for idx, info in enumerate(img_info):
+    #                     tmp_dict = dict(
+    #                         filename=info["filename"],
+    #                         ori_filename=info["filename"].split("/")[-1],
+    #                         ori_shape=img_metas[batch_id]["ori_shape"],
+    #                         img_shape=img_metas[batch_id]["img_shape"],
+    #                         pad_shape=img_metas[batch_id]["pad_shape"],
+    #                         scale_factor=img_metas[batch_id]["scale_factor"],
+    #                         flip=False,
+    #                         flip_direction=None,
+    #                     )
+    #                     img_metas_2d.append(tmp_dict)
 
-                    rank, world_size = get_dist_info()
+    #                 rank, world_size = get_dist_info()
 
-                    # Forward pass and loss computation
-                    loss_2d = self.bbox_head_2d.forward_train(
-                        sliced_2d_features, img_metas_2d, gt_bboxes, gt_labels
-                    )
+    #                 # Forward pass and loss computation
+    #                 loss_2d = self.bbox_head_2d.forward_train(
+    #                     sliced_2d_features, img_metas_2d, gt_bboxes, gt_labels
+    #                 )
 
-                    # Check for NaN in loss_2d and handle it
-                    for key, value in loss_2d.items():
-                        if torch.isnan(value).any():
-                            print(f"NaN detected in {key} for batch_id {batch_id}, replacing with zero.")
-                            loss_2d[key] = torch.zeros_like(value)
+    #                 # Check for NaN in loss_2d and handle it
+    #                 for key, value in loss_2d.items():
+    #                     if torch.isnan(value).any():
+    #                         print(f"NaN detected in {key} for batch_id {batch_id}, replacing with zero.")
+    #                         loss_2d[key] = torch.zeros_like(value)
 
-                    if batch_id == 0:
-                        overall_2d_loss.update(loss_2d)
-                    else:
-                        for key in overall_2d_loss:
-                            overall_2d_loss[key] += loss_2d[key]
+    #                 if batch_id == 0:
+    #                     overall_2d_loss.update(loss_2d)
+    #                 else:
+    #                     for key in overall_2d_loss:
+    #                         overall_2d_loss[key] += loss_2d[key]
 
-                # Normalize the loss by batch size outside the loop
-                for key in overall_2d_loss:
-                    if torch.isnan(overall_2d_loss[key]).any():
-                        print(f"NaN detected in overall_2d_loss before normalization in {key}, replacing with zero.")
-                        overall_2d_loss[key] = torch.zeros_like(overall_2d_loss[key])
-                    overall_2d_loss[key] /= batch_size
+    #             # Normalize the loss by batch size outside the loop
+    #             for key in overall_2d_loss:
+    #                 if torch.isnan(overall_2d_loss[key]).any():
+    #                     print(f"NaN detected in overall_2d_loss before normalization in {key}, replacing with zero.")
+    #                     overall_2d_loss[key] = torch.zeros_like(overall_2d_loss[key])
+    #                 overall_2d_loss[key] /= batch_size
 
-                # Check for NaN after normalization and handle it
-                for key in overall_2d_loss:
-                    if torch.isnan(overall_2d_loss[key]).any():
-                        print(f"NaN detected in overall_2d_loss after normalization in {key}, replacing with zero.")
-                        overall_2d_loss[key] = torch.zeros_like(overall_2d_loss[key])
+    #             # Check for NaN after normalization and handle it
+    #             for key in overall_2d_loss:
+    #                 if torch.isnan(overall_2d_loss[key]).any():
+    #                     print(f"NaN detected in overall_2d_loss after normalization in {key}, replacing with zero.")
+    #                     overall_2d_loss[key] = torch.zeros_like(overall_2d_loss[key])
 
-                # Update losses
-                losses.update(overall_2d_loss)
+    #             # Update losses
+    #             losses.update(overall_2d_loss)
 
-        return losses
+    #     return losses
     
     def forward_train(
         self, gt_bboxes_3d, gt_labels_3d, points=None, **kwargs
@@ -453,14 +447,32 @@ class FastBEVFusionCenterheadPretrained(BaseDetector):
 
         return losses
 
-    def forward_test_second_stage(self, img, img_metas, points,**kwargs): 
-        if not self.test_cfg.get('use_tta', False):
-            return self.simple_test(img, img_metas, points)
-        return self.aug_test(img, img_metas)
+    # def forward_test_second_stage(self, img, img_metas, points,**kwargs): 
+    #     if not self.test_cfg.get('use_tta', False):
+    #         return self.simple_test(img, img_metas, points)
+    #     return self.aug_test(img, img_metas)
     
-    def forward_test(self,img_metas, points): 
+    def forward_test(self, points, img_metas, img=None, **kwargs):
+
         
-        return self.simple_test(img_metas, points)
+        img = [img] if img is None else img
+        return self.simple_test(points[0], img_metas[0], img[0], **kwargs)
+
+
+    def simple_test(self, points, img_metas, img=None, rescale=False):
+        """Test function without augmentaiton."""
+        pts_feats = self.extract_pts_feat(points)
+
+
+        outs = self.bbox_head(pts_feats)
+        bbox_list = self.bbox_head.get_bboxes(
+            outs, img_metas, rescale=rescale)
+        bbox_results = [
+            bbox3d2result(bboxes, scores, labels)
+            for bboxes, scores, labels in bbox_list
+        ]
+        return bbox_results
+
 
     def onnx_export_2d(self, img, img_metas):
         """
