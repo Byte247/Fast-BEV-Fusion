@@ -459,14 +459,14 @@ class FastBEVFusionCenterheadPretrained(BaseDetector):
         return self.simple_test(points[0], img_metas[0], img[0], **kwargs)
 
 
-    def simple_test(self, points, img_metas, img=None, rescale=False):
+    def simple_test(self, points, img_metas, img=None):
         """Test function without augmentaiton."""
         pts_feats = self.extract_pts_feat(points)
 
 
         outs = self.bbox_head(pts_feats)
         bbox_list = self.bbox_head.get_bboxes(
-            outs, img_metas, rescale=rescale)
+            outs, img_metas, rescale=False)
         bbox_results = [
             bbox3d2result(bboxes, scores, labels)
             for bboxes, scores, labels in bbox_list
