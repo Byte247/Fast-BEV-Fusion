@@ -456,7 +456,7 @@ class FastBEVFusionCenterheadPretrained(BaseDetector):
 
         
         img = [img] if img is None else img
-        return self.simple_test(points[0], img_metas[0], img[0], **kwargs)
+        return self.simple_test(points, img_metas[0], img[0], **kwargs)
 
 
     def simple_test(self, points, img_metas, img=None, rescale=False):
