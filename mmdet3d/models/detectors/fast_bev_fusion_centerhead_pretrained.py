@@ -299,7 +299,7 @@ class FastBEVFusionCenterheadPretrained(BaseDetector):
         else:
             if self.second_stage:
                 return self.simple_test_second_stage(**kwargs)
-            return self.simple_test(**kwargs)
+            return self.forward_test(**kwargs)
 
     def forward_train_second_stage(
         self, img, img_metas, gt_bboxes_3d, gt_labels_3d, gt_bev_seg=None, points=None, **kwargs
@@ -435,10 +435,10 @@ class FastBEVFusionCenterheadPretrained(BaseDetector):
 
         return losses
 
-    # def forward_test(self, img_metas, points,**kwargs): 
-    #     if not self.test_cfg.get('use_tta', False):
-    #         return self.simple_test( img_metas, points)
-    #     return self.aug_test(img, img_metas)
+    def forward_test(self, img_metas, points,**kwargs): 
+        
+        return self.simple_test( img_metas, points)
+        
     
     # def forward_test_second_stage(self, img, img_metas, points,**kwargs): 
     #     if not self.test_cfg.get('use_tta', False):
@@ -526,7 +526,6 @@ class FastBEVFusionCenterheadPretrained(BaseDetector):
     def simple_test(self, gt_bboxes_3d=None, gt_labels_3d=None, points=None, img_metas = None, **kwargs):
         bbox_results = []
 
-        print(kwargs)
         
         lidar_features = self.extract_pts_feat(points)
 
