@@ -523,9 +523,8 @@ class FastBEVFusionCenterheadPretrained(BaseDetector):
 
         return bbox_results
     
-    def simple_test(self, points, img_metas, **kwargs):
+    def simple_test(self, gt_bboxes_3d, gt_labels_3d, points=None, img_metas = None,**kwargs):
         bbox_results = []
-
         
         lidar_features = self.extract_pts_feat(points)
 
