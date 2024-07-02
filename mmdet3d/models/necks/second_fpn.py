@@ -69,7 +69,8 @@ class SECONDFPN(BaseModule):
         if init_cfg is None:
             self.init_cfg = [
                 dict(type='Kaiming', layer='ConvTranspose2d'),
-                dict(type='Constant', layer='NaiveSyncBatchNorm2d', val=1.0)
+                dict(type='Constant', layer='NaiveSyncBatchNorm2d', val=1.0),
+                dict(type='Constant', layer='BatchNorm2d', val=1.0)
             ]
 
         if freeze_layers:

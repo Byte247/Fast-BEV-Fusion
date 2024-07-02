@@ -31,7 +31,15 @@ class ResModule2D(nn.Module):
             norm_cfg=norm_cfg,
             act_cfg=None)
         self.activation = nn.LeakyReLU(inplace=True)
-    @force_fp32()
+
+
+        self.init_cfg = [
+                dict(type='Kaiming', layer='ConvTranspose2d'),
+                dict(type='Kaiming', layer='Conv2d'),
+                dict(type='Constant', layer='BatchNorm2d', val=1.0)
+            ]
+
+    @auto_fp16()
     def forward(self, x):
         """Forward function.
 
@@ -98,6 +106,12 @@ class M2BevNeckLeakyRelu(nn.Module):
                 norm_cfg=norm_cfg,
                 act_cfg=dict(type='LeakyReLU', inplace=True)))
         self.model = nn.Sequential(*model)
+
+        self.init_cfg = [
+                dict(type='Kaiming', layer='ConvTranspose2d'),
+                dict(type='Kaiming', layer='Conv2d'),
+                dict(type='Constant', layer='BatchNorm2d', val=1.0)
+            ]
     @auto_fp16()
     def forward(self, x):
         """Forward function.
