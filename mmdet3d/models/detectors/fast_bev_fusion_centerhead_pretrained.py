@@ -463,6 +463,7 @@ class FastBEVFusionCenterheadPretrained(BaseDetector):
         """Test function without augmentaiton."""
         pts_feats = self.extract_pts_feat(points)
 
+        print(f"pts_feats: {pts_feats.shape}")
 
         outs = self.bbox_head(pts_feats)
         bbox_list = self.bbox_head.get_bboxes(
