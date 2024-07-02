@@ -25,7 +25,7 @@ model = dict(
         num_outs=4),
     neck_fuse=dict(in_channels=256, out_channels=64),
     neck_3d=dict(
-        type='M2BevNeck',
+        type='M2BevNeckLeakyRelu',
         in_channels=384,
         out_channels=256,
         num_layers=6,
@@ -197,8 +197,7 @@ train_pipeline = [
         type='LoadPointsFromMultiSweeps',
         sweeps_num=10,
         use_dim=[0, 1, 2, 3, 4],
-        pad_empty_sweeps=True,
-        remove_close=True),
+        pad_empty_sweeps=True),
     dict(type='PointsRangeFilter', point_cloud_range=point_cloud_range),
     dict(
         type='MultiViewPipeline',
@@ -209,6 +208,7 @@ train_pipeline = [
             dict(type='Normalize', **img_norm_cfg),
             dict(type='Pad', size_divisor=32)]),
     dict(type='ObjectRangeFilter', point_cloud_range=point_cloud_range),
+    dict(type='ObjectNameFilter', classes=class_names),
     dict(type='KittiSetOrigin', point_cloud_range=point_cloud_range),
     dict(type='DefaultFormatBundle3D', class_names=class_names),
     dict(type='Collect3D', keys=['img', 'gt_bboxes', 'gt_labels', 
@@ -224,8 +224,7 @@ test_pipeline = [
         type='LoadPointsFromMultiSweeps',
         sweeps_num=10,
         use_dim=[0, 1, 2, 3, 4],
-        pad_empty_sweeps=True,
-        remove_close=True),
+        pad_empty_sweeps=True),
     dict(
         type='MultiViewPipeline',
         n_images=6,
@@ -240,7 +239,7 @@ test_pipeline = [
 
 
 data = dict(
-    samples_per_gpu=2,
+    samples_per_gpu=1,
     workers_per_gpu=4,
     train=dict(
         type='RepeatDataset',
@@ -276,10 +275,12 @@ data = dict(
         box_type_3d='LiDAR'))
 
 optimizer = dict(type='AdamW', lr=1e-4,
-                 weight_decay=0.01,
+                 weight_decay=0.1,
                  paramwise_cfg=dict(
                  custom_keys={'backbone': dict(lr_mult=0.1, decay_mult=1.0),
-                              'neck_3d': dict(lr_mult=0.05, decay_mult=1.0)})) #try to combat nan even more
+                              'pos_embed_camera': dict(lr_mult= 1.0, decay_mult=0.),
+                              'pos_embed_lidar': dict(lr_mult= 1.0, decay_mult=0.),
+                              'fusion_module': dict(lr_mult= 1.0, decay_mult=0.25)})) #try to combat nan even more
 # max_norm=10 is better for SECOND
 optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
 
@@ -287,12 +288,28 @@ optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
 lr_config = dict(
     policy='poly',
     warmup='linear',
-    warmup_iters=5000,
+    warmup_iters=1000,
     warmup_ratio=1e-6,
     power=1.0,
-    min_lr=0,
+    min_lr=1e-6,
     by_epoch=False
     )
+
+# # max_norm=10 is better for SECOND
+# optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
+# lr_config = dict(
+#     policy='cyclic',
+#     target_ratio=(10, 1e-4),
+#     cyclic_times=1,
+#     step_ratio_up=0.4,
+# )
+# momentum_config = dict(
+#     policy='cyclic',
+#     target_ratio=(0.85 / 0.95, 1),
+#     cyclic_times=1,
+#     step_ratio_up=0.4,
+# )
+
 
 # runtime settings
 runner = dict(type='EpochBasedRunner', max_epochs=20)
@@ -300,7 +317,7 @@ runner = dict(type='EpochBasedRunner', max_epochs=20)
 #total_epochs = 20
 checkpoint_config = dict(interval=1)
 log_config = dict(
-    interval=200,
+    interval=100,
     hooks=[
         dict(type='TextLoggerHook'),
         dict(type='TensorboardLoggerHook'),

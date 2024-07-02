@@ -201,8 +201,7 @@ train_pipeline = [
         type='LoadPointsFromMultiSweeps',
         sweeps_num=10,
         use_dim=[0, 1, 2, 3, 4],
-        pad_empty_sweeps=True,
-        remove_close=True),
+        pad_empty_sweeps=True),
     dict(type='PointsRangeFilter', point_cloud_range=point_cloud_range),
     dict(
         type='MultiViewPipeline',
@@ -229,8 +228,7 @@ test_pipeline = [
         type='LoadPointsFromMultiSweeps',
         sweeps_num=10,
         use_dim=[0, 1, 2, 3, 4],
-        pad_empty_sweeps=True,
-        remove_close=True),
+        pad_empty_sweeps=True),
     dict(
         type='MultiViewPipeline',
         n_images=6,
