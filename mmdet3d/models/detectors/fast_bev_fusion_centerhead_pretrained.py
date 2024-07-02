@@ -279,7 +279,7 @@ class FastBEVFusionCenterheadPretrained(BaseDetector):
 
 
     @auto_fp16()
-    def forward(self, img, img_metas, return_loss=True, **kwargs):
+    def forward(self,return_loss=True, **kwargs):
         """Calls either :func:`forward_train` or :func:`forward_test` depending
         on whether ``return_loss`` is ``True``.
 
@@ -289,22 +289,35 @@ class FastBEVFusionCenterheadPretrained(BaseDetector):
         should be double nested (i.e.  List[Tensor], List[List[dict]]), with
         the outer list indicating test time augmentations.
         """
-        if torch.onnx.is_in_onnx_export():
-            if kwargs["export_2d"]:
-                return self.onnx_export_2d(img, img_metas)
-            elif kwargs["export_3d"]:
-                return self.onnx_export_3d(img, img_metas)
-            else:
-                raise NotImplementedError
+        # if torch.onnx.is_in_onnx_export():
+        #     if kwargs["export_2d"]:
+        #         return self.onnx_export_2d(img, img_metas)
+        #     elif kwargs["export_3d"]:
+        #         return self.onnx_export_3d(img, img_metas)
+        #     else:
+        #         raise NotImplementedError
+
+
+        img_metas = kwargs.get("img_metas")
 
         if return_loss:
             if self.second_stage:
+
+                img = kwargs.get("img")
+                
                 return self.forward_train_second_stage(img, img_metas, **kwargs)
             else:
                 return self.forward_train(**kwargs)
         else:
+            if self.second_stage:
+                img = kwargs.get("img")
+                
+                return self.forward_test_second_stage(img, img_metas, **kwargs)
+            else:
+                points = kwargs.get("points")
+                
+                return self.forward_test(points, img_metas)
 
-            return self.forward_test(img, img_metas, **kwargs)
 
     def forward_train_second_stage(
         self, img, img_metas, gt_bboxes_3d, gt_labels_3d, gt_bev_seg=None, points=None, **kwargs
@@ -440,10 +453,14 @@ class FastBEVFusionCenterheadPretrained(BaseDetector):
 
         return losses
 
-    def forward_test(self, img, img_metas, points,**kwargs): 
+    def forward_test_second_stage(self, img, img_metas, points,**kwargs): 
         if not self.test_cfg.get('use_tta', False):
             return self.simple_test(img, img_metas, points)
         return self.aug_test(img, img_metas)
+    
+    def forward_test(self,img_metas, points): 
+        
+        return self.simple_test(points,img_metas)
 
     def onnx_export_2d(self, img, img_metas):
         """
@@ -523,7 +540,7 @@ class FastBEVFusionCenterheadPretrained(BaseDetector):
 
         return bbox_results
     
-    def simple_test(self, img, img_metas, points):
+    def simple_test_second_stage(self, img, img_metas, points):
         bbox_results = []
         feature_bev, _, features_2d = self.extract_feat(img, img_metas, "test")
 
@@ -547,6 +564,30 @@ class FastBEVFusionCenterheadPretrained(BaseDetector):
         # BEV semantic seg
         if self.seg_head is not None:
             x_bev = self.seg_head(feature_bev)
+            bbox_results[0]['bev_seg'] = x_bev
+
+        return bbox_results
+    
+    def simple_test(self,points, img_metas):
+        bbox_results = []
+
+        lidar_features = self.extract_pts_feat(points)
+
+
+
+        if self.bbox_head is not None:
+            outs = self.bbox_head(lidar_features)
+            bbox_list = self.bbox_head.get_bboxes(outs, img_metas, rescale=True)
+                                    
+            bbox_results = [bbox3d2result(bboxes, scores, labels)for bboxes, scores, labels in bbox_list]
+            
+            
+        else:
+            bbox_results = [dict()]
+
+        # BEV semantic seg
+        if self.seg_head is not None:
+            x_bev = self.seg_head(lidar_features)
             bbox_results[0]['bev_seg'] = x_bev
 
         return bbox_results
