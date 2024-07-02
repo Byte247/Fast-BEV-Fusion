@@ -278,7 +278,7 @@ class FastBEVFusionCenterheadPretrained(BaseDetector):
 
 
 
-    
+    @auto_fp16()
     def forward(self,return_loss=True, **kwargs):
         """Calls either :func:`forward_train` or :func:`forward_test` depending
         on whether ``return_loss`` is ``True``.
