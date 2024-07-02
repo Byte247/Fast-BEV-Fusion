@@ -243,7 +243,7 @@ train_pipeline = [
        sweeps_num=10,
        use_dim=[0, 1, 2, 3, 4]),
 
-   dict(type='LoadAnnotations3D', with_bbox_3d=True, with_label_3d=True),
+    dict(type='LoadAnnotations3D', with_bbox_3d=True, with_label_3d=True),
     dict(type='ObjectSample', db_sampler=db_sampler),
     dict(
        type='GlobalRotScaleTrans',

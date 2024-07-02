@@ -523,7 +523,7 @@ class FastBEVFusionCenterheadPretrained(BaseDetector):
 
         return bbox_results
     
-    def simple_test(self, points, img_metas):
+    def simple_test(self, points, img_metas, **kwargs):
         bbox_results = []
 
         
