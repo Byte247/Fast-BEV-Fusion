@@ -53,6 +53,11 @@ class FastBEVFusionCenterheadPretrained(BaseDetector):
 
         self.second_stage = second_stage
 
+        if not self.second_stage:
+            self.additional_upsample = nn.ConvTranspose2d(384, 384, kernel_size=2, stride=2)
+            self.additional_upsample_norm = nn.BatchNorm2d(384)
+            self.additional_upsample_act = nn.LeakyReLU()
+
         #Point
         self.pts_voxel_layer = Voxelization(**pts_voxel_layer)
         self.pts_voxel_encoder = builder.build_voxel_encoder(pts_voxel_encoder)
@@ -319,6 +324,7 @@ class FastBEVFusionCenterheadPretrained(BaseDetector):
             feature_bev = self.fusion_module(lidar_features[0], feature_bev[0]) # this framework requires features inside lists for some reason. 
             feature_bev =[feature_bev]
         else:
+            lidar_features = self.additional_upsample_act(self.additional_upsample_norm(self.additional_upsample(lidar_features)))
             feature_bev = [lidar_features]
 
         assert self.bbox_head is not None or self.seg_head is not None
@@ -483,7 +489,8 @@ class FastBEVFusionCenterheadPretrained(BaseDetector):
             feature_bev =[feature_bev]
         else:
 
-            feature_bev= lidar_features
+            lidar_features = self.additional_upsample_act(self.additional_upsample_norm(self.additional_upsample(lidar_features)))
+            feature_bev = [lidar_features]
 
         if self.bbox_head is not None:
             outs = self.bbox_head(feature_bev)
