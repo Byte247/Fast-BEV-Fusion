@@ -469,7 +469,7 @@ class FastBEVFusionCenterheadPretrained(BaseDetector):
             bbox3d2result(bboxes, scores, labels)
             for bboxes, scores, labels in bbox_list
         ]
-        print(bbox_results)
+        
         return bbox_results
 
 
