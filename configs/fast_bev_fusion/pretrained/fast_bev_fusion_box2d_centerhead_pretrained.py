@@ -171,7 +171,7 @@ class_names = [
 ]
 
 dataset_type = 'NuScenesMultiView_Map_MultiModalDataset'
-#dataset_type = 'NuScenesMultiView_Map_MultiModalDataset'
+
 data_root = 'data/nuscenes/'
 # Input modality for nuScenes dataset, this is consistent with the submission
 # format which requires the information in input_modality.
@@ -227,20 +227,20 @@ db_sampler = dict(
 
 # First Stage Pipeline
 train_pipeline = [
-    dict(
-       type='LoadPointsFromFile',
-       coord_type='LIDAR',
-       load_dim=5,
-       use_dim=5,),
-   dict(
-       type='LoadPointsFromMultiSweeps',
-       sweeps_num=10,
-       use_dim=[0, 1, 2, 3, 4]),
-
     dict(type='LoadAnnotations3D',
-           with_bbox=True,
-           with_label=True,
-           with_bev_seg=False),
+         with_bbox=True,
+         with_label=True,
+         with_bev_seg=False),
+     dict(
+        type='LoadPointsFromFile',
+        coord_type='LIDAR',
+        load_dim=5,
+        use_dim=5,),
+    dict(
+        type='LoadPointsFromMultiSweeps',
+        sweeps_num=10,
+        use_dim=[0, 1, 2, 3, 4],
+        pad_empty_sweeps=True),
 
     dict(type='ObjectSample', db_sampler=db_sampler),
     dict(
@@ -264,7 +264,9 @@ train_pipeline = [
               dict(type='Pad', size_divisor=32)]),
    dict(type='KittiSetOrigin', point_cloud_range=point_cloud_range),
    dict(type='DefaultFormatBundle3D', class_names=class_names),
-   dict(type='Collect3D', keys=['points', 'gt_bboxes_3d', 'gt_labels_3d'])]
+    dict(type='Collect3D', keys=['img', 'gt_bboxes', 'gt_labels', 
+                                 'gt_bboxes_3d', 'gt_labels_3d',
+                                  'points'])]
 
 
 #Second Stage Pipeline
