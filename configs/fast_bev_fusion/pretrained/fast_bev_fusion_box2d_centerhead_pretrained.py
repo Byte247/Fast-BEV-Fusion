@@ -177,7 +177,7 @@ data_root = 'data/nuscenes/'
 # format which requires the information in input_modality.
 input_modality = dict(
     use_lidar=True,
-    use_camera=False,
+    use_camera=True,
     use_radar=False,
     use_map=False,
     use_external=False)
