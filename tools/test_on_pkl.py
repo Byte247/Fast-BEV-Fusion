@@ -201,12 +201,13 @@ def main():
             # hard-code way to remove EvalHook args
             for key in [
                     'interval', 'tmpdir', 'start', 'gpu_collect', 'save_best',
-                    'rule'
+                    'rule', 'vis'
             ]:
                 eval_kwargs.pop(key, None)
             eval_kwargs.update(dict(metric=args.eval, **kwargs))
             print(type(dataset))
-            print(dataset.evaluate(outputs, out_dir = args.workdir, vis_mode=args.vis, jsonfile_prefix=args.workdir,**eval_kwargs))
+            #print(dataset.evaluate(outputs, out_dir = args.workdir, vis_mode=args.vis, jsonfile_prefix=args.workdir,**eval_kwargs))
+            print(dataset.evaluate(outputs, out_dir = args.workdir,**eval_kwargs))
 
 
 if __name__ == '__main__':

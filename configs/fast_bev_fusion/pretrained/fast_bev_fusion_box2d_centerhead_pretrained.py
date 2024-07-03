@@ -332,7 +332,6 @@ test_pipeline = [
         ])
 ]
 
-
 # test_pipeline = [
 #     dict(
 #         type='LoadPointsFromFile',
