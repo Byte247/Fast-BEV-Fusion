@@ -259,7 +259,7 @@ train_pipeline = [
           n_images=6,
           transforms=[
               dict(type='LoadImageFromFile'),
-              dict(type='Resize', img_scale=(1600, 900), keep_ratio=True),
+              dict(type='Resize', img_scale=(100, 50), keep_ratio=True),
               dict(type='Normalize', **img_norm_cfg),
               dict(type='Pad', size_divisor=32)]),
    dict(type='KittiSetOrigin', point_cloud_range=point_cloud_range),
@@ -317,13 +317,12 @@ test_pipeline = [
         n_images=6,
         transforms=[
             dict(type='LoadImageFromFile'),
-            dict(type='Resize', img_scale=(1600, 900), keep_ratio=True),
+            dict(type='Resize', img_scale=(100, 50), keep_ratio=True),
             dict(type='Normalize', **img_norm_cfg),
             dict(type='Pad', size_divisor=32)]),
     dict(type='KittiSetOrigin', point_cloud_range=point_cloud_range),
     dict(type='DefaultFormatBundle3D', class_names=class_names, with_label=False),
     dict(type='Collect3D', keys=['img','points'])]
-
 
 
 
@@ -340,6 +339,7 @@ data = dict(
             classes=class_names,
             modality=input_modality,
             test_mode=False,
+            with_box2d=False,
             box_type_3d='LiDAR')),
     val=dict(
         type=dataset_type,
@@ -349,6 +349,7 @@ data = dict(
         classes=class_names,
         modality=input_modality,
         test_mode=True,
+        with_box2d=False,
         box_type_3d='LiDAR'),
     test=dict(
         type=dataset_type,
@@ -360,41 +361,6 @@ data = dict(
         test_mode=True,
         box_type_3d='LiDAR'))
 
-
-# data = dict(
-#     samples_per_gpu=1,
-#     workers_per_gpu=4,
-#     train=dict(
-#         type='CBGSDataset',
-#         dataset=dict(
-#             type=dataset_type,
-#             data_root=data_root,
-#             ann_file=data_root + 'nuscenes_infos_train.pkl',
-#             pipeline=train_pipeline,
-#             classes=class_names,
-#             modality=input_modality,
-#             test_mode=False,
-#             with_box2d=True,
-#             box_type_3d='LiDAR')),
-#     val=dict(
-#         type=dataset_type,
-#         data_root=data_root,
-#         ann_file=data_root + 'nuscenes_infos_val.pkl',
-#         pipeline=test_pipeline,
-#         classes=class_names,
-#         modality=input_modality,
-#         test_mode=True,
-#         with_box2d=True,
-#         box_type_3d='LiDAR'),
-#     test=dict(
-#         type=dataset_type,
-#         data_root=data_root,
-#         ann_file=data_root + 'nuscenes_infos_val.pkl',
-#         pipeline=test_pipeline,
-#         classes=class_names,
-#         modality=input_modality,
-#         test_mode=True,
-#         box_type_3d='LiDAR'))
 
 # optimizer = dict(type='AdamW', lr=0.0001,
 #                  weight_decay=0.01,
