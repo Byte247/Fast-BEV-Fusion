@@ -437,12 +437,12 @@ class FastBEVFusionCenterheadPretrained(BaseDetector):
         assert self.bbox_head is not None
 
         losses = dict()
-        if self.bbox_head is not None:
-            x = self.bbox_head([lidar_features])
+        
+        x = self.bbox_head([lidar_features])
 
-            loss_inputs = [gt_bboxes_3d, gt_labels_3d, x]
-            loss_det = self.bbox_head.loss(*loss_inputs)
-            losses.update(loss_det)
+        loss_inputs = [gt_bboxes_3d, gt_labels_3d, x]
+        loss_det = self.bbox_head.loss(*loss_inputs)
+        losses.update(loss_det)
             
 
         return losses
