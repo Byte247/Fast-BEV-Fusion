@@ -807,6 +807,8 @@ class TransFusionHead(nn.Module):
         batch_size = inputs.shape[0]
         lidar_feat = self.shared_conv(inputs)
 
+        print(f"lidar_feat: {lidar_feat.shape}")
+
         #################################
         # image to BEV
         #################################
