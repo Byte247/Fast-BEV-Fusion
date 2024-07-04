@@ -172,7 +172,7 @@ train_pipeline = [
        rot_range=[-0.3925 * 2, 0.3925 * 2],
        scale_ratio_range=[0.9, 1.1],
        translation_std=[0.5, 0.5, 0.5],
-      update_img2lidar=True),
+       update_img2lidar=True),
     dict(type='PointShuffle'),
     dict(type='PointsRangeFilter', point_cloud_range=point_cloud_range),
     dict(type='ObjectRangeFilter', point_cloud_range=point_cloud_range),
