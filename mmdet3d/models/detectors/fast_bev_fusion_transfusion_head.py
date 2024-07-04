@@ -308,7 +308,7 @@ class FastBEVFusionTransfusionhead(BaseDetector):
         
         #fuse lidar BEV and camera BEV features
         feature_bev = self.fusion_module(lidar_features, feature_bev[0]) # this framework requires features inside lists for some reason. 
-        #feature_bev =[feature_bev]
+        feature_bev =[feature_bev]
 
         assert self.bbox_head is not None or self.seg_head is not None
 

@@ -110,7 +110,7 @@ model = dict(
                 reg_cost=dict(type='BBoxBEVL1Cost', weight=0.25),
                 iou_cost=dict(type='IoU3DCost', weight=0.25)
             ),
-            voxel_size=voxel_size,
+            voxel_size=[0.075, 0.075],
             out_size_factor=4,
             gaussian_overlap=0.1,
             pos_weight=-1,
@@ -126,7 +126,7 @@ model = dict(
             score_threshold=0.1,
             pc_range=[-51.2, -51.2],
             out_size_factor=4,
-            voxel_size=[0.2, 0.2],
+            voxel_size=[0.075, 0.075],
             nms_type=None,
             pre_max_size=1000,
             post_max_size=83,
