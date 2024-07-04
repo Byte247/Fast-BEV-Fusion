@@ -2,6 +2,7 @@
 # If point cloud range is changed, the models should also change their point cloud range accordingly
 point_cloud_range = [-54.0, -54.0, -5.0, 54.0, 54.0, 3.0]
 voxel_size = [0.075, 0.075, 0.2]
+out_size_factor = 8
 
 # For nuScenes we usually do 10-class detection
 class_names = [
@@ -69,7 +70,7 @@ model = dict(
         type='TransFusionHead',
         num_proposals=200,
         auxiliary=True,
-        in_channels=512,
+        in_channels=256 * 2,
         hidden_channel=128,
         num_classes=len(class_names),
         num_decoder_layers=1,
@@ -86,23 +87,18 @@ model = dict(
             type='TransFusionBBoxCoder',
             pc_range=point_cloud_range[:2],
             voxel_size=voxel_size[:2],
-            out_size_factor=4,
+            out_size_factor=out_size_factor,
             post_center_range=[-61.2, -61.2, -10.0, 61.2, 61.2, 10.0],
             score_threshold=0.0,
             code_size=10,
         ),
         loss_cls=dict(type='FocalLoss', use_sigmoid=True, gamma=2, alpha=0.25, reduction='mean', loss_weight=1.0),
+        # loss_iou=dict(type='CrossEntropyLoss', use_sigmoid=True, reduction='mean', loss_weight=0.0),
         loss_bbox=dict(type='L1Loss', reduction='mean', loss_weight=0.25),
         loss_heatmap=dict(type='GaussianFocalLoss', reduction='mean', loss_weight=1.0),
     ),
-    
-    
-    camera_n_voxels=(256, 256, 6), 
-    camera_voxel_size=[0.4, 0.4, 1],
-
-    # model training and testing settings for the head
     train_cfg=dict(
-            grid_size=[1440, 1440, 1],
+            dataset='nuScenes',
             assigner=dict(
                 type='HungarianAssigner3D',
                 iou_calculator=dict(type='BboxOverlaps3D', coordinate='lidar'),
@@ -110,15 +106,38 @@ model = dict(
                 reg_cost=dict(type='BBoxBEVL1Cost', weight=0.25),
                 iou_cost=dict(type='IoU3DCost', weight=0.25)
             ),
-            voxel_size=[0.075, 0.075],
-            out_size_factor=4,
-            gaussian_overlap=0.1,
             pos_weight=-1,
+            gaussian_overlap=0.1,
             min_radius=2,
+            grid_size=[1440, 1440, 40],  # [x_len, y_len, 1]
+            voxel_size=voxel_size,
+            out_size_factor=out_size_factor,
             code_weights=[1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.2, 0.2],
-            point_cloud_range = point_cloud_range),
+            point_cloud_range=point_cloud_range),
+    
+    
+    camera_n_voxels=(256, 256, 6), 
+    camera_voxel_size=[0.4, 0.4, 1],
+
+    # # model training and testing settings for the head
+    # train_cfg=dict(
+    #         grid_size=[1440, 1440, 40],
+    #         assigner=dict(
+    #             type='HungarianAssigner3D',
+    #             iou_calculator=dict(type='BboxOverlaps3D', coordinate='lidar'),
+    #             cls_cost=dict(type='FocalLossCost', gamma=2, alpha=0.25, weight=0.15),
+    #             reg_cost=dict(type='BBoxBEVL1Cost', weight=0.25),
+    #             iou_cost=dict(type='IoU3DCost', weight=0.25)
+    #         ),
+    #         voxel_size=[0.075, 0.075],
+    #         out_size_factor=4,
+    #         gaussian_overlap=0.1,
+    #         pos_weight=-1,
+    #         min_radius=2,
+    #         code_weights=[1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.2, 0.2],
+    #         point_cloud_range = point_cloud_range),
      test_cfg=dict(
-            grid_size=[1440, 1440, 41],
+            grid_size=[1440, 1440, 40],
             post_center_limit_range=[-61.2, -61.2, -10.0, 61.2, 61.2, 10.0],
             max_per_img=500,
             max_pool_nms=False,
