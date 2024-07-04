@@ -794,7 +794,7 @@ class TransFusionHead(nn.Module):
                 build_assigner(res) for res in self.train_cfg.assigner
             ]
 
-    def forward_single(self, inputs, img_inputs, img_metas):
+    def forward_single(self, inputs):
         """Forward function for CenterPoint.
 
         Args:
