@@ -1096,7 +1096,6 @@ class TransFusionHead(nn.Module):
         """
         if self.initialize_by_heatmap:
             labels, label_weights, bbox_targets, bbox_weights, ious, num_pos, matched_ious, heatmap = self.get_targets(gt_bboxes_3d, gt_labels_3d, preds_dicts[0])
-            print(f"headmap target: {heatmap.shape}")
         else:
             labels, label_weights, bbox_targets, bbox_weights, ious, num_pos, matched_ious = self.get_targets(gt_bboxes_3d, gt_labels_3d, preds_dicts[0])
         if hasattr(self, 'on_the_image_mask'):
@@ -1108,6 +1107,7 @@ class TransFusionHead(nn.Module):
 
         if self.initialize_by_heatmap:
             # compute heatmap loss
+            print(f"heatmap sigmoid: {clip_sigmoid(preds_dict['dense_heatmap'])}")
             loss_heatmap = self.loss_heatmap(clip_sigmoid(preds_dict['dense_heatmap']), heatmap, avg_factor=max(heatmap.eq(1).float().sum().item(), 1))
             loss_dict['loss_heatmap'] = loss_heatmap
 
