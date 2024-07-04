@@ -194,9 +194,17 @@ train_pipeline = [
         type='LoadPointsFromMultiSweeps',
         sweeps_num=10,
         use_dim=[0, 1, 2, 3, 4],
-        pad_empty_sweeps=True,
-        remove_close=True),
+        pad_empty_sweeps=True),
+    dict(
+       type='GlobalRotScaleTrans',
+       rot_range=[-0.3925 * 2, 0.3925 * 2],
+       scale_ratio_range=[0.9, 1.1],
+       translation_std=[0.5, 0.5, 0.5],
+      update_img2lidar=False),
+    dict(type='PointShuffle'),
     dict(type='PointsRangeFilter', point_cloud_range=point_cloud_range),
+    dict(type='ObjectRangeFilter', point_cloud_range=point_cloud_range),
+    dict(type='ObjectNameFilter', classes=class_names),
     dict(
         type='MultiViewPipeline',
         n_images=6,
@@ -205,7 +213,6 @@ train_pipeline = [
             dict(type='Resize', img_scale=(800, 450), keep_ratio=True),
             dict(type='Normalize', **img_norm_cfg),
             dict(type='Pad', size_divisor=32)]),
-    dict(type='ObjectRangeFilter', point_cloud_range=point_cloud_range),
     dict(type='KittiSetOrigin', point_cloud_range=point_cloud_range),
     dict(type='DefaultFormatBundle3D', class_names=class_names),
     dict(type='Collect3D', keys=['img', 'gt_bboxes', 'gt_labels', 
@@ -221,8 +228,7 @@ test_pipeline = [
         type='LoadPointsFromMultiSweeps',
         sweeps_num=10,
         use_dim=[0, 1, 2, 3, 4],
-        pad_empty_sweeps=True,
-        remove_close=True),
+        pad_empty_sweeps=True),
     dict(
         type='MultiViewPipeline',
         n_images=6,
@@ -237,11 +243,10 @@ test_pipeline = [
 
 
 data = dict(
-    samples_per_gpu=1,
+    samples_per_gpu=12,
     workers_per_gpu=4,
     train=dict(
-        type='RepeatDataset',
-        times=1,
+        type='CBGSDataset',
         dataset=dict(
             type=dataset_type,
             data_root=data_root,
@@ -272,10 +277,13 @@ data = dict(
         test_mode=True,
         box_type_3d='LiDAR'))
 
-optimizer = dict(type='AdamW', lr=0.0001, 
-                 weight_decay=0.01,
+optimizer = dict(type='AdamW', lr=1e-4,
+                 weight_decay=0.05,
                  paramwise_cfg=dict(
-                 custom_keys={'backbone': dict(lr_mult=0.1, decay_mult=1.0)}))
+                 custom_keys={'backbone': dict(lr_mult=0.1, decay_mult=1.0),
+                              'neck_3d': dict(lr_mult=0.1, decay_mult=1.0),
+                              'pos_embed_camera': dict(lr_mult= 1.0, decay_mult=0.),
+                              'pos_embed_lidar': dict(lr_mult= 1.0, decay_mult=0.)})) #try to combat nan even more
 # max_norm=10 is better for SECOND
 optimizer_config = dict(grad_clip=dict(max_norm=10, norm_type=2))
 
@@ -283,10 +291,10 @@ optimizer_config = dict(grad_clip=dict(max_norm=10, norm_type=2))
 lr_config = dict(
     policy='poly',
     warmup='linear',
-    warmup_iters=42000, # after roughly 6 epochs, reach the 0.0001 lr 
+    warmup_iters=2000, # after roughly 6 epochs, reach the 0.0001 lr 
     warmup_ratio=1e-6,
     power=1.0,
-    min_lr=0,
+    min_lr=1e-8,
     by_epoch=False
     )
 
@@ -296,7 +304,7 @@ runner = dict(type='EpochBasedRunner', max_epochs=20)
 #total_epochs = 20
 checkpoint_config = dict(interval=1)
 log_config = dict(
-    interval=100,
+    interval=200,
     hooks=[
         dict(type='TextLoggerHook'),
         dict(type='TensorboardLoggerHook'),
