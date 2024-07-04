@@ -203,12 +203,12 @@ train_pipeline = [
         sweeps_num=10,
         use_dim=[0, 1, 2, 3, 4],
         pad_empty_sweeps=True),
-    dict(
-       type='GlobalRotScaleTrans',
-       rot_range=[-0.3925 * 2, 0.3925 * 2],
-       scale_ratio_range=[0.9, 1.1],
-       translation_std=[0.5, 0.5, 0.5],
-       update_img2lidar=True),
+    # dict(
+    #    type='GlobalRotScaleTrans',
+    #    rot_range=[-0.3925 * 2, 0.3925 * 2],
+    #    scale_ratio_range=[0.9, 1.1],
+    #    translation_std=[0.5, 0.5, 0.5],
+    #    update_img2lidar=True),
 
     dict(type='PointsRangeFilter', point_cloud_range=point_cloud_range),
     dict(type='ObjectRangeFilter', point_cloud_range=point_cloud_range),
@@ -221,7 +221,7 @@ train_pipeline = [
             dict(type='Resize', img_scale=(1600, 900), keep_ratio=True),
             dict(type='Normalize', **img_norm_cfg),
             dict(type='Pad', size_divisor=32)]),
-    dict(type='PointShuffle'),
+    #dict(type='PointShuffle'),
     dict(type='KittiSetOrigin', point_cloud_range=point_cloud_range),
     dict(type='DefaultFormatBundle3D', class_names=class_names),
     dict(type='Collect3D', keys=['img', 'gt_bboxes', 'gt_labels', 
