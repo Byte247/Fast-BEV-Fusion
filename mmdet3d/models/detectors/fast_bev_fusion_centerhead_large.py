@@ -473,6 +473,32 @@ class FastBEVFusionCenterheadLarge(BaseDetector):
             bbox_results[0]['bev_seg'] = x_bev
 
         return bbox_results
+    
+def aug_test(self, imgs, img_metas):
+        img_shape_copy = copy.deepcopy(img_metas[0]['img_shape'])
+        extrinsic_copy = copy.deepcopy(img_metas[0]['lidar2img']['extrinsic'])
+
+        x_list = []
+        img_metas_list = []
+        for tta_id in range(2):
+
+            img_metas[0]['img_shape'] = img_shape_copy[24*tta_id:24*(tta_id+1)]
+            img_metas[0]['lidar2img']['extrinsic'] = extrinsic_copy[24*tta_id:24*(tta_id+1)]
+            img_metas_list.append(img_metas)
+
+            feature_bev, _, _ = self.extract_feat(imgs[:, 24*tta_id:24*(tta_id+1)], img_metas, "test")
+            x = self.bbox_head(feature_bev)
+            x_list.append(x)
+
+        bbox_list = self.bbox_head.get_tta_bboxes(x_list, img_metas_list, valid=None)
+        bbox_results = [
+            bbox3d2result(det_bboxes, det_scores, det_labels)
+            for det_bboxes, det_scores, det_labels in [bbox_list]
+        ]
+        return bbox_results
+
+def show_results(self, *args, **kwargs):
+        pass
 
 
 @torch.no_grad()
