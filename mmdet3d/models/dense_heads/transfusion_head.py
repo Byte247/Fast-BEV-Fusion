@@ -932,12 +932,12 @@ class TransFusionHead(nn.Module):
                 - torch.Tensor: regression weights. [BS, num_proposals, 8]
         """
         # change preds_dict into list of dict (index by batch_id)
-        # preds_dict[0]['center'].shape [bs, 3, num_proposal]
+        # preds_dict['center'].shape [bs, 3, num_proposal]
         list_of_pred_dict = []
         for batch_idx in range(len(gt_bboxes_3d)):
             pred_dict = {}
-            for key in preds_dict[0].keys():
-                pred_dict[key] = preds_dict[0][key][batch_idx:batch_idx + 1]
+            for key in preds_dict.keys():
+                pred_dict[key] = preds_dict[key][batch_idx:batch_idx + 1]
             list_of_pred_dict.append(pred_dict)
 
         assert len(gt_bboxes_3d) == len(list_of_pred_dict)
@@ -1163,20 +1163,20 @@ class TransFusionHead(nn.Module):
         """
         rets = []
         for layer_id, preds_dict in enumerate(preds_dicts):
-            batch_size = preds_dict[0]['heatmap'].shape[0]
-            batch_score = preds_dict[0]['heatmap'][..., -self.num_proposals:].sigmoid()
+            batch_size = preds_dict['heatmap'].shape[0]
+            batch_score = preds_dict['heatmap'][..., -self.num_proposals:].sigmoid()
             # if self.loss_iou.loss_weight != 0:
-            #    batch_score = torch.sqrt(batch_score * preds_dict[0]['iou'][..., -self.num_proposals:].sigmoid())
+            #    batch_score = torch.sqrt(batch_score * preds_dict['iou'][..., -self.num_proposals:].sigmoid())
             one_hot = F.one_hot(self.query_labels, num_classes=self.num_classes).permute(0, 2, 1)
-            batch_score = batch_score * preds_dict[0]['query_heatmap_score'] * one_hot
+            batch_score = batch_score * preds_dict['query_heatmap_score'] * one_hot
 
-            batch_center = preds_dict[0]['center'][..., -self.num_proposals:]
-            batch_height = preds_dict[0]['height'][..., -self.num_proposals:]
-            batch_dim = preds_dict[0]['dim'][..., -self.num_proposals:]
-            batch_rot = preds_dict[0]['rot'][..., -self.num_proposals:]
+            batch_center = preds_dict['center'][..., -self.num_proposals:]
+            batch_height = preds_dict['height'][..., -self.num_proposals:]
+            batch_dim = preds_dict['dim'][..., -self.num_proposals:]
+            batch_rot = preds_dict['rot'][..., -self.num_proposals:]
             batch_vel = None
-            if 'vel' in preds_dict[0]:
-                batch_vel = preds_dict[0]['vel'][..., -self.num_proposals:]
+            if 'vel' in preds_dict:
+                batch_vel = preds_dict['vel'][..., -self.num_proposals:]
 
             temp = self.bbox_coder.decode(batch_score, batch_rot, batch_dim, batch_center, batch_height, batch_vel, filter=True)
 
