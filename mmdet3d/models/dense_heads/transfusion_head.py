@@ -805,8 +805,6 @@ class TransFusionHead(nn.Module):
             list[dict]: Output results for tasks.
         """
 
-        print(f"inputs: {inputs}")
-
         batch_size = inputs.shape[0]
         lidar_feat = self.shared_conv(inputs)
 
@@ -1098,6 +1096,7 @@ class TransFusionHead(nn.Module):
         """
         if self.initialize_by_heatmap:
             labels, label_weights, bbox_targets, bbox_weights, ious, num_pos, matched_ious, heatmap = self.get_targets(gt_bboxes_3d, gt_labels_3d, preds_dicts[0])
+            print(f"headmap target: {heatmap.shape}")
         else:
             labels, label_weights, bbox_targets, bbox_weights, ious, num_pos, matched_ious = self.get_targets(gt_bboxes_3d, gt_labels_3d, preds_dicts[0])
         if hasattr(self, 'on_the_image_mask'):
