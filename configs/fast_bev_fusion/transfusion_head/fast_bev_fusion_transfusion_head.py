@@ -121,19 +121,13 @@ model = dict(
             code_weights=[1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.2, 0.2],
             point_cloud_range=point_cloud_range),
     test_cfg=dict(
+            dataset='nuScenes',
             grid_size=[1440, 1440, 40],
-            post_center_limit_range=[-61.2, -61.2, -10.0, 61.2, 61.2, 10.0],
-            max_per_img=500,
-            max_pool_nms=False,
-            min_radius=[4, 12, 10, 1, 0.85, 0.175],
-            score_threshold=0.1,
-            pc_range=[-51.2, -51.2],
             out_size_factor=out_size_factor,
-            voxel_size=[0.075, 0.075],
+            pc_range=point_cloud_range[0:2],
+            voxel_size=voxel_size[:2],
             nms_type=None,
-            pre_max_size=1000,
-            post_max_size=83,
-            nms_thr=0.2)           
+        )     
 )
 
 dataset_type = 'NuScenesMultiView_Map_MultiModalDataset'
