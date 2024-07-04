@@ -154,9 +154,8 @@ class FastBEVFusionTransfusionhead(BaseDetector):
         else:
             c1, c2, c3, c4 = _inner_forward(x)
 
-        features_2d = None
-        if self.bbox_head_2d:
-            features_2d = [c1, c2, c3, c4]
+        
+        features_2d = [c1, c2, c3, c4]
 
         c2 = resize(
             c2, size=c1.size()[2:], mode="bilinear", align_corners=False
