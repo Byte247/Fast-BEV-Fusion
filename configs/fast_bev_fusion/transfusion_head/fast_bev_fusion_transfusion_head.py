@@ -65,11 +65,11 @@ model = dict(
     #Fusion layer
     fusion_module = dict(type='MultiHeadCrossAttentionVoxel',embed_dim = 2048, num_heads=8, dropout = 0.1),
 
-    bbox_head=dict(
+    pts_bbox_head=dict(
         type='TransFusionHead',
         num_proposals=200,
-        auxiliary=False,
-        in_channels=512,
+        auxiliary=True,
+        in_channels=256 * 2,
         hidden_channel=128,
         num_classes=len(class_names),
         num_decoder_layers=1,
@@ -85,7 +85,7 @@ model = dict(
         bbox_coder=dict(
             type='TransFusionBBoxCoder',
             pc_range=point_cloud_range[:2],
-            voxel_size=[voxel_size[0], voxel_size[1]],
+            voxel_size=voxel_size[:2],
             out_size_factor=4,
             post_center_range=[-61.2, -61.2, -10.0, 61.2, 61.2, 10.0],
             score_threshold=0.0,
@@ -103,7 +103,7 @@ model = dict(
 
     # model training and testing settings for the head
     train_cfg=dict(
-            grid_size=[1440, 1440, 41],
+            dataset='nuScenes',
             assigner=dict(
                 type='HungarianAssigner3D',
                 iou_calculator=dict(type='BboxOverlaps3D', coordinate='lidar'),
@@ -111,15 +111,14 @@ model = dict(
                 reg_cost=dict(type='BBoxBEVL1Cost', weight=0.25),
                 iou_cost=dict(type='IoU3DCost', weight=0.25)
             ),
+            pos_weight=-1,
+            gaussian_overlap=0.1,
+            min_radius=2,
+            grid_size=[1440, 1440, 40],  # [x_len, y_len, 1]
             voxel_size=voxel_size,
             out_size_factor=4,
-            dense_reg=1,
-            gaussian_overlap=0.1,
-            max_objs=500,
-            min_radius=2,
-            pos_weight=-1,
             code_weights=[1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.2, 0.2],
-            point_cloud_range = point_cloud_range),
+            point_cloud_range=point_cloud_range),
      test_cfg=dict(
             grid_size=[1440, 1440, 41],
             post_center_limit_range=[-61.2, -61.2, -10.0, 61.2, 61.2, 10.0],
