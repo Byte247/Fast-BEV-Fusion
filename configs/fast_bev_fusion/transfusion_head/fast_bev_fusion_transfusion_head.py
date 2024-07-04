@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # If point cloud range is changed, the models should also change their point cloud range accordingly
 point_cloud_range = [-51.2, -51.2, -5.0, 51.2, 51.2, 3.0]
+voxel_size = [0.075, 0.075, 0.2]
 
 # For nuScenes we usually do 10-class detection
 class_names = [
@@ -31,7 +32,7 @@ model = dict(
         num_outs=4),
     neck_fuse=dict(in_channels=256, out_channels=64),
     neck_3d=dict(
-        type='M2BevNeck',
+        type='M2BevNeckLeakyRelu',
         in_channels=384,
         out_channels=256,
         num_layers=6,
@@ -42,43 +43,33 @@ model = dict(
 
     #Point Modules:
     pts_voxel_layer=dict(
-        max_num_points=20, voxel_size=[0.2, 0.2, 8], max_voxels=(30000, 40000), point_cloud_range=point_cloud_range),
-    pts_voxel_encoder=dict(
-        type='PillarFeatureNet',
-        in_channels=5,
-        feat_channels=[64],
-        with_distance=False,
-        voxel_size=(0.2, 0.2, 8),
-        norm_cfg=dict(type='BN1d', eps=1e-3, momentum=0.01),
-        legacy=False),
+        max_num_points=10, voxel_size=voxel_size, max_voxels=(120000, 160000), point_cloud_range=point_cloud_range),
+    pts_voxel_encoder=dict(type='HardSimpleVFE', num_features=5),
     pts_middle_encoder=dict(
-        type='PointPillarsScatter', in_channels=64, output_shape=(512, 512)),
-    pts_backbone=dict(
-        type='SECOND',
-        in_channels=64,
-        out_channels=[64, 128, 256],
-        layer_nums=[3, 5, 5],
-        layer_strides=[2, 2, 2],
-        norm_cfg=dict(type='BN', eps=1e-3, momentum=0.01),
-        conv_cfg=dict(type='Conv2d', bias=False)),
+        type='SpMiddleResNetFHD',
+        in_channels=5,
+        sparse_shape=[41, 1440, 1440]),
+
+
     pts_neck=dict(
-        type='SECONDFPN',
-        in_channels=[64, 128, 256],
-        out_channels=[128, 128, 128],
-        upsample_strides=[0.5, 1, 2],
-        norm_cfg=dict(type='BN', eps=1e-3, momentum=0.01),
-        upsample_cfg=dict(type='deconv', bias=False),
-        use_conv_for_no_stride=True),
+        type="RPNV3",
+        layer_nums=[5, 5],
+        ds_layer_strides=[1, 2],
+        ds_num_filters=[256, 256],
+        us_layer_strides=[1, 2],
+        us_num_filters=[256, 256], # default 128x128
+        num_input_features=[704,256], #num features in the feature maps blocks that are feed into the structure similar to "FPN"
+    ),
 
 
     #Fusion layer
-    fusion_module = dict(type='MultiHeadCrossAttentionV2',embed_dim = 512, num_heads=8, dropout = 0.1, fuse_on_lidar=True),
+    fusion_module = dict(type='MultiHeadCrossAttentionVoxel',embed_dim = 2048, num_heads=8, dropout = 0.1),
 
     bbox_head=dict(
         type='TransFusionHead',
         num_proposals=200,
         auxiliary=True,
-        in_channels=128 * 3,
+        in_channels=512,
         hidden_channel=128,
         num_classes=len(class_names),
         num_decoder_layers=1,
@@ -94,7 +85,7 @@ model = dict(
         bbox_coder=dict(
             type='TransFusionBBoxCoder',
             pc_range=point_cloud_range[:2],
-            voxel_size=[0.2, 0.2],
+            voxel_size=[voxel_size[0], voxel_size[1]],
             out_size_factor=4,
             post_center_range=[-61.2, -61.2, -10.0, 61.2, 61.2, 10.0],
             score_threshold=0.0,
@@ -146,7 +137,7 @@ model = dict(
 
     # model training and testing settings for the head
     train_cfg=dict(
-            grid_size=[512, 512, 1],
+            grid_size=[1440, 1440, 41],
             assigner=dict(
                 type='HungarianAssigner3D',
                 iou_calculator=dict(type='BboxOverlaps3D', coordinate='lidar'),
@@ -154,7 +145,7 @@ model = dict(
                 reg_cost=dict(type='BBoxBEVL1Cost', weight=0.25),
                 iou_cost=dict(type='IoU3DCost', weight=0.25)
             ),
-            voxel_size=[0.2, 0.2],
+            voxel_size=voxel_size,
             out_size_factor=4,
             dense_reg=1,
             gaussian_overlap=0.1,
@@ -164,7 +155,7 @@ model = dict(
             code_weights=[1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.2, 0.2],
             point_cloud_range = point_cloud_range),
      test_cfg=dict(
-            grid_size=[512, 512, 1],
+            grid_size=[1440, 1440, 41],
             post_center_limit_range=[-61.2, -61.2, -10.0, 61.2, 61.2, 10.0],
             max_per_img=500,
             max_pool_nms=False,
@@ -172,7 +163,7 @@ model = dict(
             score_threshold=0.1,
             pc_range=[-51.2, -51.2],
             out_size_factor=4,
-            voxel_size=[0.2, 0.2],
+            voxel_size=voxel_size[:2],
             nms_type=None,
             pre_max_size=1000,
             post_max_size=83,
@@ -212,7 +203,7 @@ train_pipeline = [
         n_images=6,
         transforms=[
             dict(type='LoadImageFromFile'),
-            dict(type='Resize', img_scale=(1600, 900), keep_ratio=True),
+            dict(type='Resize', img_scale=(200, 112), keep_ratio=True),
             dict(type='Normalize', **img_norm_cfg),
             dict(type='Pad', size_divisor=32)]),
     dict(type='PointsRangeFilter', point_cloud_range=point_cloud_range),
@@ -281,7 +272,8 @@ data = dict(
         test_mode=True,
         box_type_3d='LiDAR'))
 
-optimizer = dict(type='AdamW', lr=0.0001, weight_decay=0.05)  # for 8gpu * 2sample_per_gpu
+optimizer = dict(type='AdamW', lr=0.0001, weight_decay=0.1)  # for 8gpu * 2sample_per_gpu
+
 optimizer_config = dict(grad_clip=dict(max_norm=0.1, norm_type=2))
 lr_config = dict(
     policy='cyclic',
@@ -296,7 +288,7 @@ momentum_config = dict(
     step_ratio_up=0.4)
 
 # runtime settings
-runner = dict(type='EpochBasedRunner', max_epochs=20)
+runner = dict(type='EpochBasedRunner', max_epochs=1)
 
 #total_epochs = 20
 checkpoint_config = dict(interval=1)

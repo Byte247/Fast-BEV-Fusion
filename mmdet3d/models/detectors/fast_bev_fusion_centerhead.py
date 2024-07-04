@@ -300,7 +300,7 @@ class FastBEVFusionCenterhead(BaseDetector):
         
         lidar_features = self.extract_pts_feat(points)
 
-        feature_bev, valids, features_2d = self.extract_feat(img, img_metas, "train")
+        camera_features, valids, features_2d = self.extract_feat(img, img_metas, "train")
 
 
         """
@@ -311,7 +311,7 @@ class FastBEVFusionCenterhead(BaseDetector):
 
         
         #fuse lidar BEV and camera BEV features
-        feature_bev = self.fusion_module(lidar_features[0], feature_bev[0]) # this framework requires features inside lists for some reason. 
+        feature_bev = self.fusion_module(lidar_features[0], camera_features[0]) # this framework requires features inside lists for some reason. 
         feature_bev =[feature_bev]
 
         assert self.bbox_head is not None or self.seg_head is not None

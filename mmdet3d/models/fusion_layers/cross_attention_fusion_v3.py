@@ -180,10 +180,6 @@ class MultiHeadCrossAttentionV3(nn.Module):
         #add position embedding to flattened patches
         camera_patches = torch.add(camera_patches, self.pos_embed_camera)
 
-        # if self.pos_embed_camera.grad is not None:
-        #    print(f"camera.grad: {self.pos_embed_camera.grad.abs().max()}")
-           
-
            
         #reshape to match required nn.MultiheadAttention input format: batch, seq, feature
         camera_patches = camera_patches.permute(0, 2, 1)  # shape: (batch_size, sequence_length, embedding_dimension)
