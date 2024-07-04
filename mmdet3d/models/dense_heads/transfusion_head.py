@@ -1105,7 +1105,7 @@ class TransFusionHead(nn.Module):
             label_weights = label_weights * self.on_the_image_mask
             bbox_weights = bbox_weights * self.on_the_image_mask[:, :, None]
             num_pos = bbox_weights.max(-1).values.sum()
-        preds_dict = preds_dicts[0][0]
+        preds_dict = preds_dicts[0]
         loss_dict = dict()
 
         if self.initialize_by_heatmap:
