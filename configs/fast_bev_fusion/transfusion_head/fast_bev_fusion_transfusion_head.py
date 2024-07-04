@@ -102,7 +102,7 @@ model = dict(
 
     # model training and testing settings for the head
     train_cfg=dict(
-            grid_size=[512, 512, 1],
+            grid_size=[1440, 1440, 41],
             assigner=dict(
                 type='HungarianAssigner3D',
                 iou_calculator=dict(type='BboxOverlaps3D', coordinate='lidar'),
@@ -118,7 +118,7 @@ model = dict(
             code_weights=[1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.2, 0.2],
             point_cloud_range = point_cloud_range),
      test_cfg=dict(
-            grid_size=[512, 512, 1],
+            grid_size=[1440, 1440, 41],
             post_center_limit_range=[-61.2, -61.2, -10.0, 61.2, 61.2, 10.0],
             max_per_img=500,
             max_pool_nms=False,
