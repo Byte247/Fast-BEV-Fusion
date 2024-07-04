@@ -794,7 +794,7 @@ class TransFusionHead(nn.Module):
                 build_assigner(res) for res in self.train_cfg.assigner
             ]
 
-    def forward_single(self, inputs):
+    def forward_single(self, inputs, img_inputs, img_metas):
         """Forward function for CenterPoint.
 
         Args:
@@ -804,10 +804,8 @@ class TransFusionHead(nn.Module):
         Returns:
             list[dict]: Output results for tasks.
         """
-        batch_size = inputs[0].shape[0]
-        lidar_feat = self.shared_conv(inputs[0])
-
-        print(f"lidar_feat: {lidar_feat.shape}")
+        batch_size = inputs.shape[0]
+        lidar_feat = self.shared_conv(inputs)
 
         #################################
         # image to BEV
@@ -815,6 +813,24 @@ class TransFusionHead(nn.Module):
         lidar_feat_flatten = lidar_feat.view(batch_size, lidar_feat.shape[1], -1)  # [BS, C, H*W]
         bev_pos = self.bev_pos.repeat(batch_size, 1, 1).to(lidar_feat.device)
 
+        if self.fuse_img:
+            img_feat = self.shared_conv_img(img_inputs)  # [BS * n_views, C, H, W]
+
+            img_h, img_w, num_channel = img_inputs.shape[-2], img_inputs.shape[-1], img_feat.shape[1]
+            raw_img_feat = img_feat.view(batch_size, self.num_views, num_channel, img_h, img_w).permute(0, 2, 3, 1, 4) # [BS, C, H, n_views, W]
+            img_feat = raw_img_feat.reshape(batch_size, num_channel, img_h, img_w * self.num_views)  # [BS, C, H, n_views*W]
+            img_feat_collapsed = img_feat.max(2).values
+            img_feat_collapsed = self.fc(img_feat_collapsed).view(batch_size, num_channel, img_w * self.num_views)
+
+            # positional encoding for image guided query initialization
+            if self.img_feat_collapsed_pos is None:
+                img_feat_collapsed_pos = self.img_feat_collapsed_pos = self.create_2D_grid(1, img_feat_collapsed.shape[-1]).to(img_feat.device)
+            else:
+                img_feat_collapsed_pos = self.img_feat_collapsed_pos
+
+            bev_feat = lidar_feat_flatten
+            for idx_view in range(self.num_views):
+                bev_feat = self.decoder[2 + idx_view](bev_feat, img_feat_collapsed[..., img_w * idx_view:img_w * (idx_view + 1)], bev_pos, img_feat_collapsed_pos[:, img_w * idx_view:img_w * (idx_view + 1)])
 
         #################################
         # image guided query initialization
@@ -884,7 +900,7 @@ class TransFusionHead(nn.Module):
             if self.fuse_img:
                 ret_dicts[0]['dense_heatmap'] = dense_heatmap_img
             else:
-                ret_dicts[0]['dense_heatmap'] = dense_heatmap
+                ret_dicts[0]['dense_heatmap'] = dense_heatmap.sigmoid()
 
         if self.auxiliary is False:
             # only return the results of last decoder layer
@@ -911,8 +927,8 @@ class TransFusionHead(nn.Module):
         """
         if img_feats is None:
             img_feats = [None]
-        res = self.forward_single(feats)
-        #assert len(res) == 1, "only support one level features."
+        res = multi_apply(self.forward_single, feats, img_feats, [img_metas])
+        assert len(res) == 1, "only support one level features."
         return res
 
     def get_targets(self, gt_bboxes_3d, gt_labels_3d, preds_dict):
@@ -932,12 +948,12 @@ class TransFusionHead(nn.Module):
                 - torch.Tensor: regression weights. [BS, num_proposals, 8]
         """
         # change preds_dict into list of dict (index by batch_id)
-        # preds_dict['center'].shape [bs, 3, num_proposal]
+        # preds_dict[0]['center'].shape [bs, 3, num_proposal]
         list_of_pred_dict = []
         for batch_idx in range(len(gt_bboxes_3d)):
             pred_dict = {}
-            for key in preds_dict.keys():
-                pred_dict[key] = preds_dict[key][batch_idx:batch_idx + 1]
+            for key in preds_dict[0].keys():
+                pred_dict[key] = preds_dict[0][key][batch_idx:batch_idx + 1]
             list_of_pred_dict.append(pred_dict)
 
         assert len(gt_bboxes_3d) == len(list_of_pred_dict)
@@ -1105,12 +1121,12 @@ class TransFusionHead(nn.Module):
             label_weights = label_weights * self.on_the_image_mask
             bbox_weights = bbox_weights * self.on_the_image_mask[:, :, None]
             num_pos = bbox_weights.max(-1).values.sum()
-        preds_dict = preds_dicts[0]
+        preds_dict = preds_dicts[0][0]
         loss_dict = dict()
 
         if self.initialize_by_heatmap:
             # compute heatmap loss
-            loss_heatmap = self.loss_heatmap(clip_sigmoid(preds_dict['dense_heatmap']), heatmap, avg_factor=max(heatmap.eq(1).float().sum().item(), 1))
+            loss_heatmap = self.loss_heatmap(preds_dict['dense_heatmap'], heatmap, avg_factor=max(heatmap.eq(1).float().sum().item(), 1))
             loss_dict['loss_heatmap'] = loss_heatmap
 
         # compute loss for each layer
@@ -1163,30 +1179,29 @@ class TransFusionHead(nn.Module):
         """
         rets = []
         for layer_id, preds_dict in enumerate(preds_dicts):
-            batch_size = preds_dict['heatmap'].shape[0]
-            batch_score = preds_dict['heatmap'][..., -self.num_proposals:].sigmoid()
+            batch_size = preds_dict[0]['heatmap'].shape[0]
+            batch_score = preds_dict[0]['heatmap'][..., -self.num_proposals:].sigmoid()
             # if self.loss_iou.loss_weight != 0:
-            #    batch_score = torch.sqrt(batch_score * preds_dict['iou'][..., -self.num_proposals:].sigmoid())
+            #    batch_score = torch.sqrt(batch_score * preds_dict[0]['iou'][..., -self.num_proposals:].sigmoid())
             one_hot = F.one_hot(self.query_labels, num_classes=self.num_classes).permute(0, 2, 1)
-            batch_score = batch_score * preds_dict['query_heatmap_score'] * one_hot
+            batch_score = batch_score * preds_dict[0]['query_heatmap_score'] * one_hot
 
-            batch_center = preds_dict['center'][..., -self.num_proposals:]
-            batch_height = preds_dict['height'][..., -self.num_proposals:]
-            batch_dim = preds_dict['dim'][..., -self.num_proposals:]
-            batch_rot = preds_dict['rot'][..., -self.num_proposals:]
+            batch_center = preds_dict[0]['center'][..., -self.num_proposals:]
+            batch_height = preds_dict[0]['height'][..., -self.num_proposals:]
+            batch_dim = preds_dict[0]['dim'][..., -self.num_proposals:]
+            batch_rot = preds_dict[0]['rot'][..., -self.num_proposals:]
             batch_vel = None
-            if 'vel' in preds_dict:
-                batch_vel = preds_dict['vel'][..., -self.num_proposals:]
+            if 'vel' in preds_dict[0]:
+                batch_vel = preds_dict[0]['vel'][..., -self.num_proposals:]
 
             temp = self.bbox_coder.decode(batch_score, batch_rot, batch_dim, batch_center, batch_height, batch_vel, filter=True)
 
-            
             self.tasks = [
                     dict(num_class=8, class_names=[], indices=[0, 1, 2, 3, 4, 5, 6, 7], radius=-1),
                     dict(num_class=1, class_names=['pedestrian'], indices=[8], radius=0.175),
                     dict(num_class=1, class_names=['traffic_cone'], indices=[9], radius=0.175),
                 ]
-            
+
 
             ret_layer = []
             for i in range(batch_size):
