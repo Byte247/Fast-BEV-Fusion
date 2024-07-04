@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 # If point cloud range is changed, the models should also change their point cloud range accordingly
 point_cloud_range = [-51.2, -51.2, -5.0, 51.2, 51.2, 3.0]
-voxel_size = [0.075, 0.075, 0.2]
 
 # For nuScenes we usually do 10-class detection
 class_names = [
@@ -32,7 +31,7 @@ model = dict(
         num_outs=4),
     neck_fuse=dict(in_channels=256, out_channels=64),
     neck_3d=dict(
-        type='M2BevNeckLeakyRelu',
+        type='M2BevNeck',
         in_channels=384,
         out_channels=256,
         num_layers=6,
@@ -43,33 +42,43 @@ model = dict(
 
     #Point Modules:
     pts_voxel_layer=dict(
-        max_num_points=10, voxel_size=voxel_size, max_voxels=(120000, 160000), point_cloud_range=point_cloud_range),
-    pts_voxel_encoder=dict(type='HardSimpleVFE', num_features=5),
-    pts_middle_encoder=dict(
-        type='SpMiddleResNetFHD',
+        max_num_points=20, voxel_size=[0.2, 0.2, 8], max_voxels=(30000, 40000), point_cloud_range=point_cloud_range),
+    pts_voxel_encoder=dict(
+        type='PillarFeatureNet',
         in_channels=5,
-        sparse_shape=[41, 1440, 1440]),
-
-
+        feat_channels=[64],
+        with_distance=False,
+        voxel_size=(0.2, 0.2, 8),
+        norm_cfg=dict(type='BN1d', eps=1e-3, momentum=0.01),
+        legacy=False),
+    pts_middle_encoder=dict(
+        type='PointPillarsScatter', in_channels=64, output_shape=(512, 512)),
+    pts_backbone=dict(
+        type='SECOND',
+        in_channels=64,
+        out_channels=[64, 128, 256],
+        layer_nums=[3, 5, 5],
+        layer_strides=[2, 2, 2],
+        norm_cfg=dict(type='BN', eps=1e-3, momentum=0.01),
+        conv_cfg=dict(type='Conv2d', bias=False)),
     pts_neck=dict(
-        type="RPNV3",
-        layer_nums=[5, 5],
-        ds_layer_strides=[1, 2],
-        ds_num_filters=[256, 256],
-        us_layer_strides=[1, 2],
-        us_num_filters=[256, 256], # default 128x128
-        num_input_features=[704,256], #num features in the feature maps blocks that are feed into the structure similar to "FPN"
-    ),
+        type='SECONDFPN',
+        in_channels=[64, 128, 256],
+        out_channels=[128, 128, 128],
+        upsample_strides=[0.5, 1, 2],
+        norm_cfg=dict(type='BN', eps=1e-3, momentum=0.01),
+        upsample_cfg=dict(type='deconv', bias=False),
+        use_conv_for_no_stride=True),
 
 
     #Fusion layer
-    fusion_module = dict(type='MultiHeadCrossAttentionVoxel',embed_dim = 2048, num_heads=8, dropout = 0.1),
+    fusion_module = dict(type='MultiHeadCrossAttentionV2',embed_dim = 512, num_heads=8, dropout = 0.1, fuse_on_lidar=True),
 
     bbox_head=dict(
         type='TransFusionHead',
         num_proposals=200,
         auxiliary=True,
-        in_channels=256 * 2,
+        in_channels=128 * 3,
         hidden_channel=128,
         num_classes=len(class_names),
         num_decoder_layers=1,
@@ -85,7 +94,7 @@ model = dict(
         bbox_coder=dict(
             type='TransFusionBBoxCoder',
             pc_range=point_cloud_range[:2],
-            voxel_size=voxel_size[:2],
+            voxel_size=[0.2, 0.2],
             out_size_factor=4,
             post_center_range=[-61.2, -61.2, -10.0, 61.2, 61.2, 10.0],
             score_threshold=0.0,
@@ -97,13 +106,47 @@ model = dict(
         loss_heatmap=dict(type='GaussianFocalLoss', reduction='mean', loss_weight=1.0),
     ),
     
+    bbox_head_2d=dict(
+        type='FCOSHead',
+        num_classes=10,
+        in_channels=64,
+        stacked_convs=2,
+        feat_channels=32,
+        strides=[4, 8, 16, 32],
+        regress_ranges=((-1, 64), (64, 128), (128, 256), (256, 1e8)),
+        loss_cls=dict(
+            type='FocalLoss',
+            use_sigmoid=True,
+            gamma=2.0,
+            alpha=0.25,
+            loss_weight=1.0),
+        loss_bbox=dict(type='IoULoss', loss_weight=1.0),
+        loss_centerness=dict(type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0)),
+    
     camera_n_voxels=(256, 256, 6), 
     camera_voxel_size=[0.4, 0.4, 1],
 
+    # training and testing settings for 2d
+    train_cfg_2d=dict(
+        assigner=dict(
+            type='MaxIoUAssigner',
+            pos_iou_thr=0.5,
+            neg_iou_thr=0.4,
+            min_pos_iou=0,
+            ignore_iof_thr=-1),
+        allowed_border=-1,
+        pos_weight=-1,
+        debug=False),
+    test_cfg_2d=dict(
+        nms_pre=1000,
+        min_bbox_size=0,
+        score_thr=0.05,
+        nms=dict(type='nms', iou_threshold=0.5),
+        max_per_img=100),
 
     # model training and testing settings for the head
     train_cfg=dict(
-            dataset='nuScenes',
+            grid_size=[512, 512, 1],
             assigner=dict(
                 type='HungarianAssigner3D',
                 iou_calculator=dict(type='BboxOverlaps3D', coordinate='lidar'),
@@ -111,16 +154,17 @@ model = dict(
                 reg_cost=dict(type='BBoxBEVL1Cost', weight=0.25),
                 iou_cost=dict(type='IoU3DCost', weight=0.25)
             ),
-            pos_weight=-1,
-            gaussian_overlap=0.1,
-            min_radius=2,
-            grid_size=[1440, 1440, 40],  # [x_len, y_len, 1]
-            voxel_size=voxel_size,
+            voxel_size=[0.2, 0.2],
             out_size_factor=4,
+            dense_reg=1,
+            gaussian_overlap=0.1,
+            max_objs=500,
+            min_radius=2,
+            pos_weight=-1,
             code_weights=[1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.2, 0.2],
-            point_cloud_range=point_cloud_range),
+            point_cloud_range = point_cloud_range),
      test_cfg=dict(
-            grid_size=[1440, 1440, 41],
+            grid_size=[512, 512, 1],
             post_center_limit_range=[-61.2, -61.2, -10.0, 61.2, 61.2, 10.0],
             max_per_img=500,
             max_pool_nms=False,
@@ -128,7 +172,7 @@ model = dict(
             score_threshold=0.1,
             pc_range=[-51.2, -51.2],
             out_size_factor=4,
-            voxel_size=voxel_size[:2],
+            voxel_size=[0.2, 0.2],
             nms_type=None,
             pre_max_size=1000,
             post_max_size=83,
@@ -161,18 +205,8 @@ train_pipeline = [
     dict(
         type='LoadPointsFromMultiSweeps',
         sweeps_num=10,
-        use_dim=[0, 1, 2, 3, 4],
-        pad_empty_sweeps=True),
-    # dict(
-    #    type='GlobalRotScaleTrans',
-    #    rot_range=[-0.3925 * 2, 0.3925 * 2],
-    #    scale_ratio_range=[0.9, 1.1],
-    #    translation_std=[0.5, 0.5, 0.5],
-    #    update_img2lidar=True),
+        use_dim=[0, 1, 2, 3, 4]),
     
-    dict(type='PointsRangeFilter', point_cloud_range=point_cloud_range),
-    dict(type='ObjectRangeFilter', point_cloud_range=point_cloud_range),
-    dict(type='ObjectNameFilter', classes=class_names),
     dict(
         type='MultiViewPipeline',
         n_images=6,
@@ -181,7 +215,8 @@ train_pipeline = [
             dict(type='Resize', img_scale=(1600, 900), keep_ratio=True),
             dict(type='Normalize', **img_norm_cfg),
             dict(type='Pad', size_divisor=32)]),
-    #dict(type='PointShuffle'),
+    dict(type='PointsRangeFilter', point_cloud_range=point_cloud_range),
+    dict(type='ObjectNameFilter', classes=class_names),
     dict(type='KittiSetOrigin', point_cloud_range=point_cloud_range),
     dict(type='DefaultFormatBundle3D', class_names=class_names),
     dict(type='Collect3D', keys=['img', 'gt_bboxes', 'gt_labels', 
@@ -196,8 +231,7 @@ test_pipeline = [
     dict(
         type='LoadPointsFromMultiSweeps',
         sweeps_num=10,
-        use_dim=[0, 1, 2, 3, 4],
-        pad_empty_sweeps=True),
+        use_dim=[0, 1, 2, 3, 4]),
     dict(
         type='MultiViewPipeline',
         n_images=6,
@@ -213,9 +247,10 @@ test_pipeline = [
 
 data = dict(
     samples_per_gpu=1,
-    workers_per_gpu=8,
+    workers_per_gpu=4,
     train=dict(
-        type='CBGSDataset',
+        type='RepeatDataset',
+        times=1,
         dataset=dict(
             type=dataset_type,
             data_root=data_root,
@@ -246,14 +281,7 @@ data = dict(
         test_mode=True,
         box_type_3d='LiDAR'))
 
-optimizer = dict(type='AdamW', lr=1e-6,
-                 weight_decay=0.01,
-                 paramwise_cfg=dict(
-                 custom_keys={'backbone': dict(lr_mult=0.1, decay_mult=1.0),
-                              'neck_3d': dict(lr_mult=0.1, decay_mult=1.0),
-                              'pos_embed_camera': dict(lr_mult= 1.0, decay_mult=0.),
-                              'pos_embed_lidar': dict(lr_mult= 1.0, decay_mult=0.)})) #try to combat nan even more
-
+optimizer = dict(type='AdamW', lr=0.0001, weight_decay=0.05)  # for 8gpu * 2sample_per_gpu
 optimizer_config = dict(grad_clip=dict(max_norm=0.1, norm_type=2))
 lr_config = dict(
     policy='cyclic',
@@ -289,4 +317,3 @@ workflow = [('train', 1)]
 
 # fp16 settings, the loss scale is specifically tuned to avoid Nan
 fp16 = dict(loss_scale='dynamic')
-
