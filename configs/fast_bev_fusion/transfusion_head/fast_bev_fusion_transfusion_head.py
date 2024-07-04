@@ -68,7 +68,7 @@ model = dict(
     bbox_head=dict(
         type='TransFusionHead',
         num_proposals=200,
-        auxiliary=True,
+        auxiliary=False,
         in_channels=512,
         hidden_channel=128,
         num_classes=len(class_names),
@@ -273,7 +273,7 @@ runner = dict(type='EpochBasedRunner', max_epochs=20)
 #total_epochs = 20
 checkpoint_config = dict(interval=1)
 log_config = dict(
-    interval=100,
+    interval=1,
     hooks=[
         dict(type='TextLoggerHook'),
         dict(type='TensorboardLoggerHook'),
