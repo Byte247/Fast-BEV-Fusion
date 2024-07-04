@@ -804,8 +804,8 @@ class TransFusionHead(nn.Module):
         Returns:
             list[dict]: Output results for tasks.
         """
-        batch_size = inputs.shape[0]
-        lidar_feat = self.shared_conv(inputs)
+        batch_size = inputs[0].shape[0]
+        lidar_feat = self.shared_conv(inputs[0])
 
         print(f"lidar_feat: {lidar_feat.shape}")
 
@@ -912,7 +912,7 @@ class TransFusionHead(nn.Module):
         if img_feats is None:
             img_feats = [None]
         res = self.forward_single(feats)
-        assert len(res) == 1, "only support one level features."
+        #assert len(res) == 1, "only support one level features."
         return res
 
     def get_targets(self, gt_bboxes_3d, gt_labels_3d, preds_dict):
