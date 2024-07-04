@@ -805,6 +805,7 @@ class TransFusionHead(nn.Module):
             list[dict]: Output results for tasks.
         """
 
+        print(f"inputs: {inputs}")
 
         batch_size = inputs.shape[0]
         lidar_feat = self.shared_conv(inputs)
@@ -821,7 +822,6 @@ class TransFusionHead(nn.Module):
         if self.initialize_by_heatmap:
             dense_heatmap = self.heatmap_head(lidar_feat)
 
-            print(f"dense_heatmap: {dense_heatmap.shape}")
             dense_heatmap_img = None
             
             heatmap = dense_heatmap.detach().sigmoid()
