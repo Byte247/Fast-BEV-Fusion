@@ -170,24 +170,18 @@ class_names = [
     'motorcycle', 'pedestrian', 'traffic_cone', 'barrier'
 ]
 
-dataset_type = 'NuScenesDataset'
-#dataset_type = 'NuScenesMultiView_Map_MultiModalDataset'
+dataset_type = 'NuScenesMultiView_Map_MultiModalDataset'
+
 data_root = 'data/nuscenes/'
 # Input modality for nuScenes dataset, this is consistent with the submission
 # format which requires the information in input_modality.
 input_modality = dict(
     use_lidar=True,
-    use_camera=False,
+    use_camera=True,
     use_radar=False,
     use_map=False,
     use_external=False)
 
-# input_modality = dict(
-#     use_lidar=True,
-#     use_camera=True,
-#     use_radar=False,
-#     use_map=False,
-#     use_external=True)
 
 img_norm_cfg = dict(mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 
@@ -233,36 +227,46 @@ db_sampler = dict(
 
 # First Stage Pipeline
 train_pipeline = [
+    dict(type='LoadAnnotations3D',
+         with_bbox=True,
+         with_label=True,
+         with_bev_seg=False),
+     dict(
+        type='LoadPointsFromFile',
+        coord_type='LIDAR',
+        load_dim=5,
+        use_dim=5,),
     dict(
-       type='LoadPointsFromFile',
-       coord_type='LIDAR',
-       load_dim=5,
-       use_dim=5,),
-   dict(
-       type='LoadPointsFromMultiSweeps',
-       sweeps_num=10,
-       use_dim=[0, 1, 2, 3, 4]),
+        type='LoadPointsFromMultiSweeps',
+        sweeps_num=10,
+        use_dim=[0, 1, 2, 3, 4],
+        pad_empty_sweeps=True),
 
-    dict(type='LoadAnnotations3D', with_bbox_3d=True, with_label_3d=True),
     dict(type='ObjectSample', db_sampler=db_sampler),
     dict(
        type='GlobalRotScaleTrans',
        rot_range=[-0.3925 * 2, 0.3925 * 2],
        scale_ratio_range=[0.9, 1.1],
        translation_std=[0.5, 0.5, 0.5]),
-    dict(
-        type='RandomFlip3D',
-        sync_2d=False,
-        flip_ratio_bev_horizontal=0.5,
-        flip_ratio_bev_vertical=0.5),
    
    dict(type='PointsRangeFilter', point_cloud_range=point_cloud_range),
    dict(type='ObjectRangeFilter', point_cloud_range=point_cloud_range),
    dict(type='ObjectNameFilter', classes=class_names),
    dict(type='PointShuffle'),
-   
+
+   dict(
+          type='MultiViewPipeline',
+          n_images=6,
+          transforms=[
+              dict(type='LoadImageFromFile'),
+              dict(type='Resize', img_scale=(100, 50), keep_ratio=True),
+              dict(type='Normalize', **img_norm_cfg),
+              dict(type='Pad', size_divisor=32)]),
+   dict(type='KittiSetOrigin', point_cloud_range=point_cloud_range),
    dict(type='DefaultFormatBundle3D', class_names=class_names),
-   dict(type='Collect3D', keys=['points', 'gt_bboxes_3d', 'gt_labels_3d'])]
+    dict(type='Collect3D', keys=['img', 'gt_bboxes', 'gt_labels', 
+                                 'gt_bboxes_3d', 'gt_labels_3d',
+                                  'points'])]
 
 
 #Second Stage Pipeline
@@ -299,63 +303,29 @@ train_pipeline = [
 #                                    'points'])]
 
 
-
 test_pipeline = [
     dict(
         type='LoadPointsFromFile',
         coord_type='LIDAR',
         load_dim=5,
-        use_dim=5,
-        file_client_args=file_client_args),
+        use_dim=5,),
     dict(
         type='LoadPointsFromMultiSweeps',
         sweeps_num=10,
         use_dim=[0, 1, 2, 3, 4],
-        file_client_args=file_client_args),
-
+        pad_empty_sweeps=True),
     dict(
-        type='MultiScaleFlipAug3D',
-        img_scale=(512, 512),
-        pts_scale_ratio=1,
-        flip=False,
+        type='MultiViewPipeline',
+        n_images=6,
         transforms=[
-            dict(
-                type='GlobalRotScaleTrans',
-                rot_range=[0, 0],
-                scale_ratio_range=[1., 1.],
-                translation_std=[0, 0, 0]),
-            dict(
-                type='DefaultFormatBundle3D',
-                class_names=class_names,
-                with_label=False),
-            dict(type='Collect3D', keys=['points'])
-        ])
-]
+            dict(type='LoadImageFromFile'),
+            dict(type='Resize', img_scale=(100, 50), keep_ratio=True),
+            dict(type='Normalize', **img_norm_cfg),
+            dict(type='Pad', size_divisor=32)]),
+    dict(type='KittiSetOrigin', point_cloud_range=point_cloud_range),
+    dict(type='DefaultFormatBundle3D', class_names=class_names, with_label=False),
+    dict(type='Collect3D', keys=['img','points'])]
 
-
-# test_pipeline = [
-#     dict(
-#         type='LoadPointsFromFile',
-#         coord_type='LIDAR',
-#         load_dim=5,
-#         use_dim=5,),
-#     dict(
-#         type='LoadPointsFromMultiSweeps',
-#         sweeps_num=10,
-#         use_dim=[0, 1, 2, 3, 4],
-#         pad_empty_sweeps=True,
-#         remove_close=True),
-#     dict(
-#         type='MultiViewPipeline',
-#         n_images=6,
-#         transforms=[
-#             dict(type='LoadImageFromFile'),
-#             dict(type='Resize', img_scale=(100, 60), keep_ratio=True),
-#             dict(type='Normalize', **img_norm_cfg),
-#             dict(type='Pad', size_divisor=32)]),
-#     dict(type='KittiSetOrigin', point_cloud_range=point_cloud_range),
-#     dict(type='DefaultFormatBundle3D', class_names=class_names, with_label=False),
-#     dict(type='Collect3D', keys=['img','points'])]
 
 
 data = dict(
@@ -371,6 +341,7 @@ data = dict(
             classes=class_names,
             modality=input_modality,
             test_mode=False,
+            with_box2d=True,
             box_type_3d='LiDAR')),
     val=dict(
         type=dataset_type,
@@ -380,6 +351,7 @@ data = dict(
         classes=class_names,
         modality=input_modality,
         test_mode=True,
+        with_box2d=False,
         box_type_3d='LiDAR'),
     test=dict(
         type=dataset_type,
@@ -391,41 +363,6 @@ data = dict(
         test_mode=True,
         box_type_3d='LiDAR'))
 
-
-# data = dict(
-#     samples_per_gpu=1,
-#     workers_per_gpu=4,
-#     train=dict(
-#         type='CBGSDataset',
-#         dataset=dict(
-#             type=dataset_type,
-#             data_root=data_root,
-#             ann_file=data_root + 'nuscenes_infos_train.pkl',
-#             pipeline=train_pipeline,
-#             classes=class_names,
-#             modality=input_modality,
-#             test_mode=False,
-#             with_box2d=True,
-#             box_type_3d='LiDAR')),
-#     val=dict(
-#         type=dataset_type,
-#         data_root=data_root,
-#         ann_file=data_root + 'nuscenes_infos_val.pkl',
-#         pipeline=test_pipeline,
-#         classes=class_names,
-#         modality=input_modality,
-#         test_mode=True,
-#         with_box2d=True,
-#         box_type_3d='LiDAR'),
-#     test=dict(
-#         type=dataset_type,
-#         data_root=data_root,
-#         ann_file=data_root + 'nuscenes_infos_val.pkl',
-#         pipeline=test_pipeline,
-#         classes=class_names,
-#         modality=input_modality,
-#         test_mode=True,
-#         box_type_3d='LiDAR'))
 
 # optimizer = dict(type='AdamW', lr=0.0001,
 #                  weight_decay=0.01,
@@ -454,7 +391,7 @@ momentum_config = dict(
     step_ratio_up=0.4)
 
 # runtime settings
-runner = dict(type='EpochBasedRunner', max_epochs=20)
+runner = dict(type='EpochBasedRunner', max_epochs=17)
 
 #total_epochs = 20
 checkpoint_config = dict(interval=1)

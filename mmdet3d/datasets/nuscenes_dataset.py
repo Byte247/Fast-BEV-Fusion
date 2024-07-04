@@ -758,7 +758,8 @@ class NuScenesDataset(Custom3DDataset):
                  result_names=['pts_bbox'],
                  show=False,
                  out_dir=None,
-                 pipeline=None):
+                 pipeline=None,
+                 vis_mode=None):
         """Evaluation in nuScenes protocol.
 
         Args:

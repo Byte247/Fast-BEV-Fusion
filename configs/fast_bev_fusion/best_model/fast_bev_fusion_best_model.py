@@ -202,7 +202,16 @@ train_pipeline = [
         sweeps_num=10,
         use_dim=[0, 1, 2, 3, 4],
         pad_empty_sweeps=True),
+    dict(
+       type='GlobalRotScaleTrans',
+       rot_range=[-0.3925 * 2, 0.3925 * 2],
+       scale_ratio_range=[0.9, 1.1],
+       translation_std=[0.5, 0.5, 0.5],
+      update_img2lidar=True),
+    dict(type='PointShuffle'),
     dict(type='PointsRangeFilter', point_cloud_range=point_cloud_range),
+    dict(type='ObjectRangeFilter', point_cloud_range=point_cloud_range),
+    dict(type='ObjectNameFilter', classes=class_names),
     dict(
         type='MultiViewPipeline',
         n_images=6,
@@ -211,8 +220,6 @@ train_pipeline = [
             dict(type='Resize', img_scale=(1600, 900), keep_ratio=True),
             dict(type='Normalize', **img_norm_cfg),
             dict(type='Pad', size_divisor=32)]),
-    dict(type='ObjectRangeFilter', point_cloud_range=point_cloud_range),
-    dict(type='ObjectNameFilter', classes=class_names),
     dict(type='KittiSetOrigin', point_cloud_range=point_cloud_range),
     dict(type='DefaultFormatBundle3D', class_names=class_names),
     dict(type='Collect3D', keys=['img', 'gt_bboxes', 'gt_labels', 
@@ -281,21 +288,24 @@ optimizer = dict(type='AdamW', lr=1e-3,
                  weight_decay=0.05,
                  paramwise_cfg=dict(
                  custom_keys={'backbone': dict(lr_mult=0.1, decay_mult=1.0),
+                              'neck_3d': dict(lr_mult=0.1, decay_mult=1.0),
                               'pos_embed_camera': dict(lr_mult= 1.0, decay_mult=0.),
                               'pos_embed_lidar': dict(lr_mult= 1.0, decay_mult=0.)})) #try to combat nan even more
+
 # max_norm=10 is better for SECOND
-optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
+optimizer_config = dict(grad_clip=dict(max_norm=0.1, norm_type=2))
 
 # learning policy
 lr_config = dict(
-    policy='poly',
-    warmup='linear',
-    warmup_iters=1000,
-    warmup_ratio=1e-6,
-    power=1.0,
-    min_lr=1e-6,
-    by_epoch=False
-    )
+    policy='cyclic',
+    target_ratio=(10, 0.0001),
+    cyclic_times=1,
+    step_ratio_up=0.4)
+momentum_config = dict(
+    policy='cyclic',
+    target_ratio=(0.8947368421052632, 1),
+    cyclic_times=1,
+    step_ratio_up=0.4)
 
 # runtime settings
 runner = dict(type='EpochBasedRunner', max_epochs=20)
