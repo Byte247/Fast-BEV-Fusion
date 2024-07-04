@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 # If point cloud range is changed, the models should also change their point cloud range accordingly
-point_cloud_range = [-54.0, -54.0, -5.0, 54.0, 54.0, 3.0]
-voxel_size = [0.075, 0.075, 0.2]
-out_size_factor = 4
+point_cloud_range = [-51.2, -51.2, -5.0, 51.2, 51.2, 3.0]
+voxel_size = [0.2, 0.2, 0.2]
+# out_size_factor = 4
 
 # For nuScenes we usually do 10-class detection
 class_names = [
@@ -49,7 +49,7 @@ model = dict(
     pts_middle_encoder=dict(
         type='SpMiddleResNetFHD',
         in_channels=5,
-        sparse_shape=[41, 1440, 1440]),
+        sparse_shape=[41, 512, 512]),
 
 
     pts_neck=dict(
@@ -64,13 +64,13 @@ model = dict(
 
 
     #Fusion layer
-    fusion_module = dict(type='MultiHeadCrossAttentionVoxel',embed_dim = 2048, num_heads=8, dropout = 0.1),
+    fusion_module = dict(type='MultiHeadCrossAttentionV2',embed_dim = 512, num_heads=8, dropout = 0.1, fuse_on_lidar=True),
 
     bbox_head=dict(
         type='TransFusionHead',
         num_proposals=200,
         auxiliary=True,
-        in_channels=256 * 2,
+        in_channels=128 * 3,
         hidden_channel=128,
         num_classes=len(class_names),
         num_decoder_layers=1,
@@ -86,8 +86,8 @@ model = dict(
         bbox_coder=dict(
             type='TransFusionBBoxCoder',
             pc_range=point_cloud_range[:2],
-            voxel_size=voxel_size[:2],
-            out_size_factor=out_size_factor,
+            voxel_size=[0.2, 0.2],
+            out_size_factor=4,
             post_center_range=[-61.2, -61.2, -10.0, 61.2, 61.2, 10.0],
             score_threshold=0.0,
             code_size=10,
@@ -98,13 +98,47 @@ model = dict(
         loss_heatmap=dict(type='GaussianFocalLoss', reduction='mean', loss_weight=1.0),
     ),
     
+    bbox_head_2d=dict(
+        type='FCOSHead',
+        num_classes=10,
+        in_channels=64,
+        stacked_convs=2,
+        feat_channels=32,
+        strides=[4, 8, 16, 32],
+        regress_ranges=((-1, 64), (64, 128), (128, 256), (256, 1e8)),
+        loss_cls=dict(
+            type='FocalLoss',
+            use_sigmoid=True,
+            gamma=2.0,
+            alpha=0.25,
+            loss_weight=1.0),
+        loss_bbox=dict(type='IoULoss', loss_weight=1.0),
+        loss_centerness=dict(type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0)),
     
     camera_n_voxels=(256, 256, 6), 
     camera_voxel_size=[0.4, 0.4, 1],
 
-    # # model training and testing settings for the head
+    # training and testing settings for 2d
+    train_cfg_2d=dict(
+        assigner=dict(
+            type='MaxIoUAssigner',
+            pos_iou_thr=0.5,
+            neg_iou_thr=0.4,
+            min_pos_iou=0,
+            ignore_iof_thr=-1),
+        allowed_border=-1,
+        pos_weight=-1,
+        debug=False),
+    test_cfg_2d=dict(
+        nms_pre=1000,
+        min_bbox_size=0,
+        score_thr=0.05,
+        nms=dict(type='nms', iou_threshold=0.5),
+        max_per_img=100),
+
+    # model training and testing settings for the head
     train_cfg=dict(
-            dataset='nuScenes',
+            grid_size=[512, 512, 1],
             assigner=dict(
                 type='HungarianAssigner3D',
                 iou_calculator=dict(type='BboxOverlaps3D', coordinate='lidar'),
@@ -112,24 +146,30 @@ model = dict(
                 reg_cost=dict(type='BBoxBEVL1Cost', weight=0.25),
                 iou_cost=dict(type='IoU3DCost', weight=0.25)
             ),
-            pos_weight=-1,
+            voxel_size=[0.2, 0.2],
+            out_size_factor=4,
+            dense_reg=1,
             gaussian_overlap=0.1,
+            max_objs=500,
             min_radius=2,
-            grid_size=[1440, 1440, 40],  # [x_len, y_len, 1]
-            voxel_size=voxel_size,
-            out_size_factor=out_size_factor,
+            pos_weight=-1,
             code_weights=[1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.2, 0.2],
-            point_cloud_range=point_cloud_range),
-    test_cfg=dict(
-            dataset='nuScenes',
-            grid_size=[1440, 1440, 40],
-            out_size_factor=out_size_factor,
-            pc_range=point_cloud_range[0:2],
-            voxel_size=voxel_size[:2],
+            point_cloud_range = point_cloud_range),
+     test_cfg=dict(
+            grid_size=[512, 512, 1],
+            post_center_limit_range=[-61.2, -61.2, -10.0, 61.2, 61.2, 10.0],
+            max_per_img=500,
+            max_pool_nms=False,
+            min_radius=[4, 12, 10, 1, 0.85, 0.175],
+            score_threshold=0.1,
+            pc_range=[-51.2, -51.2],
+            out_size_factor=4,
+            voxel_size=[0.2, 0.2],
             nms_type=None,
-        )     
+            pre_max_size=1000,
+            post_max_size=83,
+            nms_thr=0.2)    
 )
-
 dataset_type = 'NuScenesMultiView_Map_MultiModalDataset'
 data_root = 'data/nuscenes/'
 # Input modality for nuScenes dataset, this is consistent with the submission
@@ -194,7 +234,6 @@ test_pipeline = [
     dict(type='KittiSetOrigin', point_cloud_range=point_cloud_range),
     dict(type='DefaultFormatBundle3D', class_names=class_names, with_label=False),
     dict(type='Collect3D', keys=['img','points'])]
-
 
 data = dict(
     samples_per_gpu=1,
