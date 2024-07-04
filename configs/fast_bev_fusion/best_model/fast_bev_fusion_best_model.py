@@ -105,6 +105,41 @@ model = dict(
     camera_n_voxels=(256, 256, 6), #used for the camera features that are mapped to 3D voxels
     camera_voxel_size=[0.4, 0.4, 1], #used for the camera features that are mapped to 3D voxels
 
+    bbox_head_2d=dict(
+        type='FCOSHead',
+        num_classes=10,
+        in_channels=64,
+        stacked_convs=2,
+        feat_channels=32,
+        strides=[4, 8, 16, 32],
+        regress_ranges=((-1, 64), (64, 128), (128, 256), (256, 1e8)),
+        loss_cls=dict(
+            type='FocalLoss',
+            use_sigmoid=True,
+            gamma=2.0,
+            alpha=0.25,
+            loss_weight=1.0),
+        loss_bbox=dict(type='IoULoss', loss_weight=1.0),
+        loss_centerness=dict(type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0)),
+
+    # training and testing settings for 2d
+    train_cfg_2d=dict(
+        assigner=dict(
+            type='MaxIoUAssigner',
+            pos_iou_thr=0.5,
+            neg_iou_thr=0.4,
+            min_pos_iou=0,
+            ignore_iof_thr=-1),
+        allowed_border=-1,
+        pos_weight=-1,
+        debug=False),
+    test_cfg_2d=dict(
+        nms_pre=1000,
+        min_bbox_size=0,
+        score_thr=0.05,
+        nms=dict(type='nms', iou_threshold=0.5),
+        max_per_img=100),
+
 
     # model training and testing settings for the head
     train_cfg=dict(
@@ -172,7 +207,7 @@ train_pipeline = [
        rot_range=[-0.3925 * 2, 0.3925 * 2],
        scale_ratio_range=[0.9, 1.1],
        translation_std=[0.5, 0.5, 0.5],
-       update_img2lidar=True),
+      update_img2lidar=False),
     dict(type='PointShuffle'),
     dict(type='PointsRangeFilter', point_cloud_range=point_cloud_range),
     dict(type='ObjectRangeFilter', point_cloud_range=point_cloud_range),
