@@ -65,7 +65,7 @@ model = dict(
     #Fusion layer
     fusion_module = dict(type='MultiHeadCrossAttentionVoxel',embed_dim = 2048, num_heads=8, dropout = 0.1),
 
-    pts_bbox_head=dict(
+    bbox_head=dict(
         type='TransFusionHead',
         num_proposals=200,
         auxiliary=True,
