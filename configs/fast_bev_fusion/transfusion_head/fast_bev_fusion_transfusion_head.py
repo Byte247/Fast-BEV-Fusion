@@ -115,7 +115,6 @@ model = dict(
             gaussian_overlap=0.1,
             pos_weight=-1,
             min_radius=2,
-            pos_weight=-1,
             code_weights=[1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.2, 0.2],
             point_cloud_range = point_cloud_range),
      test_cfg=dict(
