@@ -813,36 +813,15 @@ class TransFusionHead(nn.Module):
         lidar_feat_flatten = lidar_feat.view(batch_size, lidar_feat.shape[1], -1)  # [BS, C, H*W]
         bev_pos = self.bev_pos.repeat(batch_size, 1, 1).to(lidar_feat.device)
 
-        if self.fuse_img:
-            img_feat = self.shared_conv_img(img_inputs)  # [BS * n_views, C, H, W]
-
-            img_h, img_w, num_channel = img_inputs.shape[-2], img_inputs.shape[-1], img_feat.shape[1]
-            raw_img_feat = img_feat.view(batch_size, self.num_views, num_channel, img_h, img_w).permute(0, 2, 3, 1, 4) # [BS, C, H, n_views, W]
-            img_feat = raw_img_feat.reshape(batch_size, num_channel, img_h, img_w * self.num_views)  # [BS, C, H, n_views*W]
-            img_feat_collapsed = img_feat.max(2).values
-            img_feat_collapsed = self.fc(img_feat_collapsed).view(batch_size, num_channel, img_w * self.num_views)
-
-            # positional encoding for image guided query initialization
-            if self.img_feat_collapsed_pos is None:
-                img_feat_collapsed_pos = self.img_feat_collapsed_pos = self.create_2D_grid(1, img_feat_collapsed.shape[-1]).to(img_feat.device)
-            else:
-                img_feat_collapsed_pos = self.img_feat_collapsed_pos
-
-            bev_feat = lidar_feat_flatten
-            for idx_view in range(self.num_views):
-                bev_feat = self.decoder[2 + idx_view](bev_feat, img_feat_collapsed[..., img_w * idx_view:img_w * (idx_view + 1)], bev_pos, img_feat_collapsed_pos[:, img_w * idx_view:img_w * (idx_view + 1)])
-
         #################################
         # image guided query initialization
         #################################
         if self.initialize_by_heatmap:
             dense_heatmap = self.heatmap_head(lidar_feat)
             dense_heatmap_img = None
-            if self.fuse_img:
-                dense_heatmap_img = self.heatmap_head_img(bev_feat.view(lidar_feat.shape))  # [BS, num_classes, H, W]
-                heatmap = (dense_heatmap.detach().sigmoid() + dense_heatmap_img.detach().sigmoid()) / 2
-            else:
-                heatmap = dense_heatmap.detach().sigmoid()
+            
+            heatmap = dense_heatmap.detach().sigmoid()
+
             padding = self.nms_kernel_size // 2
             local_max = torch.zeros_like(heatmap)
             # equals to nms radius = voxel_size * out_size_factor * kenel_size
@@ -869,9 +848,7 @@ class TransFusionHead(nn.Module):
             query_feat += query_cat_encoding
 
             query_pos = bev_pos.gather(index=top_proposals_index[:, None, :].permute(0, 2, 1).expand(-1, -1, bev_pos.shape[-1]), dim=1)
-        else:
-            query_feat = self.query_feat.repeat(batch_size, 1, 1)  # [BS, C, num_proposals]
-            base_xyz = self.query_pos.repeat(batch_size, 1, 1).to(lidar_feat.device)  # [BS, num_proposals, 2]
+        
 
         #################################
         # transformer decoder layer (LiDAR feature as K,V)
@@ -900,7 +877,7 @@ class TransFusionHead(nn.Module):
             if self.fuse_img:
                 ret_dicts[0]['dense_heatmap'] = dense_heatmap_img
             else:
-                ret_dicts[0]['dense_heatmap'] = dense_heatmap.sigmoid()
+                ret_dicts[0]['dense_heatmap'] = dense_heatmap.detach().sigmoid()
 
         if self.auxiliary is False:
             # only return the results of last decoder layer
@@ -1126,7 +1103,8 @@ class TransFusionHead(nn.Module):
 
         if self.initialize_by_heatmap:
             # compute heatmap loss
-            loss_heatmap = self.loss_heatmap(preds_dict['dense_heatmap'], heatmap, avg_factor=max(heatmap.eq(1).float().sum().item(), 1))
+            loss_heatmap = self.loss_heatmap(clip_sigmoid(preds_dict['dense_heatmap']), heatmap, avg_factor=max(heatmap.eq(1).float().sum().item(), 1))
+            print(f"loss_heatmap: {loss_heatmap}")
             loss_dict['loss_heatmap'] = loss_heatmap
 
         # compute loss for each layer
