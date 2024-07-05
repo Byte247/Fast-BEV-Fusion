@@ -237,7 +237,7 @@ test_pipeline = [
 
 
 data = dict(
-    samples_per_gpu=12,
+    samples_per_gpu=8,
     workers_per_gpu=4,
     train=dict(
         type='CBGSDataset',
@@ -275,7 +275,6 @@ optimizer = dict(type='AdamW', lr=1e-4,
                  weight_decay=0.05,
                  paramwise_cfg=dict(
                  custom_keys={'backbone': dict(lr_mult=0.1, decay_mult=1.0),
-                              'neck_3d': dict(lr_mult=0.1, decay_mult=1.0),
                               'pos_embed_camera': dict(lr_mult= 1.0, decay_mult=0.),
                               'pos_embed_lidar': dict(lr_mult= 1.0, decay_mult=0.)})) #try to combat nan even more
 # max_norm=10 is better for SECOND
