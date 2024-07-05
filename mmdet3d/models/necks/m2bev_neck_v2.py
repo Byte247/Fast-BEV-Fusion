@@ -70,42 +70,44 @@ class M2BevNeckLeakyRelu(nn.Module):
                  stride=2,
                  is_transpose=True,
                  fuse=None,
-                 with_cp=False):
+                 with_cp=False, skip=False):
         super().__init__()
 
         self.is_transpose = is_transpose
         self.with_cp = with_cp
+        self.skip = skip
         for i in range(3):
             print('neck transpose: {}'.format(is_transpose))
 
-        if fuse is not None:
-            self.fuse = nn.Conv2d(fuse["in_channels"], fuse["out_channels"], kernel_size=1)
-        else:
-            self.fuse = None
+        if not self.skip:
+            if fuse is not None:
+                self.fuse = nn.Conv2d(fuse["in_channels"], fuse["out_channels"], kernel_size=1)
+            else:
+                self.fuse = None
 
-        model = nn.ModuleList()
-        model.append(ResModule2D(in_channels, norm_cfg))
-        model.append(ConvModule(
-                in_channels=in_channels,
-                out_channels=out_channels,
-                kernel_size=3,
-                stride=stride,
-                padding=1,
-                conv_cfg=dict(type='Conv2d'),
-                norm_cfg=norm_cfg,
-                act_cfg=dict(type='LeakyReLU', inplace=True)))
-        for i in range(num_layers):
-            model.append(ResModule2D(out_channels, norm_cfg))
+            model = nn.ModuleList()
+            model.append(ResModule2D(in_channels, norm_cfg))
             model.append(ConvModule(
-                in_channels=out_channels,
-                out_channels=out_channels,
-                kernel_size=3,
-                stride=1,
-                padding=1,
-                conv_cfg=dict(type='Conv2d'),
-                norm_cfg=norm_cfg,
-                act_cfg=dict(type='LeakyReLU', inplace=True)))
-        self.model = nn.Sequential(*model)
+                    in_channels=in_channels,
+                    out_channels=out_channels,
+                    kernel_size=3,
+                    stride=stride,
+                    padding=1,
+                    conv_cfg=dict(type='Conv2d'),
+                    norm_cfg=norm_cfg,
+                    act_cfg=dict(type='LeakyReLU', inplace=True)))
+            for i in range(num_layers):
+                model.append(ResModule2D(out_channels, norm_cfg))
+                model.append(ConvModule(
+                    in_channels=out_channels,
+                    out_channels=out_channels,
+                    kernel_size=3,
+                    stride=1,
+                    padding=1,
+                    conv_cfg=dict(type='Conv2d'),
+                    norm_cfg=norm_cfg,
+                    act_cfg=dict(type='LeakyReLU', inplace=True)))
+            self.model = nn.Sequential(*model)
 
         self.init_cfg = [
                 dict(type='Kaiming', layer='ConvTranspose2d'),
@@ -136,14 +138,14 @@ class M2BevNeckLeakyRelu(nn.Module):
             # N, C*T, X, Y, Z -> N, X, Y, Z, C -> N, X, Y, Z*C*T -> N, Z*C*T, X, Y
             N, C, X, Y, Z = x.shape
             x = x.permute(0, 2, 3, 4, 1).reshape(N, X, Y, Z*C).permute(0, 3, 1, 2)
+        if not self.skip:
+            if self.fuse is not None:
+                x = self.fuse(x)
 
-        if self.fuse is not None:
-            x = self.fuse(x)
-
-        if self.with_cp and x.requires_grad:
-            x = cp.checkpoint(_inner_forward, x)
-        else:
-            x = _inner_forward(x)
+            if self.with_cp and x.requires_grad:
+                x = cp.checkpoint(_inner_forward, x)
+            else:
+                x = _inner_forward(x)
 
         if self.is_transpose:
             # Anchor3DHead axis order is (y, x).

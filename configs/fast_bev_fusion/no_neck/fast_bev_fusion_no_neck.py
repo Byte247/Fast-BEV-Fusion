@@ -27,10 +27,10 @@ model = dict(
         type='M2BevNeckLeakyRelu',
         in_channels=1536,
         out_channels=256,
-        num_layers=0,
         stride=2,
         is_transpose=False,
-        norm_cfg=dict(type='BN', requires_grad=True)),
+        norm_cfg=dict(type='BN', requires_grad=True),
+        skip=True),
 
     #Point Modules:
     pts_voxel_layer=dict(
@@ -208,6 +208,7 @@ train_pipeline = [
     dict(type='ObjectRangeFilter', point_cloud_range=point_cloud_range),
     dict(type='ObjectNameFilter', classes=class_names),
     dict(type='KittiSetOrigin', point_cloud_range=point_cloud_range),
+    dict(type='PointShuffle'),
     dict(type='DefaultFormatBundle3D', class_names=class_names),
     dict(type='Collect3D', keys=['img', 'gt_bboxes', 'gt_labels', 
                                  'gt_bboxes_3d', 'gt_labels_3d',
