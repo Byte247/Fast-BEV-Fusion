@@ -319,6 +319,7 @@ load_from = 'https://download.openmmlab.com/mmdetection3d/v0.1.0_models/nuimages
 resume_from = None
 workflow = [('train', 1)]
 
+find_unused_parameters=True
 # fp16 settings, the loss scale is specifically tuned to avoid Nan
 fp16 = dict(loss_scale='dynamic')
 
