@@ -195,13 +195,6 @@ train_pipeline = [
         sweeps_num=10,
         use_dim=[0, 1, 2, 3, 4],
         pad_empty_sweeps=True),
-    dict(
-       type='GlobalRotScaleTrans',
-       rot_range=[-0.3925 * 2, 0.3925 * 2],
-       scale_ratio_range=[0.9, 1.1],
-       translation_std=[0.5, 0.5, 0.5],
-      update_img2lidar=False),
-    dict(type='PointShuffle'),
     dict(type='PointsRangeFilter', point_cloud_range=point_cloud_range),
     dict(type='ObjectRangeFilter', point_cloud_range=point_cloud_range),
     dict(type='ObjectNameFilter', classes=class_names),
@@ -214,6 +207,7 @@ train_pipeline = [
             dict(type='Normalize', **img_norm_cfg),
             dict(type='Pad', size_divisor=32)]),
     dict(type='KittiSetOrigin', point_cloud_range=point_cloud_range),
+    dict(type='PointShuffle'),
     dict(type='DefaultFormatBundle3D', class_names=class_names),
     dict(type='Collect3D', keys=['img', 'gt_bboxes', 'gt_labels', 
                                  'gt_bboxes_3d', 'gt_labels_3d',
@@ -314,7 +308,7 @@ dist_params = dict(backend='nccl')
 find_unused_parameters = True  # todo: fix number of FPN outputs
 log_level = 'INFO'
 
-load_from = '/home/tom/ws/pretrained_models/cascade_mask_rcnn_r18_fpn_coco-mstrain_3x_20e_nuim_bbox_mAP_0.5110_segm_mAP_0.4070.pth'
+load_from = '/data/8sanitz/data/nuimage/resnet18/cascade_mask_rcnn_r18_fpn_coco-mstrain_3x_20e_nuim_bbox_mAP_0.5110_segm_mAP_0.4070.pth'
 resume_from = None
 workflow = [('train', 1)]
 
