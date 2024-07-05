@@ -25,7 +25,7 @@ model = dict(
         num_outs=4),
     neck_3d=dict(
         type='M2BevNeckLeakyRelu',
-        in_channels=384,
+        in_channels=1536,
         out_channels=256,
         num_layers=0,
         stride=2,
@@ -273,7 +273,7 @@ data = dict(
         box_type_3d='LiDAR'))
 
 optimizer = dict(type='AdamW', lr=1e-4,
-                 weight_decay=0.05,
+                 weight_decay=0.02,
                  paramwise_cfg=dict(
                  custom_keys={'backbone': dict(lr_mult=0.1, decay_mult=1.0),
                               'pos_embed_camera': dict(lr_mult= 1.0, decay_mult=0.),
