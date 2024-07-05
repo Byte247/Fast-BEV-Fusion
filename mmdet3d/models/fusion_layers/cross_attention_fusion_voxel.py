@@ -3,7 +3,7 @@ import torch.nn as nn
 import matplotlib.pyplot as plt
 import numpy as np
 from ..builder import FUSION_LAYERS
-from mmcv import build_norm_layer
+from mmcv.cnn import build_norm_layer
 
 
 class Decoder(nn.Module):
