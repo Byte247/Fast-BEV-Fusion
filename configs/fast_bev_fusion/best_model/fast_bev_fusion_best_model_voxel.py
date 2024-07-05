@@ -43,7 +43,7 @@ model = dict(
         type='SpMiddleResNetFHD',
         in_channels=5,
         sparse_shape=[41, 1440, 1440],
-        norm_cfg='SyncBN'),
+        norm_cfg=dict(type='SyncBN', requires_grad=True)),
 
     pts_neck=dict(
         type="RPNV3",
@@ -53,12 +53,12 @@ model = dict(
         us_layer_strides=[1, 2],
         us_num_filters=[256, 256], # default 128x128
         num_input_features=[704,256], #num features in the feature maps blocks that are feed into the structure similar to "FPN"
-        norm_cfg='SyncBN', 
+        norm_cfg=dict(type='SyncBN', requires_grad=True), 
     ),
 
 
     #Fusion layer
-    fusion_module = dict(type='MultiHeadCrossAttentionVoxel',embed_dim = 2048, num_heads=8, dropout = 0.1, norm_cfg='SyncBN'),
+    fusion_module = dict(type='MultiHeadCrossAttentionVoxel',embed_dim = 2048, num_heads=8, dropout = 0.1, norm_cfg=dict(type='SyncBN', requires_grad=True)),
 
     bbox_head= dict(
         type='CenterHead',
