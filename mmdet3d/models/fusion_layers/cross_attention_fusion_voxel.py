@@ -129,12 +129,12 @@ class FeedForwardBlock(nn.Module):
         return self.norm_2(self.dropout_2(self.relu_2(self.linear_2(self.dropout(self.relu(self.linear_1(self.norm(x))))))))
 
 class ConvBNReLU(nn.Module):
-    def __init__(self, in_planes, out_planes, kernel_size=3, stride=1, padding=None, norm_cfg='BN2d'):
+    def __init__(self, in_planes, out_planes, kernel_size=3, stride=1, padding=None, norm_cfg=None):
         super(ConvBNReLU, self).__init__()
         if padding is None:
             padding = (kernel_size - 1) // 2
         self.conv = nn.Conv2d(in_planes, out_planes, kernel_size, stride, padding, bias=False)
-        self.bn = build_norm_layer(norm_cfg, out_planes)[1],
+        self.bn = build_norm_layer(norm_cfg, out_planes)[1]
         self.relu = nn.LeakyReLU(inplace=True)
 
     def forward(self, x):
@@ -144,12 +144,12 @@ class ConvBNReLU(nn.Module):
         return x
     
 class ConvTransposeBNReLU(nn.Module):
-    def __init__(self, in_planes, out_planes, kernel_size=3, stride=1, padding=None, norm_cfg='BN2d'):
+    def __init__(self, in_planes, out_planes, kernel_size=3, stride=1, padding=None, norm_cfg=None):
         super(ConvTransposeBNReLU, self).__init__()
         if padding is None:
             padding = (kernel_size - 1) // 2
         self.conv = nn.ConvTranspose2d(in_planes, out_planes, kernel_size, stride, padding, bias=False)
-        self.bn = build_norm_layer(norm_cfg, out_planes)[1],
+        self.bn = build_norm_layer(norm_cfg, out_planes)[1]
         self.relu = nn.LeakyReLU(inplace=True)
 
     def forward(self, x):
