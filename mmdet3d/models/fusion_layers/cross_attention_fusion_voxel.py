@@ -3,6 +3,7 @@ import torch.nn as nn
 import matplotlib.pyplot as plt
 import numpy as np
 from ..builder import FUSION_LAYERS
+from mmcv import build_norm_layer
 
 
 class Decoder(nn.Module):
@@ -126,14 +127,14 @@ class FeedForwardBlock(nn.Module):
     def forward(self, x):
 
         return self.norm_2(self.dropout_2(self.relu_2(self.linear_2(self.dropout(self.relu(self.linear_1(self.norm(x))))))))
-    
+
 class ConvBNReLU(nn.Module):
-    def __init__(self, in_planes, out_planes, kernel_size=3, stride=1, padding=None):
+    def __init__(self, in_planes, out_planes, kernel_size=3, stride=1, padding=None, norm_cfg='BN2d'):
         super(ConvBNReLU, self).__init__()
         if padding is None:
             padding = (kernel_size - 1) // 2
         self.conv = nn.Conv2d(in_planes, out_planes, kernel_size, stride, padding, bias=False)
-        self.bn = nn.BatchNorm2d(out_planes)
+        self.bn = build_norm_layer(norm_cfg, out_planes)[1],
         self.relu = nn.LeakyReLU(inplace=True)
 
     def forward(self, x):
@@ -143,12 +144,12 @@ class ConvBNReLU(nn.Module):
         return x
     
 class ConvTransposeBNReLU(nn.Module):
-    def __init__(self, in_planes, out_planes, kernel_size=3, stride=1, padding=None):
+    def __init__(self, in_planes, out_planes, kernel_size=3, stride=1, padding=None, norm_cfg='BN2d'):
         super(ConvTransposeBNReLU, self).__init__()
         if padding is None:
             padding = (kernel_size - 1) // 2
         self.conv = nn.ConvTranspose2d(in_planes, out_planes, kernel_size, stride, padding, bias=False)
-        self.bn = nn.BatchNorm2d(out_planes)
+        self.bn = build_norm_layer(norm_cfg, out_planes)[1],
         self.relu = nn.LeakyReLU(inplace=True)
 
     def forward(self, x):
@@ -162,33 +163,35 @@ Same as V3 but adjusted to fit sparse resnet output. Upsample 4x compared to 2x
 """
 @FUSION_LAYERS.register_module()
 class MultiHeadCrossAttentionVoxel(nn.Module):
-    def __init__(self, embed_dim = 2048, num_heads=8, dropout = 0.1):
+    def __init__(self, embed_dim = 2048, num_heads=8, dropout = 0.1,norm_cfg=None):
         super(MultiHeadCrossAttentionVoxel, self).__init__()
 
         self.embed_dim = embed_dim
 
-        self.reduce_camera_spatialy = ConvBNReLU(256, self.embed_dim, kernel_size=3, stride=2, padding=1)
+        self.norm_cfg = norm_cfg
 
-        self.reduce_lidar_spatially = ConvBNReLU(512, 1024, kernel_size=3, stride=2, padding=1)
-        self.lidar_conv_0 = ConvBNReLU(1024, 1024, kernel_size=3, stride=1, padding=1)
+        self.reduce_camera_spatialy = ConvBNReLU(256, self.embed_dim, kernel_size=3, stride=2, padding=1, norm_cfg = self.norm_cfg)
 
-        self.reduce_lidar_2 = ConvBNReLU(1024, self.embed_dim, kernel_size=3, stride=2, padding=1)
-        self.lidar_conv_2 = ConvBNReLU(self.embed_dim, self.embed_dim, kernel_size=3, stride=1, padding=1)
+        self.reduce_lidar_spatially = ConvBNReLU(512, 1024, kernel_size=3, stride=2, padding=1,norm_cfg = self.norm_cfg)
+        self.lidar_conv_0 = ConvBNReLU(1024, 1024, kernel_size=3, stride=1, padding=1,norm_cfg = self.norm_cfg)
 
-        self.reduce_lidar_3 = ConvBNReLU(self.embed_dim, self.embed_dim, kernel_size=3, stride=2, padding=1)
-        self.lidar_conv_3 = ConvBNReLU(self.embed_dim, self.embed_dim, kernel_size=3, stride=1, padding=1)
-        self.lidar_conv_4 = ConvBNReLU(self.embed_dim, self.embed_dim, kernel_size=3, stride=1, padding=1)
+        self.reduce_lidar_2 = ConvBNReLU(1024, self.embed_dim, kernel_size=3, stride=2, padding=1, norm_cfg = self.norm_cfg)
+        self.lidar_conv_2 = ConvBNReLU(self.embed_dim, self.embed_dim, kernel_size=3, stride=1, padding=1, norm_cfg = self.norm_cfg)
+
+        self.reduce_lidar_3 = ConvBNReLU(self.embed_dim, self.embed_dim, kernel_size=3, stride=2, padding=1, norm_cfg = self.norm_cfg)
+        self.lidar_conv_3 = ConvBNReLU(self.embed_dim, self.embed_dim, kernel_size=3, stride=1, padding=1, norm_cfg = self.norm_cfg)
+        self.lidar_conv_4 = ConvBNReLU(self.embed_dim, self.embed_dim, kernel_size=3, stride=1, padding=1, norm_cfg = self.norm_cfg)
 
 
-        self.lidar_camera_cross_attention = Decoder(self.embed_dim, hidden_dim=self.embed_dim * 2, num_heads= num_heads, dropout=dropout, show_weights=False)
+        self.lidar_camera_cross_attention = Decoder(self.embed_dim, hidden_dim=self.embed_dim * 2, num_heads= num_heads, dropout=dropout, show_weights=False, norm_cfg = self.norm_cfg)
         
         self.pos_embed_camera = nn.Parameter(torch.randn(1, self.embed_dim, 4096) * .02) #done as in ViT: https://github.com/lucidrains/vit-pytorch/blob/main/vit_pytorch/vit.py, (14 (image hight) * 25 image width * 6 images) / 16 (image patches)
         self.pos_embed_lidar = nn.Parameter(torch.randn(1, self.embed_dim, 4096) * .02) #done as in ViT: https://github.com/lucidrains/vit-pytorch/blob/main/vit_pytorch/vit.py, no reduction for now
 
-        self.upsample_layer = ConvTransposeBNReLU(embed_dim, 1024, kernel_size=2, stride=2)
+        self.upsample_layer = ConvTransposeBNReLU(embed_dim, 1024, kernel_size=2, stride=2, norm_cfg = self.norm_cfg)
 
 
-        self.upsample_layer_2 = ConvTransposeBNReLU(1024, 512, kernel_size=2, stride=2) # match centerpoint
+        self.upsample_layer_2 = ConvTransposeBNReLU(1024, 512, kernel_size=2, stride=2, norm_cfg = self.norm_cfg) # match centerpoint
 
 
 
