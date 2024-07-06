@@ -10,7 +10,7 @@ model = dict(
         num_stages=4,
         out_indices=(0, 1, 2, 3),
         frozen_stages=1,
-        norm_cfg=dict(type='BN', requires_grad=True),
+        norm_cfg=dict(type='SyncBN', requires_grad=True),
         norm_eval=True,
         init_cfg=dict(type='Pretrained', checkpoint='torchvision://resnet50'),
         style='pytorch',
@@ -19,7 +19,7 @@ model = dict(
     ),
     neck=dict(
         type='FPN',
-        norm_cfg=dict(type='BN', requires_grad=True),
+        norm_cfg=dict(type='SyncBN', requires_grad=True),
         in_channels=[256, 512, 1024, 2048],
         out_channels=64,
         num_outs=4),
@@ -29,7 +29,7 @@ model = dict(
         out_channels=256,
         stride=2,
         is_transpose=False,
-        norm_cfg=dict(type='BN', requires_grad=True),
+        norm_cfg=dict(type='SyncBN', requires_grad=True),
         skip=True),
 
     #Point Modules:
@@ -41,7 +41,7 @@ model = dict(
         feat_channels=[64],
         with_distance=False,
         voxel_size=(0.2, 0.2, 8),
-        norm_cfg=dict(type='BN1d', eps=1e-3, momentum=0.01),
+        norm_cfg=dict(type='SyncBN', requires_grad=True),
         legacy=False),
     pts_middle_encoder=dict(
         type='PointPillarsScatter', in_channels=64, output_shape=(512, 512)),
@@ -51,20 +51,20 @@ model = dict(
         out_channels=[64, 128, 256],
         layer_nums=[3, 5, 5],
         layer_strides=[2, 2, 2],
-        norm_cfg=dict(type='BN', eps=1e-3, momentum=0.01),
+        norm_cfg=dict(type='SyncBN', requires_grad=True),
         conv_cfg=dict(type='Conv2d', bias=False)),
     pts_neck=dict(
         type='SECONDFPN',
         in_channels=[64, 128, 256],
         out_channels=[128, 128, 128],
         upsample_strides=[0.5, 1, 2],
-        norm_cfg=dict(type='BN', eps=1e-3, momentum=0.01),
+        norm_cfg=dict(type='SyncBN', requires_grad=True),
         upsample_cfg=dict(type='deconv', bias=False),
         use_conv_for_no_stride=True),
 
 
     #Fusion layer
-    fusion_module = dict(type='MultiHeadCrossAttentionNoNeck',embed_dim = 512, num_heads=8, dropout = 0.1, fuse_on_lidar=True),
+    fusion_module = dict(type='MultiHeadCrossAttentionNoNeck',embed_dim = 512, num_heads=8, dropout = 0.1, fuse_on_lidar=True, norm_cfg=dict(type='SyncBN', requires_grad=True)),
 
     bbox_head= dict(
         type='CenterHead',

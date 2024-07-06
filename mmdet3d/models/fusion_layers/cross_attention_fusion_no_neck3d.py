@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import matplotlib.pyplot as plt
 import numpy as np
+from mmcv.cnn import build_norm_layer
 from ..builder import FUSION_LAYERS
 
 
@@ -132,19 +133,25 @@ Same as V1 but with an addition skip connection around the cross attention
 """
 @FUSION_LAYERS.register_module()
 class MultiHeadCrossAttentionNoNeck(nn.Module):
-    def __init__(self, embed_dim = 512, num_heads=8, dropout = 0.1, fuse_on_lidar=True):
+    def __init__(self, embed_dim = 512, num_heads=8, dropout = 0.1, fuse_on_lidar=True, norm_cfg = None):
         super(MultiHeadCrossAttentionNoNeck, self).__init__()
 
         self.embed_dim = embed_dim
 
         self.reduce_lidar_channel = nn.Conv2d(384, self.embed_dim, kernel_size=3, stride=2, padding=1)
         self.reduce_lidar_channel_act = nn.LeakyReLU()
-        self.reduce_lidar_channel_norm = nn.BatchNorm2d(self.embed_dim)
+        if norm_cfg is None:
+            self.reduce_lidar_channel_norm = nn.BatchNorm2d(self.embed_dim)
+        else:
+            self.reduce_lidar_channel_norm = build_norm_layer(norm_cfg, self.embed_dim)[1]
         self.fuse_on_lidar = fuse_on_lidar
 
 
         self.reduce_camera_spatialy = nn.Conv2d(1536, self.embed_dim, kernel_size=3, stride=2, padding=1)
-        self.reduce_camera_spatialy_norm = nn.BatchNorm2d(self.embed_dim)
+        if norm_cfg is None:
+            self.reduce_camera_spatialy_norm = nn.BatchNorm2d(self.embed_dim)
+        else:
+            self.reduce_camera_spatialy_norm = build_norm_layer(norm_cfg, self.embed_dim)[1]
         self.reduce_camera_spatialy_act = nn.LeakyReLU(inplace=True)
 
         self.lidar_camera_cross_attention = Decoder(self.embed_dim, hidden_dim=self.embed_dim * 2, num_heads= num_heads, dropout=dropout, show_weights=False)
@@ -153,7 +160,10 @@ class MultiHeadCrossAttentionNoNeck(nn.Module):
         self.pos_embed_lidar = nn.Parameter(torch.randn(1, self.embed_dim, 4096) * .02) #done as in ViT: https://github.com/lucidrains/vit-pytorch/blob/main/vit_pytorch/vit.py, no reduction for now
 
         self.upsample_layer = nn.ConvTranspose2d(embed_dim, 3 * 128, kernel_size=2, stride=2) # match centerpoint
-        self.upsample_layer_norm = nn.BatchNorm2d(3 * 128)
+        if norm_cfg is None:
+            self.upsample_layer_norm = nn.BatchNorm2d(3 * 128)
+        else:
+            self.upsample_layer_norm = build_norm_layer(norm_cfg, 3 * 128)[1]
         self.upsample_layer_act = nn.LeakyReLU(inplace=True)
 
         self.last_norm = nn.LayerNorm(self.embed_dim)
