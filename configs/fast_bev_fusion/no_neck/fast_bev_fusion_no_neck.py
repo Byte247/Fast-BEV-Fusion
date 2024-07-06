@@ -273,13 +273,8 @@ data = dict(
         test_mode=True,
         box_type_3d='LiDAR'))
 
-optimizer = dict(type='AdamW', lr=1e-4,
-                 weight_decay=0.02,
-                 paramwise_cfg=dict(
-                 custom_keys={'backbone': dict(lr_mult=0.1, decay_mult=1.0),
-                              'pos_embed_camera': dict(lr_mult= 1.0, decay_mult=0.),
-                              'pos_embed_lidar': dict(lr_mult= 1.0, decay_mult=0.),
-                              'fusion_module': dict(lr_mult= 1.0, decay_mult=0.5)})) #try to combat nan even more
+optimizer = dict(type='AdamW', lr=1e-5,
+                 weight_decay=0.02)
 # max_norm=10 is better for SECOND
 optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
 
@@ -288,9 +283,9 @@ lr_config = dict(
     policy='poly',
     warmup='linear',
     warmup_iters=1000,
-    warmup_ratio=1e-6,
+    warmup_ratio=1e-7,
     power=1.0,
-    min_lr=1e-6,
+    min_lr=1e-8,
     by_epoch=False
     )
 
@@ -316,7 +311,7 @@ runner = dict(type='EpochBasedRunner', max_epochs=20)
 #total_epochs = 20
 checkpoint_config = dict(interval=1)
 log_config = dict(
-    interval=250,
+    interval=50,
     hooks=[
         dict(type='TextLoggerHook'),
         dict(type='TensorboardLoggerHook'),
