@@ -239,7 +239,7 @@ test_pipeline = [
 
 data = dict(
     samples_per_gpu=4,
-    workers_per_gpu=3,
+    workers_per_gpu=2,
     train=dict(
         type='RepeatDataset',
         times=1,
@@ -282,7 +282,7 @@ optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
 lr_config = dict(
     policy='poly',
     warmup='linear',
-    warmup_iters=1000,
+    warmup_iters=200,
     warmup_ratio=1e-7,
     power=1.0,
     min_lr=1e-8,
