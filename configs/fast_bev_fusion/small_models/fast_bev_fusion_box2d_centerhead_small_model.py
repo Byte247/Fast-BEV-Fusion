@@ -21,15 +21,9 @@ model = dict(
         in_channels=[64, 128, 256, 512],
         out_channels=64,
         num_outs=4),
-    neck_fuse=dict(in_channels=256, out_channels=64),
     neck_3d=dict(
-        type='M2BevNeck',
-        in_channels=384,
-        out_channels=256,
-        num_layers=2,
-        stride=2,
-        is_transpose=False,
-        norm_cfg=dict(type='BN', requires_grad=True)),
+        type='M2BevNeckTransOnly',
+        is_transpose=False),
     
     #Point Modules:
     pts_voxel_layer=dict(

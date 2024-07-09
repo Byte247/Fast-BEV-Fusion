@@ -26,15 +26,9 @@ model = dict(
         num_outs=4),
     neck_fuse=dict(in_channels=256, out_channels=64),
     neck_3d=dict(
-        type='M2BevNeckLeakyRelu',
-        in_channels=384,
-        out_channels=256,
-        num_layers=6,
-        stride=2,
-        is_transpose=False,
-        norm_cfg=dict(type='SyncBN', requires_grad=True)),
+        type='M2BevNeckTransOnly',
+        is_transpose=False),
     
-
     #Point Modules:
     pts_voxel_layer=dict(
         max_num_points=10, voxel_size=voxel_size, max_voxels=(120000, 160000), point_cloud_range=point_cloud_range),

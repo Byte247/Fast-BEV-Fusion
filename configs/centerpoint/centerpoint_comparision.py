@@ -225,8 +225,8 @@ input_modality = dict(
     use_external=False)
 
 
-optimizer = dict(type='AdamW', lr=1e-5,
-                 weight_decay=0.02)
+optimizer = dict(type='AdamW', lr=1e-4,
+                 weight_decay=0.01)
 # max_norm=10 is better for SECOND
 optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
 
@@ -235,7 +235,7 @@ lr_config = dict(
     policy='poly',
     warmup='linear',
     warmup_iters=200,
-    warmup_ratio=1e-7,
+    warmup_ratio=1e-6,
     power=1.0,
     min_lr=1e-8,
     by_epoch=False
@@ -261,7 +261,8 @@ log_config = dict(
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
 work_dir = None
-load_from = "/media/tom/Volume/master_thesis/Fast-BEV-Fusion/workdirs/att_v2/fast_bev_fusion_centerhead_sub2d_att_v2/epoch_1.pth"
+#load_from = "/media/tom/Volume/master_thesis/Fast-BEV-Fusion/workdirs/att_v2/fast_bev_fusion_centerhead_sub2d_att_v2/epoch_1.pth"
+load_from = None
 resume_from = None
 workflow = [('train', 1)]
 
