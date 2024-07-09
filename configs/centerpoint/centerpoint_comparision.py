@@ -44,7 +44,7 @@ model = dict(
         norm_cfg=dict(type='SyncBN', requires_grad=True),
         upsample_cfg=dict(type='deconv', bias=False),
         use_conv_for_no_stride=True),
-    bbox_head= dict(
+    pts_bbox_head= dict(
         type='CenterHead',
         in_channels=384,
         tasks=[
