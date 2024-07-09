@@ -6,6 +6,21 @@ from ..builder import FUSION_LAYERS
 from mmcv.cnn import build_norm_layer
 
 
+class ConvBNReLU(nn.Module):
+    def __init__(self, in_planes, out_planes, kernel_size=3, stride=1, padding=None, norm_cfg=None):
+        super(ConvBNReLU, self).__init__()
+        if padding is None:
+            padding = (kernel_size - 1) // 2
+        self.conv = nn.Conv2d(in_planes, out_planes, kernel_size, stride, padding, bias=False)
+        self.bn = build_norm_layer(norm_cfg, out_planes)[1]
+        self.relu = nn.LeakyReLU(inplace=True)
+
+    def forward(self, x):
+        x = self.conv(x)
+        x = self.bn(x)
+        x = self.relu(x)
+        return x
+
 class Decoder(nn.Module):
 
     def __init__(self, d_model = 256, hidden_dim = 512, num_heads = 8, dropout = 0.1, show_weights=False) -> None:
@@ -170,7 +185,9 @@ class MultiHeadCrossAttentionVoxel(nn.Module):
 
         self.norm_cfg = norm_cfg
 
-        self.reduce_camera_spatialy = ConvBNReLU(256, self.embed_dim, kernel_size=3, stride=2, padding=1, norm_cfg = self.norm_cfg)
+        self.reduce_camera_spatialy = ConvBNReLU(384, self.embed_dim, kernel_size=3, stride=2, padding=1, norm_cfg = self.norm_cfg)
+        self.reduce_camera_spatialy_conv1 = ConvBNReLU(self.embed_dim, self.embed_dim, kernel_size=3, stride=1, padding=1, norm_cfg = self.norm_cfg)
+        self.reduce_camera_spatialy_2 = ConvBNReLU(self.embed_dim, self.embed_dim, kernel_size=3, stride=2, padding=1, norm_cfg = self.norm_cfg)
 
         self.reduce_lidar_spatially = ConvBNReLU(512, 1024, kernel_size=3, stride=2, padding=1,norm_cfg = self.norm_cfg)
         self.lidar_conv_0 = ConvBNReLU(1024, 1024, kernel_size=3, stride=1, padding=1,norm_cfg = self.norm_cfg)
@@ -229,18 +246,9 @@ class MultiHeadCrossAttentionVoxel(nn.Module):
     
     def forward(self, lidar_bev_features, camera_bev_features):
 
-        # Make a copy of the tensor and convert it to CPU
-        camera_bev_features_cpu = camera_bev_features.clone().cpu()
-
-        # Check for NaN values
-        if torch.isnan(camera_bev_features_cpu).any():
-            print("Camera Tensor contains NaN values.")
-
-        # Check for Inf values
-        if torch.isinf(camera_bev_features_cpu).any():
-            print("Camera Tensor contains Inf values.")
-
         camera_bev_features = self.reduce_camera_spatialy(camera_bev_features)
+        camera_bev_features = self.reduce_camera_spatialy_conv1(camera_bev_features)
+        camera_bev_features = self.reduce_camera_spatialy_2(camera_bev_features)
 
         reduced_lidar_bev_features = self.reduce_lidar_spatially(lidar_bev_features)
         reduced_lidar_bev_features = self.lidar_conv_0(reduced_lidar_bev_features) #180x180

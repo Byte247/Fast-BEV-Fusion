@@ -25,15 +25,16 @@ class FastBEVFusionTransfusionhead(BaseDetector):
         self,
         backbone,
         neck,
-        neck_fuse,
         neck_3d,
         bbox_head,
         camera_n_voxels,
         camera_voxel_size,
         pts_voxel_layer,
+        neck_fuse = None,
         seg_head=None,
         pts_voxel_encoder=None,
         pts_middle_encoder=None,
+        pts_backbone=None,
         pts_neck=None,
         fusion_module=None,
         bbox_head_2d=None,
@@ -55,6 +56,8 @@ class FastBEVFusionTransfusionhead(BaseDetector):
         self.pts_middle_encoder= builder.build_middle_encoder(
                 pts_middle_encoder)
         self.pts_neck = builder.build_neck(pts_neck)
+        
+        self.pts_backbone = builder.build_backbone(pts_backbone)
 
         #Fusion
 
@@ -63,13 +66,7 @@ class FastBEVFusionTransfusionhead(BaseDetector):
         self.backbone = builder.build_backbone(backbone)
         self.neck = builder.build_neck(neck)
         
-        self.neck_fuse = nn.Conv2d(
-            neck_fuse["in_channels"],
-            neck_fuse["out_channels"],
-            kernel_size=3,
-            stride=1,
-            padding=1,
-        )
+        
         self.neck_3d = builder.build_neck(neck_3d)
 
         if bbox_head is not None:
@@ -169,14 +166,14 @@ class FastBEVFusionTransfusionhead(BaseDetector):
 
         x = torch.cat([c1, c2, c3, c4], dim=1)
 
-        def _inner_forward(x):
-            out = self.neck_fuse(x)  # [6, 64, 232, 400]
-            return out
+        #def _inner_forward(x):
+        #    out = self.neck_fuse(x)  # [6, 64, 232, 400]
+        #    return out
 
-        if self.with_cp and x.requires_grad:
-            x = cp.checkpoint(_inner_forward, x)
-        else:
-            x = _inner_forward(x)
+        #if self.with_cp and x.requires_grad and self.neck_fuse is not None:
+        #    x = cp.checkpoint(_inner_forward, x)
+        #elif self.neck_fuse is not None:
+        #    x = _inner_forward(x)
 
         x = x.reshape([batch_size, -1] + list(x.shape[1:]))  # [1, 6, 64, 232, 400]
 
@@ -231,6 +228,8 @@ class FastBEVFusionTransfusionhead(BaseDetector):
         batch_size = coors[-1, 0] + 1
  
         x = self.pts_middle_encoder(voxel_features, coors, batch_size)
+       
+        x = self.pts_backbone(x)
         
         x = self.pts_neck(x)
 
@@ -307,14 +306,13 @@ class FastBEVFusionTransfusionhead(BaseDetector):
 
         
         #fuse lidar BEV and camera BEV features
-        feature_bev = self.fusion_module(lidar_features, feature_bev[0]) # this framework requires features inside lists for some reason. 
+        feature_bev = self.fusion_module(lidar_features[0], feature_bev[0]) # this framework requires features inside lists for some reason. 
         feature_bev =[feature_bev]
 
         assert self.bbox_head is not None or self.seg_head is not None
 
         losses = dict()
         if self.bbox_head is not None:
-
             outs = self.bbox_head(feature_bev, features_2d, img_metas)
             loss_inputs = [gt_bboxes_3d, gt_labels_3d, outs]
             loss_det = self.bbox_head.loss(*loss_inputs)
@@ -421,7 +419,8 @@ class FastBEVFusionTransfusionhead(BaseDetector):
             c4, size=c1.size()[2:], mode="bilinear", align_corners=False
         )  # [6, 64, 232, 400]
         x = torch.cat([c1, c2, c3, c4], dim=1)
-        x = self.neck_fuse(x)
+        #if self.neck_fuse is not None:
+        #    x = self.neck_fuse(x)
 
         if bool(os.getenv("DEPLOY", False)):
             x = x.permute(0, 2, 3, 1)
@@ -458,7 +457,7 @@ class FastBEVFusionTransfusionhead(BaseDetector):
 
     def simple_test(self, img, img_metas, points):
         bbox_results = []
-        feature_bev, _, _ = self.extract_feat(img, img_metas, "test")
+        feature_bev, _, features_2d = self.extract_feat(img, img_metas, "test")
 
         lidar_features = self.extract_pts_feat(points)
 
@@ -468,7 +467,7 @@ class FastBEVFusionTransfusionhead(BaseDetector):
 
 
         if self.bbox_head is not None:
-            outs = self.bbox_head(feature_bev)
+            outs = self.bbox_head(feature_bev, features_2d, img_metas)
             bbox_list = self.bbox_head.get_bboxes(outs, img_metas, rescale=False)
                                     
             bbox_results = [bbox3d2result(bboxes, scores, labels)for bboxes, scores, labels in bbox_list]

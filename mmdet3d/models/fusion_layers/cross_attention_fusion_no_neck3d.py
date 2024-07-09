@@ -104,7 +104,7 @@ class Decoder(nn.Module):
             
             # Plot attention heatmap
             attention_heatmap = attention_heatmaps[i]
-            attention_heatmap_2d = attention_heatmap.reshape((128, 128)).T
+            attention_heatmap_2d = attention_heatmap.reshape((64, 64)).T
             
             axs_heatmap[0].imshow(attention_heatmap_2d, cmap='viridis', interpolation='nearest')
             axs_heatmap[0].set_xlabel('Wide Image Patch X-Axis')
@@ -212,17 +212,7 @@ class MultiHeadCrossAttentionNoNeck(nn.Module):
         return camera_patches
     
     def forward(self, lidar_bev_features, camera_bev_features):
-        
-        # Make a copy of the tensor and convert it to CPU
-        camera_bev_features_cpu = camera_bev_features.clone().cpu()
 
-        # Check for NaN values
-        if torch.isnan(camera_bev_features_cpu).any():
-            print("Camera Tensor contains NaN values.")
-
-        # Check for Inf values
-        if torch.isinf(camera_bev_features_cpu).any():
-            print("Camera Tensor contains Inf values.")
         
         lidar_bev_features = self.reduce_lidar_channel(lidar_bev_features)
 

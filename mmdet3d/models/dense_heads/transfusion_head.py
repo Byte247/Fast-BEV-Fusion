@@ -20,6 +20,7 @@ from mmdet3d.models.fusion_layers import apply_3d_transformation
 from mmdet3d.ops.iou3d.iou3d_utils import nms_gpu
 from mmdet.core import build_bbox_coder, multi_apply, build_assigner, build_sampler, AssignResult
 from mmdet3d.ops.roiaware_pool3d import points_in_boxes_batch
+from mmcv.cnn import build_norm_layer
 
 
 class PositionEmbeddingLearned(nn.Module):
@@ -27,11 +28,16 @@ class PositionEmbeddingLearned(nn.Module):
     Absolute pos embedding, learned.
     """
 
-    def __init__(self, input_channel, num_pos_feats=288):
+    def __init__(self, input_channel, num_pos_feats=288, norm_cfg = None):
         super().__init__()
+        if norm_cfg is not None:
+            norm = build_norm_layer(norm_cfg, num_pos_feats)[1]
+        else:
+            norm =  nn.BatchNorm1d(num_pos_feats),
+           
         self.position_embedding_head = nn.Sequential(
             nn.Conv1d(input_channel, num_pos_feats, kernel_size=1),
-            nn.BatchNorm1d(num_pos_feats),
+            norm,
             nn.ReLU(inplace=True),
             nn.Conv1d(num_pos_feats, num_pos_feats, kernel_size=1))
 
@@ -630,6 +636,8 @@ class TransFusionHead(nn.Module):
                  ):
         super(TransFusionHead, self).__init__()
 
+
+        self.norm_cfg = norm_cfg
         self.num_classes = num_classes
         self.num_proposals = num_proposals
         self.auxiliary = auxiliary
@@ -675,7 +683,7 @@ class TransFusionHead(nn.Module):
                 padding=1,
                 bias=bias,
                 conv_cfg=dict(type='Conv2d'),
-                norm_cfg=dict(type='BN2d'),
+                norm_cfg=norm_cfg,
             ))
             layers.append(build_conv_layer(
                 dict(type='Conv2d'),
@@ -698,8 +706,8 @@ class TransFusionHead(nn.Module):
             self.decoder.append(
                 TransformerDecoderLayer(
                     hidden_channel, num_heads, ffn_channel, dropout, activation,
-                    self_posembed=PositionEmbeddingLearned(2, hidden_channel),
-                    cross_posembed=PositionEmbeddingLearned(2, hidden_channel),
+                    self_posembed=PositionEmbeddingLearned(2, hidden_channel, norm_cfg=norm_cfg),
+                    cross_posembed=PositionEmbeddingLearned(2, hidden_channel,norm_cfg=norm_cfg),
                 ))
 
         # Prediction Head
@@ -726,16 +734,16 @@ class TransFusionHead(nn.Module):
             self.decoder.append(
                 TransformerDecoderLayer(
                     hidden_channel, num_heads, ffn_channel, dropout, activation,
-                    self_posembed=PositionEmbeddingLearned(2, hidden_channel),
-                    cross_posembed=PositionEmbeddingLearned(2, hidden_channel),
+                    self_posembed=PositionEmbeddingLearned(2, hidden_channel, self.norm_cfg),
+                    cross_posembed=PositionEmbeddingLearned(2, hidden_channel, self.norm_cfg),
                 ))
             # cross-attention only layers for projecting img feature onto BEV
             for i in range(num_views):
                 self.decoder.append(
                     TransformerDecoderLayer(
                         hidden_channel, num_heads, ffn_channel, dropout, activation,
-                        self_posembed=PositionEmbeddingLearned(2, hidden_channel),
-                        cross_posembed=PositionEmbeddingLearned(2, hidden_channel),
+                        self_posembed=PositionEmbeddingLearned(2, hidden_channel, self.norm_cfg),
+                        cross_posembed=PositionEmbeddingLearned(2, hidden_channel, self.norm_cfg),
                         cross_only=True,
                     ))
             self.fc = nn.Sequential(*[nn.Conv1d(hidden_channel, hidden_channel, kernel_size=1)])
@@ -877,7 +885,7 @@ class TransFusionHead(nn.Module):
             if self.fuse_img:
                 ret_dicts[0]['dense_heatmap'] = dense_heatmap_img
             else:
-                ret_dicts[0]['dense_heatmap'] = dense_heatmap.detach().sigmoid()
+                ret_dicts[0]['dense_heatmap'] = dense_heatmap
 
         if self.auxiliary is False:
             # only return the results of last decoder layer

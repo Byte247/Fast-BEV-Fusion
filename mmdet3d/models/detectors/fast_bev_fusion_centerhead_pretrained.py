@@ -26,7 +26,6 @@ class FastBEVFusionCenterheadPretrained(BaseDetector):
         second_stage,
         backbone,
         neck,
-        neck_fuse,
         neck_3d,
         bbox_head,
         camera_n_voxels,
@@ -53,10 +52,6 @@ class FastBEVFusionCenterheadPretrained(BaseDetector):
 
         self.second_stage = second_stage
 
-        if not self.second_stage:
-            self.additional_upsample = nn.ConvTranspose2d(384, 384, kernel_size=2, stride=2)
-            self.additional_upsample_norm = nn.BatchNorm2d(384)
-            self.additional_upsample_act = nn.LeakyReLU()
 
         #Point
         self.pts_voxel_layer = Voxelization(**pts_voxel_layer)
@@ -67,20 +62,13 @@ class FastBEVFusionCenterheadPretrained(BaseDetector):
         self.pts_neck = builder.build_neck(pts_neck)
 
         #Fusion
+        if self.second_stage:
+            self.fusion_module = builder.build_fusion_layer(fusion_module)
 
-        self.fusion_module = builder.build_fusion_layer(fusion_module)
-
-        self.backbone = builder.build_backbone(backbone)
-        self.neck = builder.build_neck(neck)
-        
-        self.neck_fuse = nn.Conv2d(
-            neck_fuse["in_channels"],
-            neck_fuse["out_channels"],
-            kernel_size=3,
-            stride=1,
-            padding=1,
-        )
-        self.neck_3d = builder.build_neck(neck_3d)
+            self.backbone = builder.build_backbone(backbone)
+            self.neck = builder.build_neck(neck)
+            
+            self.neck_3d = builder.build_neck(neck_3d)
 
         if bbox_head is not None:
             bbox_head.update(train_cfg=train_cfg)
@@ -95,10 +83,11 @@ class FastBEVFusionCenterheadPretrained(BaseDetector):
         else:
             self.seg_head = None
 
-        if bbox_head_2d is not None:
-            bbox_head_2d.update(train_cfg=train_cfg_2d)
-            bbox_head_2d.update(test_cfg=test_cfg_2d)
-            self.bbox_head_2d = builder.build_head(bbox_head_2d)
+        if self.second_stage:
+            if bbox_head_2d is not None:
+                bbox_head_2d.update(train_cfg=train_cfg_2d)
+                bbox_head_2d.update(test_cfg=test_cfg_2d)
+                self.bbox_head_2d = builder.build_head(bbox_head_2d)
         else:
             self.bbox_head_2d = None
 
@@ -179,15 +168,6 @@ class FastBEVFusionCenterheadPretrained(BaseDetector):
         )  # [6, 64, 232, 400]
 
         x = torch.cat([c1, c2, c3, c4], dim=1)
-
-        def _inner_forward(x):
-            out = self.neck_fuse(x)  # [6, 64, 232, 400]
-            return out
-
-        if self.with_cp and x.requires_grad:
-            x = cp.checkpoint(_inner_forward, x)
-        else:
-            x = _inner_forward(x)
 
         x = x.reshape([batch_size, -1] + list(x.shape[1:]))  # [1, 6, 64, 232, 400]
 
@@ -324,8 +304,7 @@ class FastBEVFusionCenterheadPretrained(BaseDetector):
             feature_bev = self.fusion_module(lidar_features[0], feature_bev[0]) # this framework requires features inside lists for some reason. 
             feature_bev =[feature_bev]
         else:
-            lidar_features = self.additional_upsample_act(self.additional_upsample_norm(self.additional_upsample(lidar_features)))
-            feature_bev = [lidar_features]
+            feature_bev = lidar_features
 
         assert self.bbox_head is not None or self.seg_head is not None
 
@@ -345,75 +324,76 @@ class FastBEVFusionCenterheadPretrained(BaseDetector):
             loss_seg = self.seg_head.losses(x_bev, gt_bev)
             losses.update(loss_seg)
 
-        if self.bbox_head_2d is not None:
-            
-            if self.second_stage:
-                batch_size = (feature_bev[0].shape)[0]
-                overall_2d_loss = dict()
+        if self.second_stage:
+            if self.bbox_head_2d is not None:
+                
+                if self.second_stage:
+                    batch_size = (feature_bev[0].shape)[0]
+                    overall_2d_loss = dict()
 
-                for batch_id in range(batch_size):
+                    for batch_id in range(batch_size):
 
 
-                    start_idx = batch_id * 6
-                    end_idx = (batch_id + 1) * 6
+                        start_idx = batch_id * 6
+                        end_idx = (batch_id + 1) * 6
 
-                    # Extract the relevant slices for the current batch index
-                    sliced_2d_features = [tensor[start_idx:end_idx] for tensor in features_2d]
+                        # Extract the relevant slices for the current batch index
+                        sliced_2d_features = [tensor[start_idx:end_idx] for tensor in features_2d]
 
-                    gt_bboxes = kwargs["gt_bboxes"][batch_id]
-                    gt_labels = kwargs["gt_labels"][batch_id]
+                        gt_bboxes = kwargs["gt_bboxes"][batch_id]
+                        gt_labels = kwargs["gt_labels"][batch_id]
 
-                    # hack a img_metas_2d
-                    img_metas_2d = []
-                    img_info = img_metas[batch_id]["img_info"]
-                    
-                    for idx, info in enumerate(img_info):
-                        tmp_dict = dict(
-                            filename=info["filename"],
-                            ori_filename=info["filename"].split("/")[-1],
-                            ori_shape=img_metas[batch_id]["ori_shape"],
-                            img_shape=img_metas[batch_id]["img_shape"],
-                            pad_shape=img_metas[batch_id]["pad_shape"],
-                            scale_factor=img_metas[batch_id]["scale_factor"],
-                            flip=False,
-                            flip_direction=None,
+                        # hack a img_metas_2d
+                        img_metas_2d = []
+                        img_info = img_metas[batch_id]["img_info"]
+                        
+                        for idx, info in enumerate(img_info):
+                            tmp_dict = dict(
+                                filename=info["filename"],
+                                ori_filename=info["filename"].split("/")[-1],
+                                ori_shape=img_metas[batch_id]["ori_shape"],
+                                img_shape=img_metas[batch_id]["img_shape"],
+                                pad_shape=img_metas[batch_id]["pad_shape"],
+                                scale_factor=img_metas[batch_id]["scale_factor"],
+                                flip=False,
+                                flip_direction=None,
+                            )
+                            img_metas_2d.append(tmp_dict)
+
+                        rank, world_size = get_dist_info()
+
+
+                        loss_2d = self.bbox_head_2d.forward_train(
+                            sliced_2d_features, img_metas_2d, gt_bboxes, gt_labels
                         )
-                        img_metas_2d.append(tmp_dict)
+                        
+                        # Check for NaN in loss_2d and handle it
+                        for key, value in loss_2d.items():
+                            if torch.isnan(value).any():
+                                print(f"NaN detected in {key} for batch_id {batch_id}, replacing with zero.")
+                                loss_2d[key] = torch.zeros_like(value)
 
-                    rank, world_size = get_dist_info()
+                        if batch_id == 0:
+                            overall_2d_loss.update(loss_2d)
+                        else:
+                            for key in overall_2d_loss:
+                                overall_2d_loss[key] += loss_2d[key]
 
+                    # Normalize the loss by batch size outside the loop
+                    for key in overall_2d_loss:
+                        if torch.isnan(overall_2d_loss[key]).any():
+                            print(f"NaN detected in overall_2d_loss before normalization in {key}, replacing with zero.")
+                            overall_2d_loss[key] = torch.zeros_like(overall_2d_loss[key])
+                        overall_2d_loss[key] /= batch_size
 
-                    loss_2d = self.bbox_head_2d.forward_train(
-                        sliced_2d_features, img_metas_2d, gt_bboxes, gt_labels
-                    )
-                    
-                    # Check for NaN in loss_2d and handle it
-                    for key, value in loss_2d.items():
-                        if torch.isnan(value).any():
-                            print(f"NaN detected in {key} for batch_id {batch_id}, replacing with zero.")
-                            loss_2d[key] = torch.zeros_like(value)
+                    # Check for NaN after normalization and handle it
+                    for key in overall_2d_loss:
+                        if torch.isnan(overall_2d_loss[key]).any():
+                            print(f"NaN detected in overall_2d_loss after normalization in {key}, replacing with zero.")
+                            overall_2d_loss[key] = torch.zeros_like(overall_2d_loss[key])
 
-                    if batch_id == 0:
-                        overall_2d_loss.update(loss_2d)
-                    else:
-                        for key in overall_2d_loss:
-                            overall_2d_loss[key] += loss_2d[key]
-
-                # Normalize the loss by batch size outside the loop
-                for key in overall_2d_loss:
-                    if torch.isnan(overall_2d_loss[key]).any():
-                        print(f"NaN detected in overall_2d_loss before normalization in {key}, replacing with zero.")
-                        overall_2d_loss[key] = torch.zeros_like(overall_2d_loss[key])
-                    overall_2d_loss[key] /= batch_size
-
-                # Check for NaN after normalization and handle it
-                for key in overall_2d_loss:
-                    if torch.isnan(overall_2d_loss[key]).any():
-                        print(f"NaN detected in overall_2d_loss after normalization in {key}, replacing with zero.")
-                        overall_2d_loss[key] = torch.zeros_like(overall_2d_loss[key])
-
-                # Update losses
-                losses.update(overall_2d_loss)
+                    # Update losses
+                    losses.update(overall_2d_loss)
             
         return losses
 
@@ -439,7 +419,6 @@ class FastBEVFusionCenterheadPretrained(BaseDetector):
             c4, size=c1.size()[2:], mode="bilinear", align_corners=False
         )  # [6, 64, 232, 400]
         x = torch.cat([c1, c2, c3, c4], dim=1)
-        x = self.neck_fuse(x)
 
         if bool(os.getenv("DEPLOY", False)):
             x = x.permute(0, 2, 3, 1)
@@ -489,8 +468,7 @@ class FastBEVFusionCenterheadPretrained(BaseDetector):
             feature_bev =[feature_bev]
         else:
 
-            lidar_features = self.additional_upsample_act(self.additional_upsample_norm(self.additional_upsample(lidar_features)))
-            feature_bev = [lidar_features]
+            feature_bev = lidar_features
 
         if self.bbox_head is not None:
             outs = self.bbox_head(feature_bev)

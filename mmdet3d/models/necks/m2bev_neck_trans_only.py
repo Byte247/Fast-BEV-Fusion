@@ -9,7 +9,7 @@ import ipdb
 
 
 @NECKS.register_module()
-class M2BevNeckLeakyRelu(nn.Module):
+class M2BevNeckTransOnly(nn.Module):
     """Neck for M2BEV.
     """
 

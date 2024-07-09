@@ -60,7 +60,7 @@ class SparseBasicBlock(SparseModule):
 
         self.conv1 = conv3x3(inplanes, planes, stride, indice_key=indice_key, bias=bias)
         self.bn1 = build_norm_layer(norm_cfg, planes)[1]
-        self.relu = nn.ReLU()
+        self.relu = nn.LeakyReLU()
         self.conv2 = conv3x3(planes, planes, indice_key=indice_key, bias=bias)
         self.bn2 = build_norm_layer(norm_cfg, planes)[1]
         self.downsample = downsample
@@ -104,7 +104,7 @@ class SpMiddleResNetFHD(nn.Module):
         self.conv_input = SparseSequential(
             SubMConv3d(in_channels, 16, 3, bias=False, indice_key="res0"),
             build_norm_layer(norm_cfg, 16)[1],
-            nn.ReLU(inplace=True)
+            nn.LeakyReLU(inplace=True)
         )
 
         self.conv1 = SparseSequential(        
@@ -117,7 +117,7 @@ class SpMiddleResNetFHD(nn.Module):
                 16, 32, 3, 2, padding=1, bias=False
             ),  # [1600, 1200, 41] -> [800, 600, 21]
             build_norm_layer(norm_cfg, 32)[1],
-            nn.ReLU(inplace=True),
+            nn.LeakyReLU(inplace=True),
             SparseBasicBlock(32, 32, norm_cfg=norm_cfg, indice_key="res1"),
             SparseBasicBlock(32, 32, norm_cfg=norm_cfg, indice_key="res1"),
         )
@@ -127,7 +127,7 @@ class SpMiddleResNetFHD(nn.Module):
                 32, 64, 3, 2, padding=1, bias=False
             ),  # [800, 600, 21] -> [400, 300, 11]
             build_norm_layer(norm_cfg, 64)[1],
-            nn.ReLU(inplace=True),
+            nn.LeakyReLU(inplace=True),
             SparseBasicBlock(64, 64, norm_cfg=norm_cfg, indice_key="res2"),
             SparseBasicBlock(64, 64, norm_cfg=norm_cfg, indice_key="res2"),
         )
@@ -137,7 +137,7 @@ class SpMiddleResNetFHD(nn.Module):
                 64, 128, 3, 2, padding=[0, 1, 1], bias=False
             ),  # [400, 300, 11] -> [200, 150, 5]
             build_norm_layer(norm_cfg, 128)[1],
-            nn.ReLU(inplace=True),
+            nn.LeakyReLU(inplace=True),
             SparseBasicBlock(128, 128, norm_cfg=norm_cfg, indice_key="res3"),
             SparseBasicBlock(128, 128, norm_cfg=norm_cfg, indice_key="res3"),
         )
@@ -148,7 +148,7 @@ class SpMiddleResNetFHD(nn.Module):
                 128, 128, (3, 1, 1), (2, 1, 1), bias=False
             ),  # [200, 150, 5] -> [200, 150, 2]
             build_norm_layer(norm_cfg, 128)[1],
-            nn.ReLU(),
+            nn.LeakyReLU(),
         )
 
     def forward(self, voxel_features, coors, batch_size):
