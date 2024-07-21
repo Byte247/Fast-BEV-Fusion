@@ -41,7 +41,7 @@ model = dict(
     pts_middle_encoder=dict(
         type='PointPillarsScatter', in_channels=64, output_shape=(512, 512)),
     pts_backbone=dict(
-        type='SparseResNet2D',
+        type='SparseResNet18',
         layer_nums=[2, 2, 2, 2],
         ds_layer_strides=[1, 2, 2, 2],
         ds_num_filters=[64, 128, 256, 256],
