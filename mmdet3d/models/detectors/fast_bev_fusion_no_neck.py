@@ -122,11 +122,11 @@ class FastBEVFusionNoNeck(BaseDetector):
 
     def extract_feat(self, img, img_metas, mode):
         batch_size = img.shape[0]
-        print(f"type 0: {type(img)}")
+        print(f"type 0: {img.dtype}")
         img = img.reshape(
             [-1] + list(img.shape)[2:]
         )  # [1, 6, 3, 928, 1600] -> [6, 3, 928, 1600]
-        print(f"type 1: {type(img)}")
+        print(f"type 1: {img.dtype}")
         x = self.backbone(
             img
         )  # [6, 256, 232, 400]; [6, 512, 116, 200]; [6, 1024, 58, 100]; [6, 2048, 29, 50]

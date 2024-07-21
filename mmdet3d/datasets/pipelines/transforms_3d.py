@@ -1713,7 +1713,7 @@ class RandomAugImageMultiViewImage(object):
 
             # cv2.imshow("post_pil_img", new_image)
             # cv2.waitKey(0)
-            print(f"post_pil_img: {type(post_pil_img)}")
+            
             aug_imgs.append(np.asarray(post_pil_img))
             aug_extrinsics.append(
                 self.rts2proj(results['lidar2img']['lidar2img_aug'][cam_id], post_rot, post_tran)
