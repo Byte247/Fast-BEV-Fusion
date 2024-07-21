@@ -99,7 +99,7 @@ model = dict(
             alpha=0.25,
             loss_weight=1.0),
         loss_bbox=dict(type='IoULoss', loss_weight=1.0),
-        loss_centerness=dict(type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0)),
+        loss_centerness=dict(type='CrossEntropyLoss', use_sigmoid=True, loss_weight=0.1)), #centerness does not seem to work
     # training and testing settings for 2d
     train_cfg_2d=dict(
         assigner=dict(
