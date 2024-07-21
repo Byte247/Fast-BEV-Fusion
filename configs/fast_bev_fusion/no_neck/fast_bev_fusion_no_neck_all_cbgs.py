@@ -1,9 +1,17 @@
 # -*- coding: utf-8 -*-
-# If point cloud range is changed, the models should also change their point cloud range accordingly
 point_cloud_range = [-51.2, -51.2, -5.0, 51.2, 51.2, 3.0]
 
+voxel_size = [0.2, 0.2, 8]
+out_size_factor = 4
+
+# For nuScenes we usually do 10-class detection
+class_names = [
+    'car', 'truck', 'trailer', 'bus', 'construction_vehicle', 'bicycle',
+    'motorcycle', 'pedestrian', 'traffic_cone', 'barrier'
+]
+
 model = dict(
-    type='FastBEVFusionNoNeck',
+    type='FastBEVFusionTransfusionhead',
     backbone=dict(
         type='ResNet',
         depth=50,
@@ -29,7 +37,7 @@ model = dict(
 
     #Point Modules:
     pts_voxel_layer=dict(
-        max_num_points=20, voxel_size=[0.2, 0.2, 8], max_voxels=(30000, 40000), point_cloud_range=point_cloud_range),
+        max_num_points=20, voxel_size=voxel_size, max_voxels=(30000, 40000), point_cloud_range=point_cloud_range),
     pts_voxel_encoder=dict(
         type='PillarFeatureNet',
         in_channels=5,
@@ -59,34 +67,38 @@ model = dict(
     #Fusion layer
     fusion_module = dict(type='MultiHeadCrossAttentionNoNeck',embed_dim = 512, num_heads=1, dropout = 0.1, fuse_on_lidar=True, norm_cfg=dict(type='SyncBN', requires_grad=True)),
 
-    bbox_head= dict(
-        type='CenterHead',
+    bbox_head=dict(
+        type='TransFusionHead',
+        num_proposals=200,
+        auxiliary=True,
         in_channels=384,
-        tasks=[
-            dict(num_class=1, class_names=['car']),
-            dict(num_class=2, class_names=['truck', 'construction_vehicle']),
-            dict(num_class=2, class_names=['bus', 'trailer']),
-            dict(num_class=1, class_names=['barrier']),
-            dict(num_class=2, class_names=['motorcycle', 'bicycle']),
-            dict(num_class=2, class_names=['pedestrian', 'traffic_cone']),
-        ],
-        common_heads=dict(
-            reg=(2, 2), height=(1, 2), dim=(3, 2), rot=(2, 2), vel=(2, 2)),
-        share_conv_channel=128,
+        hidden_channel=128,
+        num_classes=len(class_names),
+        num_decoder_layers=1,
+        num_heads=8,
+        learnable_query_pos=False,
+        initialize_by_heatmap=True,
+        nms_kernel_size=3,
+        ffn_channel=256,
+        dropout=0.1,
+        bn_momentum=0.1,
+        activation='relu',
+        norm_cfg = dict(type='SyncBN', requires_grad=True),
+        common_heads=dict(center=(2, 2), height=(1, 2), dim=(3, 2), rot=(2, 2), vel=(2, 2)),
         bbox_coder=dict(
-            type='CenterPointBBoxCoder',
-            post_center_range=[-61.2, -61.2, -10.0, 61.2, 61.2, 10.0],
-            max_num=500,
-            score_threshold=0.1,
-            out_size_factor=4,
+            type='TransFusionBBoxCoder',
+            pc_range=point_cloud_range[:2],
             voxel_size=[0.2, 0.2],
-            pc_range=[-51.2, -51.2],
-            code_size=9),
-        separate_head=dict(
-            type='SeparateHead', init_bias=-2.19, final_kernel=3),
-        loss_cls=dict(type='GaussianFocalLoss', reduction='mean'),
+            out_size_factor=out_size_factor,
+            post_center_range=[-61.2, -61.2, -10.0, 61.2, 61.2, 10.0],
+            score_threshold=0.0,
+            code_size=10,
+        ),
+        loss_cls=dict(type='FocalLoss', use_sigmoid=True, gamma=2, alpha=0.25, reduction='mean', loss_weight=1.0),
+        # loss_iou=dict(type='CrossEntropyLoss', use_sigmoid=True, reduction='mean', loss_weight=0.0),
         loss_bbox=dict(type='L1Loss', reduction='mean', loss_weight=0.25),
-        norm_bbox=True),
+        loss_heatmap=dict(type='GaussianFocalLoss', reduction='mean', loss_weight=1.0),
+    ),
     
     bbox_head_2d=dict(
         type='FCOSHead',
@@ -128,26 +140,34 @@ model = dict(
 
     # model training and testing settings for the head
     train_cfg=dict(
-            grid_size=[512, 512, 1],
+            grid_size=[512, 512, 8],
+            assigner=dict(
+                type='HungarianAssigner3D',
+                iou_calculator=dict(type='BboxOverlaps3D', coordinate='lidar'),
+                cls_cost=dict(type='FocalLossCost', gamma=2, alpha=0.25, weight=0.15),
+                reg_cost=dict(type='BBoxBEVL1Cost', weight=0.25),
+                iou_cost=dict(type='IoU3DCost', weight=0.25)
+            ),
             voxel_size=[0.2, 0.2],
-            out_size_factor=4,
+            out_size_factor=out_size_factor,
             dense_reg=1,
             gaussian_overlap=0.1,
             max_objs=500,
             min_radius=2,
+            pos_weight=-1,
             code_weights=[1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.2, 0.2],
             point_cloud_range = point_cloud_range),
      test_cfg=dict(
-        
+            grid_size=[512, 512, 1],
             post_center_limit_range=[-61.2, -61.2, -10.0, 61.2, 61.2, 10.0],
             max_per_img=500,
             max_pool_nms=False,
             min_radius=[4, 12, 10, 1, 0.85, 0.175],
-            score_threshold=0.1,
-            pc_range=[-51.2, -51.2],
-            out_size_factor=4,
+            score_threshold=0.0,
+            pc_range=point_cloud_range[:2],
+            out_size_factor=out_size_factor,
             voxel_size=[0.2, 0.2],
-            nms_type='rotate',
+            nms_type=None,
             pre_max_size=1000,
             post_max_size=83,
             nms_thr=0.2)
@@ -155,12 +175,6 @@ model = dict(
 )
 
 
-
-# For nuScenes we usually do 10-class detection
-class_names = [
-    'car', 'truck', 'trailer', 'bus', 'construction_vehicle', 'bicycle',
-    'motorcycle', 'pedestrian', 'traffic_cone', 'barrier'
-]
 dataset_type = 'NuScenesMultiView_Map_MultiModalDataset'
 data_root = 'data/nuscenes/'
 # Input modality for nuScenes dataset, this is consistent with the submission
@@ -173,6 +187,25 @@ input_modality = dict(
     use_external=True)
 
 img_norm_cfg = dict(mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
+
+data_config = {
+    'src_size': (900, 1600),
+    'input_size': (900, 1600),
+    # train-aug
+    'resize': (-0.06, 0.11),
+    'crop': (-0.05, 0.05),
+    'rot': (-5.4, 5.4),
+    'flip': True,
+    # test-aug
+    'test_input_size': (900, 1600),
+    'test_resize': 0.0,
+    'test_rotate': 0.0,
+    'test_flip': False,
+    # top, right, bottom, left
+    'pad': (0, 0, 0, 0),
+    'pad_divisor': 32,
+    'pad_color': (0, 0, 0),
+}
 
 train_pipeline = [
     dict(type='LoadAnnotations3D',
@@ -210,6 +243,7 @@ train_pipeline = [
             dict(type='Resize', img_scale=(1600, 900), keep_ratio=True),
             dict(type='Normalize', **img_norm_cfg),
             dict(type='Pad', size_divisor=32)]),
+    dict(type='RandomAugImageMultiViewImage', data_config=data_config),
     dict(type='PointsRangeFilter', point_cloud_range=point_cloud_range),
     dict(type='ObjectRangeFilter', point_cloud_range=point_cloud_range),
     dict(type='ObjectNameFilter', classes=class_names),
@@ -247,8 +281,7 @@ data = dict(
     samples_per_gpu=3,
     workers_per_gpu=1,
     train=dict(
-        type='RepeatDataset',
-        times=1,
+        type='CBGSDataset',
         dataset=dict(
             type=dataset_type,
             data_root=data_root,
