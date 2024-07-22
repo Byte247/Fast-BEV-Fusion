@@ -10,7 +10,7 @@ model = dict(
         num_stages=4,
         out_indices=(0, 1, 2, 3),
         frozen_stages=1,
-        norm_cfg=dict(type='SyncBN', requires_grad=True),
+        norm_cfg=dict(type='BN', requires_grad=True),
         norm_eval=True,
         init_cfg=dict(type='Pretrained', checkpoint='torchvision://resnet50'),
         style='pytorch',
@@ -19,7 +19,7 @@ model = dict(
     ),
     neck=dict(
         type='FPN',
-        norm_cfg=dict(type='SyncBN', requires_grad=True),
+        norm_cfg=dict(type='BN', requires_grad=True),
         in_channels=[256, 512, 1024, 2048],
         out_channels=64,
         num_outs=4),
@@ -36,28 +36,28 @@ model = dict(
         feat_channels=[64,64],
         with_distance=False,
         voxel_size=(0.2, 0.2, 8),
-        norm_cfg=dict(type='SyncBN', requires_grad=True),
+        norm_cfg=dict(type='BN1d', requires_grad=True),
         legacy=False),
     pts_middle_encoder=dict(
         type='PointPillarsScatter', in_channels=64, output_shape=(512, 512)),
     pts_backbone=dict(
-        type='SparseResNet18',
-        layer_nums=[2, 2, 2, 2],
-        ds_layer_strides=[1, 2, 2, 2],
-        ds_num_filters=[64, 128, 256, 256],
-        num_input_features=64,
-        out_channels= 256,
-        norm_cfg=dict(type='SyncBN', requires_grad=True)),
-
+        type="PointResNet34V2",
+        norm_cfg=dict(type='BN', requires_grad=True)),
+                      
     pts_neck=dict(
-        type='ASPP',
-        in_channels=256,
-        out_channels= 384,
-        norm_cfg=dict(type='SyncBN', requires_grad=True)),
+        type="RPNV3",
+        layer_nums=[5, 5],
+        ds_layer_strides=[1, 2],
+        ds_num_filters=[256, 256],
+        us_layer_strides=[1, 2],
+        us_num_filters=[128, 128], # default 128x128
+        num_input_features=[256,512], #num features in the feature maps block 4 and 5 that are feed into the structure similar to "FPN"
+        norm_cfg=dict(type='BN', requires_grad=True),
+    ),
 
 
     #Fusion layer
-    fusion_module = dict(type='MultiHeadCrossAttentionNoNeck',embed_dim = 512, num_heads=1, dropout = 0.1, fuse_on_lidar=True, norm_cfg=dict(type='SyncBN', requires_grad=True)),
+    fusion_module = dict(type='MultiHeadCrossAttentionNoNeck',embed_dim = 512, num_heads=1, dropout = 0.1, fuse_on_lidar=True, norm_cfg=dict(type='BN', requires_grad=True)),
 
     bbox_head= dict(
         type='CenterHead',
@@ -264,7 +264,7 @@ test_pipeline = [
 
 
 data = dict(
-    samples_per_gpu=3,
+    samples_per_gpu=1,
     workers_per_gpu=1,
     train=dict(
         type='RepeatDataset',
@@ -352,5 +352,5 @@ resume_from = None
 workflow = [('train', 1)]
 
 # fp16 settings, the loss scale is specifically tuned to avoid Nan
-#fp16 = dict(loss_scale='dynamic')
+fp16 = dict(loss_scale='dynamic')
 

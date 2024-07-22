@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.utils.checkpoint as cp
 import torch.nn.functional as F
 from mmdet.models import NECKS
+from mmcv.runner import BaseModule
 from mmcv.cnn import build_norm_layer
 
 class Conv(nn.Module):
@@ -58,7 +59,7 @@ class BasicBlock(nn.Module):
         return out
 
 @NECKS.register_module()
-class ASPPNeck(nn.Module):
+class ASPPNeck(BaseModule):
     def __init__(self, in_channels, out_channels,norm_cfg=None):
 
         super(ASPPNeck, self).__init__()

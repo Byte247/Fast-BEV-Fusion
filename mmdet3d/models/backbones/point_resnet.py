@@ -1,5 +1,6 @@
 import torch.nn as nn
 from ..builder import BACKBONES
+from mmcv.cnn import build_norm_layer
 
 
 def conv3x3(in_planes, out_planes, stride=1, groups=1, dilation=1):
@@ -18,20 +19,22 @@ class BasicBlock(nn.Module):
     expansion = 1
 
     def __init__(self, inplanes, planes, stride=1, downsample=None, groups=1,
-                 base_width=64, dilation=1, norm_layer=None):
+                 base_width=64, dilation=1, norm_cfg=None):
         super(BasicBlock, self).__init__()
-        if norm_layer is None:
-            norm_layer = nn.BatchNorm2d
+        if norm_cfg is None:
+            norm_layer = nn.BatchNorm2d(planes)
+        else:
+            norm_layer = build_norm_layer(norm_cfg, planes)[1]
         if groups != 1 or base_width != 64:
             raise ValueError('BasicBlock only supports groups=1 and base_width=64')
         if dilation > 1:
             raise NotImplementedError("Dilation > 1 not supported in BasicBlock")
         # Both self.conv1 and self.downsample layers downsample the input when stride != 1
         self.conv1 = conv3x3(inplanes, planes, stride)
-        self.bn1 = norm_layer(planes)
+        self.bn1 = norm_layer
         self.relu = nn.ReLU(inplace=True)
         self.conv2 = conv3x3(planes, planes)
-        self.bn2 = norm_layer(planes)
+        self.bn2 = norm_layer
         self.downsample = downsample
         self.stride = stride
 
@@ -65,13 +68,19 @@ class PointResNet34V2(nn.Module):
                  groups=1, width_per_group=64, replace_stride_with_dilation=None, 
                  norm_layer=None, name="PointResNet34V2", first_max_pool = False, freeze_layers = False, **kwargs):
         super(PointResNet34V2, self).__init__()
-        if norm_layer is None:
-            norm_layer = nn.BatchNorm2d
-        self._norm_layer = norm_layer
+        norm_cfg = norm_layer
+        self.norm_cfg = norm_cfg
         self.first_max_pool = first_max_pool
         self.freeze = freeze_layers
 
         self.inplanes = 64
+
+        if norm_cfg is None:
+            norm_layer = nn.BatchNorm2d(self.inplanes)
+        else:
+            norm_layer = build_norm_layer(norm_cfg, self.inplanes)[1]
+
+
         self.dilation = 1
         self.in_channels = in_channels
         if replace_stride_with_dilation is None:
@@ -85,7 +94,7 @@ class PointResNet34V2(nn.Module):
         self.base_width = width_per_group
         self.conv1 = nn.Conv2d(self.in_channels, self.inplanes, kernel_size=7, stride=2, padding=3,
                                bias=False)
-        self.bn1 = norm_layer(self.inplanes)
+        self.bn1 = norm_layer
         self.relu = nn.ReLU(inplace=True)
         if self.first_max_pool:
             self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
@@ -123,26 +132,27 @@ class PointResNet34V2(nn.Module):
             param.requires_grad = False
 
     def _make_layer(self, block, planes, blocks, stride=1, dilate=False):
-        norm_layer = self._norm_layer
+        
         downsample = None
         previous_dilation = self.dilation
         if dilate:
             self.dilation *= stride
             stride = 1
+ 
         if stride != 1 or self.inplanes != planes * block.expansion:
             downsample = nn.Sequential(
                 conv1x1(self.inplanes, planes * block.expansion, stride),
-                norm_layer(planes * block.expansion),
+                norm_layer = build_norm_layer(self.norm_cfg, planes * block.expansion)[1],
             )
 
         layers = []
         layers.append(block(self.inplanes, planes, stride, downsample, self.groups,
-                            self.base_width, previous_dilation, norm_layer))
+                            self.base_width, previous_dilation, self.norm_cfg))
         self.inplanes = planes * block.expansion
         for _ in range(1, blocks):
             layers.append(block(self.inplanes, planes, groups=self.groups,
                                 base_width=self.base_width, dilation=self.dilation,
-                                norm_layer=norm_layer))
+                                norm_cfg= self.norm_cfg))
 
         return nn.Sequential(*layers)
 

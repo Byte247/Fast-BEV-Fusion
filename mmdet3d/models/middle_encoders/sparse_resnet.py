@@ -10,7 +10,7 @@ import torch
 
 from mmcv.cnn import build_norm_layer
 
-from ..builder import MIDDLE_ENCODERS
+from ..builder import MIDDLE_ENCODERS,BACKBONES
 
 
 
@@ -46,7 +46,7 @@ class SparseConvBlock(spconv.pytorch.SparseModule):
     SparseConv2d for stride > 1 and subMconv2d for stride==1
     '''
 
-    def __init__(self, in_channels, out_channels, kernel_size, stride, use_subm=True, bias=False, norm_cfg=False):
+    def __init__(self, in_channels, out_channels, kernel_size, stride, use_subm=True, bias=False, norm_cfg=None):
         super(SparseConvBlock, self).__init__()
 
         if norm_cfg is None:
@@ -241,8 +241,13 @@ class SpMiddleResNetFHD(nn.Module):
 
 
 
-@MIDDLE_ENCODERS.register_module()
-class SparseResNet18(spconv.pytorch.SparseModule):
+
+
+
+
+
+@BACKBONES.register_module()
+class SparseResNet18(nn.Module):
     def __init__(
             self,
             layer_nums,
@@ -276,17 +281,17 @@ class SparseResNet18(spconv.pytorch.SparseModule):
                 self._num_filters[i],
                 kernel_size[i],
                 self._layer_strides[i],
-                layer_num,
-                self.norm_cfg)
+                layer_num)
             blocks.append(block)
 
         self.blocks = nn.ModuleList(blocks)
 
         if self.norm_cfg is not None:
-            mapping_norm = build_norm_layer(self.norm_cfg, out_channels)[1],
+            mapping_norm = build_norm_layer(self.norm_cfg, out_channels)[1]
         else:
-            mapping_norm = nn.BatchNorm1d(out_channels, eps=1e-3, momentum=0.01),
+            mapping_norm = nn.BatchNorm1d(out_channels, eps=1e-3, momentum=0.01)
 
+        
         self.mapping = SparseSequential(
             SparseConv2d(self._num_filters[-1],
                          out_channels, 1, 1, bias=False),
@@ -307,6 +312,7 @@ class SparseResNet18(spconv.pytorch.SparseModule):
 
     def forward(self, pillar_features, coors, input_shape):
         batch_size = len(torch.unique(coors[:, 0]))
+        print(f"pillar_features: {pillar_features.shape}")
         x = spconv.pytorch.SparseConvTensor(
             pillar_features, coors, input_shape, batch_size)
         for i in range(len(self.blocks)):
