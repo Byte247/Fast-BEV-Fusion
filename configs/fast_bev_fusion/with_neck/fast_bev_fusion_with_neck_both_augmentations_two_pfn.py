@@ -31,7 +31,7 @@ model = dict(
         num_layers=6,
         stride=2,
         is_transpose=False,
-        norm_cfg=dict(type='BN', requires_grad=True)),
+        norm_cfg=dict(type='SyncBN', requires_grad=True)),
 
     #Point Modules:
     pts_voxel_layer=dict(
