@@ -4,7 +4,7 @@ point_cloud_range = [-51.2, -51.2, -5.0, 51.2, 51.2, 3.0]
 
 model = dict(
     type='FastBEVFusionCenterheadPretrained',
-    second_stage=True,
+    second_stage=False,
     backbone=dict(
         type='ResNet',
         depth=50,
@@ -59,7 +59,7 @@ model = dict(
         use_conv_for_no_stride=True),
 
     #Fusion layer
-    fusion_module = dict(type='MultiHeadCrossAttentionNoNeck',embed_dim = 512, num_heads=8, dropout = 0.1, fuse_on_lidar=True, norm_cfg=dict(type='BN', requires_grad=True)),
+    fusion_module = dict(type='MultiHeadCrossAttentionNoNeck',embed_dim = 512, num_heads=1, dropout = 0.1, fuse_on_lidar=True, norm_cfg=dict(type='BN', requires_grad=True)),
 
     bbox_head= dict(
         type='CenterHead',
@@ -219,7 +219,7 @@ db_sampler = dict(
        use_dim=[0, 1, 2, 3, 4],
        file_client_args=file_client_args))
 
-"""
+
 # First Stage Pipeline
 train_pipeline = [
     dict(type='LoadAnnotations3D',
@@ -269,8 +269,8 @@ train_pipeline = [
    dict(type='Collect3D', keys=['img', 'gt_bboxes', 'gt_labels', 
                                  'gt_bboxes_3d', 'gt_labels_3d',
                                   'points'])]
-"""
 
+"""
 #Second Stage Pipeline
 train_pipeline = [
     dict(type='LoadAnnotations3D',
@@ -317,7 +317,7 @@ train_pipeline = [
     dict(type='Collect3D', keys=['img', 'gt_bboxes', 'gt_labels', 
                                    'gt_bboxes_3d', 'gt_labels_3d',
                                     'points'])]
-
+"""
 
 test_pipeline = [
     dict(
@@ -335,7 +335,7 @@ test_pipeline = [
         n_images=6,
         transforms=[
             dict(type='LoadImageFromFile'),
-            dict(type='Resize', img_scale=(1600, 900), keep_ratio=True),
+            dict(type='Resize', img_scale=(200, 100), keep_ratio=True),
             dict(type='Normalize', **img_norm_cfg),
             dict(type='Pad', size_divisor=32)]),
     dict(type='KittiSetOrigin', point_cloud_range=point_cloud_range),
@@ -380,7 +380,7 @@ data = dict(
         box_type_3d='LiDAR'))
 """
 data = dict(
-    samples_per_gpu=1,
+    samples_per_gpu=16,
     workers_per_gpu=4,
     train=dict(
         type='RepeatDataset',
@@ -415,7 +415,7 @@ data = dict(
         test_mode=True,
         box_type_3d='LiDAR'))
 
-
+"""
 optimizer = dict(type='AdamW', lr=0.0001,
                   weight_decay=0.01,
                   paramwise_cfg=dict(
@@ -427,11 +427,11 @@ optimizer = dict(type='AdamW', lr=0.0001,
                                'neck':dict(lr_mult=1.0, decay_mult=1.0),
                                'fusion_module':dict(lr_mult=1.0, decay_mult=1.0),
                                'bbox_head': dict(lr_mult=0.1, decay_mult=1.0)}))
+"""
 
-"""
-optimizer = dict(type='AdamW', lr=0.0001,
+optimizer = dict(type='AdamW', lr=0.001,
                  weight_decay=0.01)
-"""
+
 # max_norm=10 is better for SECOND
 optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
 
@@ -447,12 +447,12 @@ lr_config = dict(
     )
 
 # runtime settings
-runner = dict(type='EpochBasedRunner', max_epochs=10)
+runner = dict(type='EpochBasedRunner', max_epochs=20)
 
 #total_epochs = 20
 checkpoint_config = dict(interval=1)
 log_config = dict(
-    interval=500,
+    interval=200,
     hooks=[
         dict(type='TextLoggerHook'),
         dict(type='TensorboardLoggerHook'),
