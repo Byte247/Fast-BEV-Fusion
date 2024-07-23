@@ -127,8 +127,6 @@ class FastBEVFusionNoNeck(BaseDetector):
             [-1] + list(img.shape)[2:]
         )  # [1, 6, 3, 928, 1600] -> [6, 3, 928, 1600]
         
-        if img.dtype != torch.float32:
-            img = img.float()
         x = self.backbone(
             img
         )  # [6, 256, 232, 400]; [6, 512, 116, 200]; [6, 1024, 58, 100]; [6, 2048, 29, 50]

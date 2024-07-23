@@ -236,13 +236,13 @@ train_pipeline = [
         transforms=[
             dict(type='LoadImageFromFile'),
             dict(type='Resize', img_scale=(1600, 900), keep_ratio=True),
-            dict(type='Normalize', **img_norm_cfg),
             dict(type='Pad', size_divisor=32)]),
     dict(type='RandomAugImageMultiViewImage', data_config=data_config),
     dict(type='PointsRangeFilter', point_cloud_range=point_cloud_range),
     dict(type='ObjectRangeFilter', point_cloud_range=point_cloud_range),
     dict(type='ObjectNameFilter', classes=class_names),
     dict(type='PointShuffle'),
+    dict(type='NormalizeMultiviewImage', **img_norm_cfg),
     dict(type='KittiSetOrigin', point_cloud_range=point_cloud_range),
     dict(type='DefaultFormatBundle3D', class_names=class_names),
     dict(type='Collect3D', keys=['img', 'gt_bboxes', 'gt_labels', 
@@ -265,8 +265,9 @@ test_pipeline = [
         transforms=[
             dict(type='LoadImageFromFile'),
             dict(type='Resize', img_scale=(1600, 900), keep_ratio=True),
-            dict(type='Normalize', **img_norm_cfg),
             dict(type='Pad', size_divisor=32)]),
+    dict(type='RandomAugImageMultiViewImage', data_config=data_config, is_train=False),
+    dict(type='NormalizeMultiviewImage', **img_norm_cfg),
     dict(type='KittiSetOrigin', point_cloud_range=point_cloud_range),
     dict(type='DefaultFormatBundle3D', class_names=class_names, with_label=False),
     dict(type='Collect3D', keys=['img','points'])]
@@ -274,7 +275,7 @@ test_pipeline = [
 
 data = dict(
     samples_per_gpu=1,
-    workers_per_gpu=1,
+    workers_per_gpu=2,
     train=dict(
         type='RepeatDataset',
         times=1,
@@ -344,7 +345,7 @@ lr_config = dict(
 
 
 # runtime settings
-runner = dict(type='EpochBasedRunner', max_epochs=10)
+runner = dict(type='EpochBasedRunner', max_epochs=20)
 
 #total_epochs = 20
 checkpoint_config = dict(interval=1)

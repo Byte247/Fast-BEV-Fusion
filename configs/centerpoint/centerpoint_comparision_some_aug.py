@@ -123,15 +123,13 @@ train_pipeline = [
        type='GlobalRotScaleTrans',
        rot_range=[-0.3925, 0.3925],
        scale_ratio_range=[0.95, 1.05],
-       translation_std=[0.5, 0.5, 0.5],
-       update_img2lidar=True),
+       translation_std=[0.5, 0.5, 0.5]),
     dict(
         type='RandomFlip3D',
         flip_2d=False,
         sync_2d=False,
         flip_ratio_bev_horizontal=0.5,
-        flip_ratio_bev_vertical=0.5,
-        update_img2lidar=True),
+        flip_ratio_bev_vertical=0.5),
     dict(type='PointsRangeFilter', point_cloud_range=point_cloud_range),
     dict(type='ObjectRangeFilter', point_cloud_range=point_cloud_range),
     dict(type='ObjectNameFilter', classes=class_names),
@@ -195,7 +193,7 @@ eval_pipeline = [
 ]
 
 data = dict(
-    samples_per_gpu=16,
+    samples_per_gpu=12,
     workers_per_gpu=4,
     train=dict(
         # type='CBGSDataset',
@@ -247,7 +245,7 @@ optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
 lr_config = dict(
     policy='poly',
     warmup='linear',
-    warmup_iters=200,
+    warmup_iters=400,
     warmup_ratio=1e-6,
     power=1.0,
     min_lr=1e-8,
