@@ -66,7 +66,14 @@ class FastBEVFusionTransfusionhead(BaseDetector):
         self.backbone = builder.build_backbone(backbone)
         self.neck = builder.build_neck(neck)
         
-        
+        self.neck_fuse = nn.Conv2d(
+            neck_fuse["in_channels"],
+            neck_fuse["out_channels"],
+            kernel_size=3,
+            stride=1,
+            padding=1,
+        )
+
         self.neck_3d = builder.build_neck(neck_3d)
 
         if bbox_head is not None:
@@ -166,14 +173,14 @@ class FastBEVFusionTransfusionhead(BaseDetector):
 
         x = torch.cat([c1, c2, c3, c4], dim=1)
 
-        #def _inner_forward(x):
-        #    out = self.neck_fuse(x)  # [6, 64, 232, 400]
-        #    return out
+        def _inner_forward(x):
+            out = self.neck_fuse(x)  # [6, 64, 232, 400]
+            return out
 
-        #if self.with_cp and x.requires_grad and self.neck_fuse is not None:
-        #    x = cp.checkpoint(_inner_forward, x)
-        #elif self.neck_fuse is not None:
-        #    x = _inner_forward(x)
+        if self.with_cp and x.requires_grad and self.neck_fuse is not None:
+            x = cp.checkpoint(_inner_forward, x)
+        elif self.neck_fuse is not None:
+            x = _inner_forward(x)
 
         x = x.reshape([batch_size, -1] + list(x.shape[1:]))  # [1, 6, 64, 232, 400]
 
@@ -419,8 +426,8 @@ class FastBEVFusionTransfusionhead(BaseDetector):
             c4, size=c1.size()[2:], mode="bilinear", align_corners=False
         )  # [6, 64, 232, 400]
         x = torch.cat([c1, c2, c3, c4], dim=1)
-        #if self.neck_fuse is not None:
-        #    x = self.neck_fuse(x)
+        if self.neck_fuse is not None:
+            x = self.neck_fuse(x)
 
         if bool(os.getenv("DEPLOY", False)):
             x = x.permute(0, 2, 3, 1)

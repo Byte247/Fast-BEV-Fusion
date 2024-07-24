@@ -33,6 +33,7 @@ model = dict(
         in_channels=[256, 512, 1024, 2048],
         out_channels=64,
         num_outs=4),
+    neck_fuse=dict(in_channels=256, out_channels=64),
     neck_3d=dict(
         type='M2BevNeckLeakyRelu',
         in_channels=384,
@@ -292,8 +293,7 @@ data = dict(
     samples_per_gpu=1,
     workers_per_gpu=1,
     train=dict(
-        type='RepeatDataset',
-        times=1,
+        type='CBGSDataset',
         dataset=dict(
             type=dataset_type,
             data_root=data_root,
@@ -326,24 +326,8 @@ data = dict(
 
 optimizer = dict(type='AdamW', lr=1e-4,
                  weight_decay=0.01)
-# max_norm=10 is better for SECOND
-optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
 
-# learning policy
-# learning policy
-"""
-lr_config = dict(
-    policy='poly',
-    warmup='linear',
-    warmup_iters=500,
-    warmup_ratio=1e-6,
-    power=1.0,
-    min_lr=0,
-    by_epoch=False
-    )
-"""
 
-# # max_norm=10 is better for SECOND
 optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
 lr_config = dict(
      policy='cyclic',
