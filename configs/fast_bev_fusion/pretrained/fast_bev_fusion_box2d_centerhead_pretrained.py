@@ -237,7 +237,7 @@ train_pipeline = [
         use_dim=[0, 1, 2, 3, 4],
         pad_empty_sweeps=True),
 
-    dict(type='ObjectSample', db_sampler=db_sampler),
+    #dict(type='ObjectSample', db_sampler=db_sampler),
     dict(
        type='GlobalRotScaleTrans',
        rot_range=[-0.3925, 0.3925],
