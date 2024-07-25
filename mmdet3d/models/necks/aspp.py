@@ -58,6 +58,18 @@ class BasicBlock(nn.Module):
 
         return out
 
+class ASPPConv(nn.Sequential):
+    def __init__(self, in_channels: int, out_channels: int, dilation: int, norm_cfg = dict(type='BN', requires_grad=True)) -> None:
+
+        norm = self.norm = build_norm_layer(norm_cfg, out_channels)[1]
+        modules = [
+            nn.Conv2d(in_channels, out_channels, 3, padding=dilation, dilation=dilation, bias=False),
+            norm,
+            nn.LeakyReLU(),
+        ]
+        super().__init__(*modules)
+
+
 @NECKS.register_module()
 class ASPPNeck(BaseModule):
     def __init__(self, in_channels, out_channels,norm_cfg=None):
@@ -75,17 +87,22 @@ class ASPPNeck(BaseModule):
         self.weight = nn.Parameter(torch.randn(in_channels, in_channels, 3, 3))
         self.post_conv = ConvBlock(in_channels * 6, out_channels, kernel_size=1, stride=1, norm_cfg=self.norm_cfg)
 
+        self.branch1 = ASPPConv(in_channels, in_channels, dilation=1, norm_cfg=self.norm_cfg)
+        self.branch6 = ASPPConv(in_channels, in_channels, dilation=6, norm_cfg=self.norm_cfg)
+        self.branch12 = ASPPConv(in_channels, in_channels, dilation=12, norm_cfg=self.norm_cfg)
+        self.branch18 = ASPPConv(in_channels, in_channels, dilation=18, norm_cfg=self.norm_cfg)
+
     def _forward(self, x):
+
+        x = x[0] # x is a list of last 4 ResNet layers, 0 idx being smallest res
+
         x = self.pre_conv(x)
         branch1x1 = self.conv1x1(x)
-        branch1 = F.conv2d(x, self.weight, stride=1,
-                           bias=None, padding=1, dilation=1)
-        branch6 = F.conv2d(x, self.weight, stride=1,
-                           bias=None, padding=6, dilation=6)
-        branch12 = F.conv2d(x, self.weight, stride=1,
-                            bias=None, padding=12, dilation=12)
-        branch18 = F.conv2d(x, self.weight, stride=1,
-                            bias=None, padding=18, dilation=18)
+        branch1 = self.branch1(x)
+        branch6 = self.branch6(x)
+        branch12 = self.branch12(x)
+        branch18 = self.branch18(x)
+
         x = self.post_conv(
             torch.cat((x, branch1x1, branch1, branch6, branch12, branch18), dim=1))
         return x

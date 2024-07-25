@@ -50,16 +50,11 @@ model = dict(
         in_channels=5,
         sparse_shape=[41, 1440, 1440]),
 
-
     pts_neck=dict(
-        type="RPNV3",
-        layer_nums=[5, 5],
-        ds_layer_strides=[1, 2],
-        ds_num_filters=[256, 256],
-        us_layer_strides=[1, 2],
-        us_num_filters=[256, 256], # default 128x128
-        num_input_features=[704,256], #num features in the feature maps blocks that are feed into the structure similar to "FPN"
-    ),
+        type='ASPPNeck',
+        in_channels=512,
+        out_channels= 384,
+        norm_cfg=dict(type='SyncBN', requires_grad=True)),
 
 
     #Fusion layer

@@ -49,17 +49,11 @@ model = dict(
     pts_middle_encoder=dict(
         type='PointPillarsScatter', in_channels=64, output_shape=(512, 512)),
     pts_backbone=dict(
-        type='SparseResNet18',
-        layer_nums=[2, 2, 2, 2],
-        ds_layer_strides=[1, 2, 2, 2],
-        ds_num_filters=[64, 128, 256, 256],
-        num_input_features=64,
-        out_channels= 256,
-        norm_cfg=dict(type='SyncBN', requires_grad=True)),
-
+        type="PointResNet34V2",
+        norm_cfg=dict(type='SyncBN', requires_grad=True)),  
     pts_neck=dict(
-        type='ASPP',
-        in_channels=256,
+        type='ASPPNeck',
+        in_channels=512,
         out_channels= 384,
         norm_cfg=dict(type='SyncBN', requires_grad=True)),
 
