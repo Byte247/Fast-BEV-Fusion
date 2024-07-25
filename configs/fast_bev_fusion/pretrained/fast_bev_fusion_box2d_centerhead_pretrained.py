@@ -4,7 +4,7 @@ point_cloud_range = [-51.2, -51.2, -5.0, 51.2, 51.2, 3.0]
 
 model = dict(
     type='FastBEVFusionCenterheadPretrained',
-    second_stage=False,
+    second_stage=True,
     backbone=dict(
         type='ResNet',
         depth=50,
@@ -179,9 +179,77 @@ input_modality = dict(
 
 img_norm_cfg = dict(mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 
+img_norm_cfg = dict(mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
+
+data_config = {
+    'src_size': (900, 1600),
+    'input_size': (900, 1600),
+    # train-aug
+    'resize': (-0.06, 0.11),
+    'crop': (-0.05, 0.05),
+    'rot': (-5.4, 5.4),
+    'flip': True,
+    # test-aug
+    'test_input_size': (900, 1600),
+    'test_resize': 0.0,
+    'test_rotate': 0.0,
+    'test_flip': False,
+    # top, right, bottom, left
+    'pad': (0, 0, 0, 0),
+    'pad_divisor': 32,
+    'pad_color': (0, 0, 0),
+}
+
+
+train_pipeline = [
+    dict(type='LoadAnnotations3D',
+         with_bbox=True,
+         with_label=True,
+         with_bev_seg=False),
+     dict(
+        type='LoadPointsFromFile',
+        coord_type='LIDAR',
+        load_dim=5,
+        use_dim=5,),
+    dict(
+        type='LoadPointsFromMultiSweeps',
+        sweeps_num=10,
+        use_dim=[0, 1, 2, 3, 4],
+        pad_empty_sweeps=True),
+    dict(
+       type='GlobalRotScaleTrans',
+       rot_range=[-0.3925, 0.3925],
+       scale_ratio_range=[0.95, 1.05],
+       translation_std=[0.5, 0.5, 0.5],
+       update_img2lidar=True),
+    dict(
+        type='RandomFlip3D',
+        flip_2d=False,
+        sync_2d=False,
+        flip_ratio_bev_horizontal=0.5,
+        flip_ratio_bev_vertical=0.5,
+        update_img2lidar=True),
+    dict(
+        type='MultiViewPipeline',
+        n_images=6,
+        transforms=[
+            dict(type='LoadImageFromFile'),
+            dict(type='Resize', img_scale=(1600, 900), keep_ratio=True),
+            dict(type='Pad', size_divisor=32)]),
+    dict(type='RandomAugImageMultiViewImage', data_config=data_config),
+    dict(type='PointsRangeFilter', point_cloud_range=point_cloud_range),
+    dict(type='ObjectRangeFilter', point_cloud_range=point_cloud_range),
+    dict(type='ObjectNameFilter', classes=class_names),
+    dict(type='PointShuffle'),
+    dict(type='NormalizeMultiviewImage', **img_norm_cfg),
+    dict(type='KittiSetOrigin', point_cloud_range=point_cloud_range),
+    dict(type='DefaultFormatBundle3D', class_names=class_names),
+    dict(type='Collect3D', keys=['img', 'gt_bboxes', 'gt_labels', 
+                                 'gt_bboxes_3d', 'gt_labels_3d',
+                                  'points'])]
 
 #First Stage Pipeline:
-
+"""
 file_client_args = dict(backend='disk')
 db_sampler = dict(
    data_root=data_root,
@@ -218,106 +286,8 @@ db_sampler = dict(
        load_dim=5,
        use_dim=[0, 1, 2, 3, 4],
        file_client_args=file_client_args))
-
-
-# First Stage Pipeline
-train_pipeline = [
-    dict(type='LoadAnnotations3D',
-         with_bbox=True,
-         with_label=True,
-         with_bev_seg=False),
-     dict(
-        type='LoadPointsFromFile',
-        coord_type='LIDAR',
-        load_dim=5,
-        use_dim=5,),
-    dict(
-        type='LoadPointsFromMultiSweeps',
-        sweeps_num=10,
-        use_dim=[0, 1, 2, 3, 4],
-        pad_empty_sweeps=True),
-
-    #dict(type='ObjectSample', db_sampler=db_sampler),
-    dict(
-       type='GlobalRotScaleTrans',
-       rot_range=[-0.3925, 0.3925],
-       scale_ratio_range=[0.95, 1.05],
-       translation_std=[0.5, 0.5, 0.5],
-       update_img2lidar=True),
-    dict(
-        type='RandomFlip3D',
-        flip_2d=False,
-        sync_2d=False,
-        flip_ratio_bev_horizontal=0.5,
-        flip_ratio_bev_vertical=0.5,
-        update_img2lidar=True),
-   
-   dict(type='PointsRangeFilter', point_cloud_range=point_cloud_range),
-   dict(type='ObjectRangeFilter', point_cloud_range=point_cloud_range),
-   dict(type='ObjectNameFilter', classes=class_names),
-   dict(
-          type='MultiViewPipeline',
-          n_images=6,
-          transforms=[
-              dict(type='LoadImageFromFile'),
-              dict(type='Resize', img_scale=(100, 50), keep_ratio=True),
-              dict(type='Normalize', **img_norm_cfg),
-              dict(type='Pad', size_divisor=32)]),
-   dict(type='PointShuffle'), 
-   dict(type='KittiSetOrigin', point_cloud_range=point_cloud_range),
-   dict(type='DefaultFormatBundle3D', class_names=class_names),
-   dict(type='Collect3D', keys=['img', 'gt_bboxes', 'gt_labels', 
-                                 'gt_bboxes_3d', 'gt_labels_3d',
-                                  'points'])]
-
 """
-#Second Stage Pipeline
-train_pipeline = [
-    dict(type='LoadAnnotations3D',
-           with_bbox=True,
-           with_label=True,
-           with_bev_seg=False),
-    dict(
-          type='LoadPointsFromFile',
-          coord_type='LIDAR',
-          load_dim=5,
-          use_dim=5,),
-    dict(
-          type='LoadPointsFromMultiSweeps',
-          sweeps_num=10,
-          use_dim=[0, 1, 2, 3, 4],
-          pad_empty_sweeps=True,
-          remove_close=True),
-    dict(
-       type='GlobalRotScaleTrans',
-       rot_range=[-0.3925, 0.3925],
-       scale_ratio_range=[0.95, 1.05],
-       translation_std=[0.5, 0.5, 0.5],
-       update_img2lidar=True),
-    dict(
-        type='RandomFlip3D',
-        flip_2d=False,
-        sync_2d=False,
-        flip_ratio_bev_horizontal=0.5,
-        flip_ratio_bev_vertical=0.5,
-        update_img2lidar=True),
-      
-    dict(
-          type='MultiViewPipeline',
-          n_images=6,
-          transforms=[
-              dict(type='LoadImageFromFile'),
-              dict(type='Resize', img_scale=(1600, 900), keep_ratio=True),
-              dict(type='Normalize', **img_norm_cfg),
-              dict(type='Pad', size_divisor=32)]),
-    dict(type='PointsRangeFilter', point_cloud_range=point_cloud_range),
-    dict(type='ObjectRangeFilter', point_cloud_range=point_cloud_range),
-    dict(type='KittiSetOrigin', point_cloud_range=point_cloud_range),
-    dict(type='DefaultFormatBundle3D', class_names=class_names),
-    dict(type='Collect3D', keys=['img', 'gt_bboxes', 'gt_labels', 
-                                   'gt_bboxes_3d', 'gt_labels_3d',
-                                    'points'])]
-"""
+
 
 test_pipeline = [
     dict(
@@ -335,12 +305,14 @@ test_pipeline = [
         n_images=6,
         transforms=[
             dict(type='LoadImageFromFile'),
-            dict(type='Resize', img_scale=(200, 100), keep_ratio=True),
-            dict(type='Normalize', **img_norm_cfg),
+            dict(type='Resize', img_scale=(1600, 900), keep_ratio=True),
             dict(type='Pad', size_divisor=32)]),
+    dict(type='RandomAugImageMultiViewImage', data_config=data_config, is_train=False),
+    dict(type='NormalizeMultiviewImage', **img_norm_cfg),
     dict(type='KittiSetOrigin', point_cloud_range=point_cloud_range),
     dict(type='DefaultFormatBundle3D', class_names=class_names, with_label=False),
     dict(type='Collect3D', keys=['img','points'])]
+
 
 
 """
@@ -380,7 +352,7 @@ data = dict(
         box_type_3d='LiDAR'))
 """
 data = dict(
-    samples_per_gpu=12,
+    samples_per_gpu=1,
     workers_per_gpu=4,
     train=dict(
         type='RepeatDataset',
@@ -415,22 +387,20 @@ data = dict(
         test_mode=True,
         box_type_3d='LiDAR'))
 
-"""
+
 optimizer = dict(type='AdamW', lr=0.0001,
                   weight_decay=0.01,
                   paramwise_cfg=dict(
-                  custom_keys={'backbone': dict(lr_mult=0.1, decay_mult=1.0),
-                               'pts_voxel_encoder': dict(lr_mult=0.1, decay_mult=1.0),
+                  custom_keys={'pts_voxel_encoder': dict(lr_mult=0.1, decay_mult=1.0),
                                'pts_middle_encoder': dict(lr_mult=0.1, decay_mult=1.0),
                                'pts_backbone': dict(lr_mult=0.1, decay_mult=1.0),
                                'pts_neck': dict(lr_mult=0.1, decay_mult=1.0),
-                               'neck':dict(lr_mult=1.0, decay_mult=1.0),
-                               'fusion_module':dict(lr_mult=1.0, decay_mult=1.0),
                                'bbox_head': dict(lr_mult=0.1, decay_mult=1.0)}))
-"""
 
+"""
 optimizer = dict(type='AdamW', lr=0.001,
                  weight_decay=0.01)
+"""
 
 # max_norm=10 is better for SECOND
 optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
@@ -447,7 +417,7 @@ lr_config = dict(
     )
 
 # runtime settings
-runner = dict(type='EpochBasedRunner', max_epochs=20)
+runner = dict(type='EpochBasedRunner', max_epochs=6)
 
 #total_epochs = 20
 checkpoint_config = dict(interval=1)
