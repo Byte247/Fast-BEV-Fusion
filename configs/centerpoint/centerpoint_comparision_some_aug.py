@@ -193,7 +193,7 @@ eval_pipeline = [
 ]
 
 data = dict(
-    samples_per_gpu=12,
+    samples_per_gpu=16,
     workers_per_gpu=4,
     train=dict(
         # type='CBGSDataset',
