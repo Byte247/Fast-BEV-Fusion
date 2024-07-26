@@ -225,18 +225,6 @@ def main():
         train_cfg=cfg.get('train_cfg'),
         test_cfg=cfg.get('test_cfg'))
     model.init_weights() #init weights from the load-from
-    
-
-    if cfg.load_additional_from is not None:
-
-        print(f"in load_additional_params")
-        #init weights from additional checkpoint
-        # Load the checkpoint
-        checkpoint = torch.load(cfg.load_additional_from)
-
-        # Load the state dictionary from the checkpoint into the model
-        # Use strict=False to avoid errors for layers that are not in the checkpoint
-        model.load_state_dict(checkpoint, strict=False)
 
 
     # logger.info(f'Model:\n{model}')
