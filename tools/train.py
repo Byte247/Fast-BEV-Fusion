@@ -228,6 +228,8 @@ def main():
     
 
     if cfg.load_additional_from is not None:
+
+        print(f"in load_additional_params")
         #init weights from additional checkpoint
         # Load the checkpoint
         checkpoint = torch.load(cfg.load_additional_from)
