@@ -392,11 +392,12 @@ data = dict(
 optimizer = dict(type='AdamW', lr=0.0001,
                   weight_decay=0.01,
                   paramwise_cfg=dict(
-                  custom_keys={'pts_voxel_encoder': dict(lr_mult=0.05, decay_mult=1.0),
-                               'pts_middle_encoder': dict(lr_mult=0.05, decay_mult=1.0),
-                               'pts_backbone': dict(lr_mult=0.05, decay_mult=1.0),
-                               'pts_neck': dict(lr_mult=0.05, decay_mult=1.0),
-                               'bbox_head': dict(lr_mult=0.5, decay_mult=1.0)}))
+                  custom_keys={'pts_voxel_encoder': dict(lr_mult=0.01, decay_mult=1.0),
+                               'pts_middle_encoder': dict(lr_mult=0.01, decay_mult=1.0),
+                               'pts_backbone': dict(lr_mult=0.01, decay_mult=1.0),
+                               'pts_neck': dict(lr_mult=0.01, decay_mult=1.0),
+                               'backbone': dict(lr_mult=0.1, decay_mult=1.0),
+                               'bbox_head': dict(lr_mult=0.1, decay_mult=1.0)}))
 
 """
 optimizer = dict(type='AdamW', lr=0.001,
@@ -435,6 +436,7 @@ find_unused_parameters = True  # todo: fix number of FPN outputs
 log_level = 'INFO'
 #load_from = None
 load_from = 'https://download.openmmlab.com/mmdetection3d/v0.1.0_models/nuimages_semseg/cascade_mask_rcnn_r50_fpn_coco-20e_20e_nuim/cascade_mask_rcnn_r50_fpn_coco-20e_20e_nuim_20201009_124951-40963960.pth'
+load_additional_from = None
 resume_from = None
 workflow = [('train', 1)]
 

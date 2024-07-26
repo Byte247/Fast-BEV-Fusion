@@ -39,6 +39,8 @@ def parse_args():
     parser.add_argument(
         '--load-from', help='the checkpoint file to load from')
     parser.add_argument(
+        '--load-additional-from', help='the second checkpoint file to load from, mostly for pretrained models')
+    parser.add_argument(
         '--no-validate',
         action='store_true',
         help='whether not to evaluate the checkpoint during training')
@@ -143,6 +145,10 @@ def main():
         cfg.resume_from = args.resume_from
     if args.load_from is not None:
         cfg.load_from = args.load_from
+
+    if args.load_additional_from is not None:
+        cfg.load_additional_from = args.load_additional_from
+
     if args.gpu_ids is not None:
         cfg.gpu_ids = args.gpu_ids
     else:
@@ -218,7 +224,19 @@ def main():
         cfg.model,
         train_cfg=cfg.get('train_cfg'),
         test_cfg=cfg.get('test_cfg'))
-    model.init_weights()
+    model.init_weights() #init weights from the load-from
+    
+
+    if cfg.load_additional_from is not None:
+        #init weights from additional checkpoint
+        # Load the checkpoint
+        checkpoint = torch.load(cfg.load_additional_from)
+
+        # Load the state dictionary from the checkpoint into the model
+        # Use strict=False to avoid errors for layers that are not in the checkpoint
+        model.load_state_dict(checkpoint, strict=False)
+
+
     # logger.info(f'Model:\n{model}')
     
     # frozen_det = cfg.get('frozen_det', False)
