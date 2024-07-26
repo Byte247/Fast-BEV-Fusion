@@ -392,10 +392,10 @@ data = dict(
 optimizer = dict(type='AdamW', lr=0.0001,
                   weight_decay=0.01,
                   paramwise_cfg=dict(
-                  custom_keys={'pts_voxel_encoder': dict(lr_mult=0.01, decay_mult=1.0),
-                               'pts_middle_encoder': dict(lr_mult=0.01, decay_mult=1.0),
-                               'pts_backbone': dict(lr_mult=0.01, decay_mult=1.0),
-                               'pts_neck': dict(lr_mult=0.01, decay_mult=1.0),
+                  custom_keys={'pts_voxel_encoder': dict(lr_mult=0.1, decay_mult=1.0),
+                               'pts_middle_encoder': dict(lr_mult=0.1, decay_mult=1.0),
+                               'pts_backbone': dict(lr_mult=0.1, decay_mult=1.0),
+                               'pts_neck': dict(lr_mult=0.1, decay_mult=1.0),
                                'backbone': dict(lr_mult=0.1, decay_mult=1.0),
                                'bbox_head': dict(lr_mult=0.1, decay_mult=1.0)}))
 
@@ -409,22 +409,22 @@ optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
 
 # learning policy
 lr_config = dict(
-    policy='cyclic',
-    target_ratio=(10, 0.0001),
-    cyclic_times=1,
-    step_ratio_up=0.4)
-momentum_config = dict(
-    policy='cyclic',
-    target_ratio=(0.8947368421052632, 1),
-    cyclic_times=1,
-    step_ratio_up=0.4)
+    policy='poly',
+    warmup='linear',
+    warmup_iters=200,
+    warmup_ratio=1e-6,
+    power=1.0,
+    min_lr=0,
+    by_epoch=False
+    )
+
 
 # runtime settings
 runner = dict(type='EpochBasedRunner', max_epochs=10)
 
 checkpoint_config = dict(interval=1)
 log_config = dict(
-    interval=10,
+    interval=200,
     hooks=[
         dict(type='TextLoggerHook'),
         dict(type='TensorboardLoggerHook'),
