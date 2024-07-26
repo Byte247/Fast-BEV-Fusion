@@ -2,9 +2,11 @@
 # If point cloud range is changed, the models should also change their point cloud range accordingly
 point_cloud_range = [-51.2, -51.2, -5.0, 51.2, 51.2, 3.0]
 
+second_stage = True
+
 model = dict(
     type='FastBEVFusionCenterheadPretrained',
-    second_stage=True,
+    second_stage=second_stage,
     backbone=dict(
         type='ResNet',
         depth=50,
@@ -38,9 +40,10 @@ model = dict(
         with_distance=False,
         voxel_size=(0.2, 0.2, 8),
         norm_cfg=dict(type='SyncBN', eps=1e-3, momentum=0.01),
-        legacy=False),
+        legacy=False,
+        freeze_layers=second_stage),
     pts_middle_encoder=dict(
-        type='PointPillarsScatter', in_channels=64, output_shape=(512, 512)),
+        type='PointPillarsScatter', in_channels=64, output_shape=(512, 512), freeze_layers=second_stage),
     pts_backbone=dict(
         type='SECOND',
         in_channels=64,
@@ -48,7 +51,8 @@ model = dict(
         layer_nums=[3, 5, 5],
         layer_strides=[2, 2, 2],
         norm_cfg=dict(type='SyncBN', requires_grad=True),
-        conv_cfg=dict(type='Conv2d', bias=False)),
+        conv_cfg=dict(type='Conv2d', bias=False),
+        freeze_layers=second_stage),
     pts_neck=dict(
         type='SECONDFPN',
         in_channels=[64, 128, 256],
@@ -56,7 +60,8 @@ model = dict(
         upsample_strides=[0.5, 1, 2],
         norm_cfg=dict(type='SyncBN', requires_grad=True),
         upsample_cfg=dict(type='deconv', bias=False),
-        use_conv_for_no_stride=True),
+        use_conv_for_no_stride=True,
+        freeze_layers=second_stage),
 
     #Fusion layer
     fusion_module = dict(type='MultiHeadCrossAttentionNoNeck',embed_dim = 512, num_heads=1, dropout = 0.1, fuse_on_lidar=True, norm_cfg=dict(type='SyncBN', requires_grad=True)),
@@ -389,14 +394,10 @@ data = dict(
         box_type_3d='LiDAR'))
 
 
-optimizer = dict(type='AdamW', lr=0.0001,
+optimizer = dict(type='AdamW', lr=1e-4,
                   weight_decay=0.01,
                   paramwise_cfg=dict(
-                  custom_keys={'pts_voxel_encoder': dict(lr_mult=0.1, decay_mult=1.0),
-                               'pts_middle_encoder': dict(lr_mult=0.1, decay_mult=1.0),
-                               'pts_backbone': dict(lr_mult=0.1, decay_mult=1.0),
-                               'pts_neck': dict(lr_mult=0.1, decay_mult=1.0),
-                               'backbone': dict(lr_mult=0.1, decay_mult=1.0),
+                  custom_keys={'backbone': dict(lr_mult=0.1, decay_mult=1.0),
                                'bbox_head': dict(lr_mult=0.1, decay_mult=1.0)}))
 
 """
@@ -407,16 +408,18 @@ optimizer = dict(type='AdamW', lr=0.001,
 # max_norm=10 is better for SECOND
 optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
 
-# learning policy
 lr_config = dict(
-    policy='poly',
-    warmup='linear',
-    warmup_iters=200,
-    warmup_ratio=1e-6,
-    power=1.0,
-    min_lr=0,
-    by_epoch=False
-    )
+    policy='cyclic',
+    target_ratio=(10, 1e-4),
+    cyclic_times=1,
+    step_ratio_up=0.4,
+)
+momentum_config = dict(
+    policy='cyclic',
+    target_ratio=(0.85 / 0.95, 1),
+    cyclic_times=1,
+    step_ratio_up=0.4,
+)
 
 
 # runtime settings
