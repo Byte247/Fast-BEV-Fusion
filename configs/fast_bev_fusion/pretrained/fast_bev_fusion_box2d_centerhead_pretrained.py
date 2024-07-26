@@ -431,7 +431,7 @@ log_config = dict(
     ])
 evaluation = dict(interval=1)
 dist_params = dict(backend='nccl')
-#find_unused_parameters = True  # todo: fix number of FPN outputs
+find_unused_parameters = True  # todo: fix number of FPN outputs
 log_level = 'INFO'
 #load_from = None
 load_from = 'https://download.openmmlab.com/mmdetection3d/v0.1.0_models/nuimages_semseg/cascade_mask_rcnn_r50_fpn_coco-20e_20e_nuim/cascade_mask_rcnn_r50_fpn_coco-20e_20e_nuim_20201009_124951-40963960.pth'
