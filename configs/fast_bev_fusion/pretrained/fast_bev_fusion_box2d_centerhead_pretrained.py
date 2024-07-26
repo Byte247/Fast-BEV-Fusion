@@ -11,7 +11,7 @@ model = dict(
         num_stages=4,
         out_indices=(0, 1, 2, 3),
         frozen_stages=1,
-        norm_cfg=dict(type='BN', requires_grad=True),
+        norm_cfg=dict(type='SyncBN', requires_grad=True),
         norm_eval=True,
         init_cfg=dict(type='Pretrained', checkpoint='torchvision://resnet50'),
         style='pytorch',
@@ -20,7 +20,7 @@ model = dict(
     ),
     neck=dict(
         type='FPN',
-        norm_cfg=dict(type='BN', requires_grad=True),
+        norm_cfg=dict(type='SyncBN', requires_grad=True),
         in_channels=[256, 512, 1024, 2048],
         out_channels=64,
         num_outs=4),
@@ -37,7 +37,7 @@ model = dict(
         feat_channels=[64, 64],
         with_distance=False,
         voxel_size=(0.2, 0.2, 8),
-        norm_cfg=dict(type='BN1d', eps=1e-3, momentum=0.01),
+        norm_cfg=dict(type='SyncBN', eps=1e-3, momentum=0.01),
         legacy=False),
     pts_middle_encoder=dict(
         type='PointPillarsScatter', in_channels=64, output_shape=(512, 512)),
@@ -47,22 +47,23 @@ model = dict(
         out_channels=[64, 128, 256],
         layer_nums=[3, 5, 5],
         layer_strides=[2, 2, 2],
-        norm_cfg=dict(type='BN', requires_grad=True),
+        norm_cfg=dict(type='SyncBN', requires_grad=True),
         conv_cfg=dict(type='Conv2d', bias=False)),
     pts_neck=dict(
         type='SECONDFPN',
         in_channels=[64, 128, 256],
         out_channels=[128, 128, 128],
         upsample_strides=[0.5, 1, 2],
-        norm_cfg=dict(type='BN', requires_grad=True),
+        norm_cfg=dict(type='SyncBN', requires_grad=True),
         upsample_cfg=dict(type='deconv', bias=False),
         use_conv_for_no_stride=True),
 
     #Fusion layer
-    fusion_module = dict(type='MultiHeadCrossAttentionNoNeck',embed_dim = 512, num_heads=1, dropout = 0.1, fuse_on_lidar=True, norm_cfg=dict(type='BN', requires_grad=True)),
+    fusion_module = dict(type='MultiHeadCrossAttentionNoNeck',embed_dim = 512, num_heads=1, dropout = 0.1, fuse_on_lidar=True, norm_cfg=dict(type='SyncBN', requires_grad=True)),
 
     bbox_head= dict(
         type='CenterHead',
+        norm_cfg = dict(type='SyncBN', requires_grad=True),
         in_channels=384,
         tasks=[
             dict(num_class=1, class_names=['car']),
@@ -352,8 +353,8 @@ data = dict(
         box_type_3d='LiDAR'))
 """
 data = dict(
-    samples_per_gpu=1,
-    workers_per_gpu=4,
+    samples_per_gpu=3,
+    workers_per_gpu=1,
     train=dict(
         type='RepeatDataset',
         times=1,
@@ -391,11 +392,11 @@ data = dict(
 optimizer = dict(type='AdamW', lr=0.0001,
                   weight_decay=0.01,
                   paramwise_cfg=dict(
-                  custom_keys={'pts_voxel_encoder': dict(lr_mult=0.1, decay_mult=1.0),
-                               'pts_middle_encoder': dict(lr_mult=0.1, decay_mult=1.0),
-                               'pts_backbone': dict(lr_mult=0.1, decay_mult=1.0),
-                               'pts_neck': dict(lr_mult=0.1, decay_mult=1.0),
-                               'bbox_head': dict(lr_mult=0.1, decay_mult=1.0)}))
+                  custom_keys={'pts_voxel_encoder': dict(lr_mult=0.05, decay_mult=1.0),
+                               'pts_middle_encoder': dict(lr_mult=0.05, decay_mult=1.0),
+                               'pts_backbone': dict(lr_mult=0.05, decay_mult=1.0),
+                               'pts_neck': dict(lr_mult=0.05, decay_mult=1.0),
+                               'bbox_head': dict(lr_mult=0.5, decay_mult=1.0)}))
 
 """
 optimizer = dict(type='AdamW', lr=0.001,
@@ -407,17 +408,18 @@ optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
 
 # learning policy
 lr_config = dict(
-    policy='poly',
-    warmup='linear',
-    warmup_iters=1000,
-    warmup_ratio=1e-6,
-    power=1.0,
-    min_lr=0,
-    by_epoch=False
-    )
+    policy='cyclic',
+    target_ratio=(10, 0.0001),
+    cyclic_times=1,
+    step_ratio_up=0.4)
+momentum_config = dict(
+    policy='cyclic',
+    target_ratio=(0.8947368421052632, 1),
+    cyclic_times=1,
+    step_ratio_up=0.4)
 
 # runtime settings
-runner = dict(type='EpochBasedRunner', max_epochs=6)
+runner = dict(type='EpochBasedRunner', max_epochs=10)
 
 #total_epochs = 20
 checkpoint_config = dict(interval=1)
