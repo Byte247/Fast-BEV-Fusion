@@ -156,6 +156,14 @@ def train_detector(model,
         runner.resume(cfg.resume_from)
     elif cfg.load_from:
         runner.load_checkpoint(cfg.load_from)
+
+        if cfg.load_additional_from is not None:
+
+            print(f"in load_additional_params")
+            
+            runner.load_checkpoint(cfg.load_additional_from)
+
+
     runner.run(data_loaders, cfg.workflow)
 
 
