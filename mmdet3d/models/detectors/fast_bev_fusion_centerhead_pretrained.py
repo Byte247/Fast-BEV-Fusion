@@ -296,13 +296,10 @@ class FastBEVFusionCenterheadPretrained(BaseDetector):
             """
             feature_bev, valids, features_2d = self.extract_feat(img, img_metas, "train")
 
-
-       
-
         
             #fuse lidar BEV and camera BEV features
-            feature_bev = self.fusion_module(lidar_features[0], feature_bev[0]) # this framework requires features inside lists for some reason. 
-            feature_bev =[feature_bev]
+            feature_bev = self.fusion_module(lidar_features, feature_bev)
+    
         else:
             feature_bev = lidar_features
 

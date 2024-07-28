@@ -157,6 +157,8 @@ class MultiHeadCrossAttentionPillar(nn.Module):
         self.fuse_on_lidar = fuse_on_lidar
 
 
+        self.increase_lidar_channels = ConvBNReLU(384, 512, kernel_size=3, stride=1, padding=1, norm_cfg = self.norm_cfg)
+
         self.reduce_camera_spatialy = ConvBNReLU(1536, 1024, kernel_size=3, stride=2, padding=1, norm_cfg = self.norm_cfg)
 
         self.reduce_camera_spatialy_between = ConvBNReLU(1024, self.embed_dim, kernel_size=3, stride=1, padding=1, norm_cfg = self.norm_cfg)
@@ -212,6 +214,10 @@ class MultiHeadCrossAttentionPillar(nn.Module):
     
     def forward(self, lidar_bev_features, camera_bev_features):
 
+        lidar_bev_features = lidar_bev_features[0]
+        camera_bev_features = camera_bev_features[0]
+
+        lidar_bev_features = self.increase_lidar_channels(lidar_bev_features)
 
         camera_bev_features = self.reduce_camera_spatialy(camera_bev_features)
         camera_bev_features = self.reduce_camera_spatialy_between(camera_bev_features)
@@ -238,4 +244,4 @@ class MultiHeadCrossAttentionPillar(nn.Module):
         output = self.upsample_layer_act(self.upsample_layer_norm(self.upsample_layer(output)))
 
         
-        return output
+        return [output]

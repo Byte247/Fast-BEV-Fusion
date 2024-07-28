@@ -14,6 +14,21 @@ import numpy as np
 import torch
 
 
+class ConvTBNReLU(nn.Module):
+    def __init__(self, in_planes, out_planes, kernel_size=3, stride=1, padding=None, norm_cfg=None):
+        super(ConvTBNReLU, self).__init__()
+        if padding is None:
+            padding = (kernel_size - 1) // 2
+        self.conv = nn.ConvTranspose2d(in_planes, out_planes, kernel_size, stride, padding, bias=False)
+        self.bn = build_norm_layer(norm_cfg, out_planes)[1]
+        self.relu = nn.LeakyReLU(inplace=True)
+
+    def forward(self, x):
+        x = self.conv(x)
+        x = self.bn(x)
+        x = self.relu(x)
+        return x
+
 @NECKS.register_module()
 class RPNV3(BaseModule):
     def __init__(
@@ -94,6 +109,8 @@ class RPNV3(BaseModule):
             stride=1,
         )
 
+        self.additional_upsample = ConvTBNReLU(num_out_filters, num_out_filters, kernel_size=2, stride=2)
+
         if self.freeze:
             # Freeze all layers
             self.freeze_layers()
@@ -145,7 +162,8 @@ class RPNV3(BaseModule):
 
         x = torch.cat(ups, dim=1)
         x = self.block_4(x)
-        return x
+        x = self.additional_upsample(x)
+        return [x]
     
 
 

@@ -66,7 +66,7 @@ class PointResNet34V2(nn.Module):
     """
     def __init__(self, block= BasicBlock, layers=[6,6,3,1], in_channels = 64, zero_init_residual=False,
                  groups=1, width_per_group=64, replace_stride_with_dilation=None, 
-                 norm_layer=None, name="PointResNet34V2", first_max_pool = False, freeze_layers = False, **kwargs):
+                 norm_layer=None, first_max_pool = False, freeze_layers = False):
         super(PointResNet34V2, self).__init__()
         norm_cfg = norm_layer
         self.norm_cfg = norm_cfg
@@ -140,9 +140,12 @@ class PointResNet34V2(nn.Module):
             stride = 1
  
         if stride != 1 or self.inplanes != planes * block.expansion:
+
+            norm_layer = build_norm_layer(self.norm_cfg, planes * block.expansion)[1]
+
             downsample = nn.Sequential(
                 conv1x1(self.inplanes, planes * block.expansion, stride),
-                norm_layer = build_norm_layer(self.norm_cfg, planes * block.expansion)[1],
+                norm_layer,
             )
 
         layers = []

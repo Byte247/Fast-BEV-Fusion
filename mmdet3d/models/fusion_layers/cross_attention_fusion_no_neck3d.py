@@ -241,4 +241,4 @@ class MultiHeadCrossAttentionNoNeck(nn.Module):
         output = self.upsample_layer_act(self.upsample_layer_norm(self.upsample_layer(output)))
 
         
-        return output
+        return [output]
