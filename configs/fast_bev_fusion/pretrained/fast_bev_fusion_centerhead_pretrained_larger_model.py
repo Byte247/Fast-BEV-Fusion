@@ -37,7 +37,7 @@ model = dict(
         feat_channels=[64, 64],
         with_distance=False,
         voxel_size=(0.2, 0.2, 8),
-        norm_cfg=dict(type='SyncBN', eps=1e-3, momentum=0.01),
+        norm_cfg=dict(type='SyncBN', requires_grad=True),
         legacy=False,
         freeze_layers = False),
     pts_middle_encoder=dict(
