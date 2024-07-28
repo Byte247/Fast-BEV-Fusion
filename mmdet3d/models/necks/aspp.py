@@ -132,9 +132,7 @@ class ASPPNeck(BaseModule):
 
         x = x[0] # x is a list of last 4 ResNet layers, 0 idx being smallest res
 
-        if x.requires_grad:
-            out = cp.checkpoint(self._forward, x)
-        else:
-            out = self._forward(x)
+
+        out = self._forward(x)
 
         return [out]
