@@ -44,7 +44,7 @@ model = dict(
         type='PointPillarsScatter', in_channels=64, output_shape=(512, 512)),
     pts_backbone=dict(type="PointResNet34V2",
                       first_max_pool=False,
-                      norm_layer = dict(type='SyncBN'),
+                      norm_layer = dict(type='SyncBN', requires_grad=True),
                       freeze_layers = False),
     pts_neck=dict(
         type='ASPPNeck',
