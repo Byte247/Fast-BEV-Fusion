@@ -37,20 +37,20 @@ model = dict(
         feat_channels=[64, 64],
         with_distance=False,
         voxel_size=(0.2, 0.2, 8),
-        norm_cfg=dict(type='BN1d', eps=1e-3, momentum=0.01),
+        norm_cfg=dict(type='SyncBN', eps=1e-3, momentum=0.01),
         legacy=False,
         freeze_layers = False),
     pts_middle_encoder=dict(
         type='PointPillarsScatter', in_channels=64, output_shape=(512, 512)),
     pts_backbone=dict(type="PointResNet34V2",
                       first_max_pool=False,
-                      norm_layer = dict(type='BN'),
+                      norm_layer = dict(type='SyncBN'),
                       freeze_layers = False),
     pts_neck=dict(
         type='ASPPNeck',
         in_channels=512,
         out_channels=384,
-        norm_cfg=dict(type='BN', requires_grad=True),
+        norm_cfg=dict(type='SyncBN', requires_grad=True),
         freeze_layers = False),
 
     #Fusion layer
@@ -58,7 +58,7 @@ model = dict(
 
     bbox_head= dict(
         type='CenterHead',
-        norm_cfg = dict(type='BN', requires_grad=True),
+        norm_cfg = dict(type='SyncBN', requires_grad=True),
         in_channels=384,
         tasks=[
             dict(num_class=1, class_names=['car']),
