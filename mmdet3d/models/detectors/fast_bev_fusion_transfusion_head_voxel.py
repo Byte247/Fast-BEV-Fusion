@@ -290,7 +290,7 @@ class FastBEVFusionTransfusionheadVoxel(BaseDetector):
 
             
             #fuse lidar BEV and camera BEV features
-            feature_bev = [self.fusion_module(lidar_features, feature_bev)]
+            feature_bev = [self.fusion_module(lidar_features[0], feature_bev[0])]
             
         else:
             feature_bev = [lidar_features]
