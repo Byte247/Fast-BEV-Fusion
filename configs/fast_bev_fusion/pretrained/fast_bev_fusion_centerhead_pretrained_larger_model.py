@@ -136,19 +136,19 @@ model = dict(
             min_radius=2,
             code_weights=[1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.2, 0.2],
             point_cloud_range = point_cloud_range),
-    test_cfg=dict(
+    test_cfg=dict(    
             post_center_limit_range=[-61.2, -61.2, -10.0, 61.2, 61.2, 10.0],
             max_per_img=500,
             max_pool_nms=False,
             min_radius=[4, 12, 10, 1, 0.85, 0.175],
-            score_threshold=0.0,
+            score_threshold=0.01,
             pc_range=[-51.2, -51.2],
             out_size_factor=4,
             voxel_size=[0.2, 0.2],
             nms_type='rotate',
             pre_max_size=1000,
             post_max_size=83,
-            nms_thr=0.2)           
+            nms_thr=0.2)  
 )
 
 
