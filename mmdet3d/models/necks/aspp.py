@@ -104,7 +104,6 @@ class ASPPNeck(BaseModule):
         self.branch12 = ASPPConv(in_channels, in_channels, dilation=12, norm_cfg=self.norm_cfg)
         self.branch18 = ASPPConv(in_channels, in_channels, dilation=18, norm_cfg=self.norm_cfg)
 
-        self.upsample_0 = ConvTNormAct(in_channels, in_channels, self.norm_cfg, kernel_size=2, stride=2)
         self.upsample_1 = ConvTNormAct(in_channels, out_channels, self.norm_cfg, kernel_size=2, stride=2)
 
         if freeze_layers:
@@ -113,8 +112,6 @@ class ASPPNeck(BaseModule):
 
 
     def _forward(self, x):
-
-        x = self.upsample_0(x)
 
         x = self.pre_conv(x)
         branch1x1 = self.conv1x1(x)
