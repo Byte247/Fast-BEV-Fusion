@@ -813,6 +813,7 @@ class TransFusionHead(nn.Module):
         Returns:
             list[dict]: Output results for tasks.
         """
+        inputs = inputs[0]
         batch_size = inputs.shape[0]
         lidar_feat = self.shared_conv(inputs)
 
