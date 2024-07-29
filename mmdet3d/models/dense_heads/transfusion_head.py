@@ -683,7 +683,7 @@ class TransFusionHead(nn.Module):
                 padding=1,
                 bias=bias,
                 conv_cfg=dict(type='Conv2d'),
-                norm_cfg=norm_cfg,
+                norm_cfg=dict(type='BN'),
             ))
             layers.append(build_conv_layer(
                 dict(type='Conv2d'),
