@@ -821,6 +821,8 @@ class TransFusionHead(nn.Module):
         lidar_feat_flatten = lidar_feat.view(batch_size, lidar_feat.shape[1], -1)  # [BS, C, H*W]
         bev_pos = self.bev_pos.repeat(batch_size, 1, 1).to(lidar_feat.device)
 
+        print(f"lidar_feat: {lidar_feat.shape}")
+
         #################################
         # image guided query initialization
         #################################
