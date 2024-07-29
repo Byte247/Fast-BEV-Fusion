@@ -468,6 +468,8 @@ class FastBEVFusionCenterheadPretrained(BaseDetector):
             bbox_list = self.bbox_head.get_bboxes(outs, img_metas, rescale=True)
                                     
             bbox_results = [bbox3d2result(bboxes, scores, labels)for bboxes, scores, labels in bbox_list]
+
+            print(f"bbox_results: {bbox_results}")
             
             
         else:
