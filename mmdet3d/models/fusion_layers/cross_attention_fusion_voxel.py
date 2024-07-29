@@ -246,6 +246,9 @@ class MultiHeadCrossAttentionVoxel(nn.Module):
     
     def forward(self, lidar_bev_features, camera_bev_features):
 
+        lidar_bev_features = lidar_bev_features[0]
+        camera_bev_features = camera_bev_features[0]
+
         camera_bev_features = self.reduce_camera_spatialy(camera_bev_features)
         camera_bev_features = self.reduce_camera_spatialy_conv1(camera_bev_features)
         camera_bev_features = self.reduce_camera_spatialy_2(camera_bev_features)
