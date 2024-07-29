@@ -813,7 +813,8 @@ class TransFusionHead(nn.Module):
         Returns:
             list[dict]: Output results for tasks.
         """
-        inputs = inputs[0]
+        if isinstance(inputs, list):
+            inputs = inputs[0]
 
         print(f"inputs in head: {inputs.shape}")
         batch_size = inputs.shape[0]
