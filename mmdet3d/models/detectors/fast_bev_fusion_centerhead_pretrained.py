@@ -395,6 +395,8 @@ class FastBEVFusionCenterheadPretrained(BaseDetector):
         return losses
 
     def forward_test(self, img, img_metas, points,**kwargs): 
+
+        print(f"second stage: {self.second_stage}")
         if not self.test_cfg.get('use_tta', False):
             return self.simple_test(img, img_metas, points)
         return self.aug_test(img, img_metas)
