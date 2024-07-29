@@ -257,7 +257,7 @@ class FastBEVFusionCenterheadPretrained(BaseDetector):
 
 
 
-    @auto_fp16(apply_to=('img', 'points'))
+    #@auto_fp16(apply_to=('img', 'points'))
     def forward(self, img, img_metas, return_loss=True, **kwargs):
         """Calls either :func:`forward_train` or :func:`forward_test` depending
         on whether ``return_loss`` is ``True``.
@@ -469,7 +469,7 @@ class FastBEVFusionCenterheadPretrained(BaseDetector):
                                     
             bbox_results = [bbox3d2result(bboxes, scores, labels)for bboxes, scores, labels in bbox_list]
 
-            print(f"bbox_results: {bbox_results}")
+            #print(f"bbox_results: {bbox_results}")
             
             
         else:
