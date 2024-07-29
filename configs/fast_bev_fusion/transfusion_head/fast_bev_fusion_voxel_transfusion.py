@@ -242,14 +242,14 @@ train_pipeline = [
         type='GlobalRotScaleTrans',
         rot_range=[-0.3925 * 2, 0.3925 * 2],
         scale_ratio_range=[0.9, 1.1],
-        translation_std=[0.5, 0.5, 0.5],)
+        translation_std=[0.5, 0.5, 0.5]),
         #update_img2lidar=True),
     dict(
         type='RandomFlip3D',
         flip_2d=False,
         sync_2d=False,
         flip_ratio_bev_horizontal=0.5,
-        flip_ratio_bev_vertical=0.5,)
+        flip_ratio_bev_vertical=0.5),
         #update_img2lidar=True),
     dict(
         type='MultiViewPipeline',
