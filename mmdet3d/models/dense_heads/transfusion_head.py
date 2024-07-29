@@ -804,7 +804,7 @@ class TransFusionHead(nn.Module):
             ]
 
     def forward_single(self, inputs):
-        """Forward function for TransFusionHead.
+        """Forward function for CenterPoint.
 
         Args:
             inputs (torch.Tensor): Input feature map with the shape of
@@ -821,8 +821,6 @@ class TransFusionHead(nn.Module):
         #################################
         lidar_feat_flatten = lidar_feat.view(batch_size, lidar_feat.shape[1], -1)  # [BS, C, H*W]
         bev_pos = self.bev_pos.repeat(batch_size, 1, 1).to(lidar_feat.device)
-
-        print(f"lidar_feat: {lidar_feat.shape}")
 
         #################################
         # image guided query initialization
@@ -913,9 +911,9 @@ class TransFusionHead(nn.Module):
         Returns:
             tuple(list[dict]): Output results. first index by level, second index by layer
         """
-        feats = feats[0]
-        res = self.forward_single(feats)
         
+        res = multi_apply(self.forward_single, feats)
+        assert len(res) == 1, "only support one level features."
         return res
 
     def get_targets(self, gt_bboxes_3d, gt_labels_3d, preds_dict):
@@ -939,8 +937,8 @@ class TransFusionHead(nn.Module):
         list_of_pred_dict = []
         for batch_idx in range(len(gt_bboxes_3d)):
             pred_dict = {}
-            for key in preds_dict.keys():
-                pred_dict[key] = preds_dict[key][batch_idx:batch_idx + 1]
+            for key in preds_dict[0].keys():
+                pred_dict[key] = preds_dict[0][key][batch_idx:batch_idx + 1]
             list_of_pred_dict.append(pred_dict)
 
         assert len(gt_bboxes_3d) == len(list_of_pred_dict)
