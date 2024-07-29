@@ -185,7 +185,7 @@ class MultiHeadCrossAttentionVoxel(nn.Module):
 
         self.norm_cfg = norm_cfg
 
-        self.reduce_camera_spatialy = ConvBNReLU(384, self.embed_dim, kernel_size=3, stride=2, padding=1, norm_cfg = self.norm_cfg)
+        self.reduce_camera_spatialy = ConvBNReLU(1536, self.embed_dim, kernel_size=3, stride=2, padding=1, norm_cfg = self.norm_cfg)
         self.reduce_camera_spatialy_conv1 = ConvBNReLU(self.embed_dim, self.embed_dim, kernel_size=3, stride=1, padding=1, norm_cfg = self.norm_cfg)
         self.reduce_camera_spatialy_2 = ConvBNReLU(self.embed_dim, self.embed_dim, kernel_size=3, stride=2, padding=1, norm_cfg = self.norm_cfg)
 
