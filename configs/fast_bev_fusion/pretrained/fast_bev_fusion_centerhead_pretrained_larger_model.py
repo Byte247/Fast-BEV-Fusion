@@ -125,6 +125,7 @@ model = dict(
         nms=dict(type='nms', iou_threshold=0.5),
         max_per_img=100),
 
+
     # model training and testing settings for the head
     train_cfg=dict(
             grid_size=[512, 512, 1],
