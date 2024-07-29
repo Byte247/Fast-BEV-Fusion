@@ -940,7 +940,7 @@ class TransFusionHead(nn.Module):
         for batch_idx in range(len(gt_bboxes_3d)):
             pred_dict = {}
             for key in preds_dict.keys():
-                pred_dict[key] = preds_dict[0][key][batch_idx:batch_idx + 1]
+                pred_dict[key] = preds_dict[key][batch_idx:batch_idx + 1]
             list_of_pred_dict.append(pred_dict)
 
         assert len(gt_bboxes_3d) == len(list_of_pred_dict)
