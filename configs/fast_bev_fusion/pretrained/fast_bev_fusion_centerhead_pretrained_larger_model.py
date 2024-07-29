@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 # If point cloud range is changed, the models should also change their point cloud range accordingly
 point_cloud_range = [-51.2, -51.2, -5.0, 51.2, 51.2, 3.0]
+second_stage = False
 
 model = dict(
     type='FastBEVFusionCenterheadPretrained',
-    second_stage=False,
+    second_stage=second_stage,
     backbone=dict(
         type='ResNet',
         depth=50,
@@ -37,21 +38,21 @@ model = dict(
         feat_channels=[64, 64],
         with_distance=False,
         voxel_size=(0.2, 0.2, 8),
-        norm_cfg=dict(type='SyncBN', requires_grad=True),
+        norm_cfg=dict(type='SyncBN', eps=1e-3, momentum=0.01, requires_grad=True),
         legacy=False,
-        freeze_layers = False),
+        freeze_layers = second_stage),
     pts_middle_encoder=dict(
         type='PointPillarsScatter', in_channels=64, output_shape=(512, 512)),
     pts_backbone=dict(type="PointResNet34V2",
                       first_max_pool=False,
                       norm_layer = dict(type='SyncBN', requires_grad=True),
-                      freeze_layers = False),
+                      freeze_layers = second_stage),
     pts_neck=dict(
         type='ASPPNeck',
         in_channels=512,
         out_channels=384,
         norm_cfg=dict(type='SyncBN', requires_grad=True),
-        freeze_layers = False),
+        freeze_layers = second_stage),
 
     #Fusion layer
     fusion_module = dict(type='MultiHeadCrossAttentionNoNeck',embed_dim = 512, num_heads=1, dropout = 0.1, fuse_on_lidar=True, norm_cfg=dict(type='SyncBN', requires_grad=True)),
@@ -140,7 +141,7 @@ model = dict(
             max_per_img=500,
             max_pool_nms=False,
             min_radius=[4, 12, 10, 1, 0.85, 0.175],
-            score_threshold=0.1,
+            score_threshold=0.0,
             pc_range=[-51.2, -51.2],
             out_size_factor=4,
             voxel_size=[0.2, 0.2],
