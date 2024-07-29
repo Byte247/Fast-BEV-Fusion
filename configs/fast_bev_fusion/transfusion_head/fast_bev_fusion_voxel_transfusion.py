@@ -14,7 +14,7 @@ class_names = [
     'motorcycle', 'pedestrian', 'traffic_cone', 'barrier'
 ]
 
-second_stage = True
+second_stage = False
 
 model = dict(
     type='FastBEVFusionTransfusionheadVoxel',
@@ -53,14 +53,14 @@ model = dict(
         in_channels=5,
         sparse_shape=[41, 1440, 1440],
         norm_cfg=dict(type="BN1d", eps=1e-3, momentum=0.01),
-        freeze_layers=False),
+        freeze_layers=second_stage),
 
     pts_neck=dict(
         type='ASPPNeck',
         in_channels=256,
         out_channels=512,
         norm_cfg=dict(type='BN', requires_grad=True),
-        freeze_layers=False),
+        freeze_layers=second_stage),
 
     #Fusion layer
     fusion_module = dict(type='MultiHeadCrossAttentionVoxel',embed_dim = 2048, num_heads=8, dropout = 0.1, norm_cfg=dict(type='BN', requires_grad=True)),
@@ -237,29 +237,29 @@ train_pipeline = [
         sweeps_num=10,
         use_dim=[0, 1, 2, 3, 4],
         pad_empty_sweeps=True),
-    #dict(type='ObjectSample', db_sampler=db_sampler),
+    dict(type='ObjectSample', db_sampler=db_sampler),
     dict(
         type='GlobalRotScaleTrans',
         rot_range=[-0.3925 * 2, 0.3925 * 2],
         scale_ratio_range=[0.9, 1.1],
-        translation_std=[0.5, 0.5, 0.5],
-       update_img2lidar=True),
+        translation_std=[0.5, 0.5, 0.5],)
+        #update_img2lidar=True),
     dict(
         type='RandomFlip3D',
         flip_2d=False,
         sync_2d=False,
         flip_ratio_bev_horizontal=0.5,
-        flip_ratio_bev_vertical=0.5,
-        update_img2lidar=True),
+        flip_ratio_bev_vertical=0.5,)
+        #update_img2lidar=True),
     dict(
         type='MultiViewPipeline',
         n_images=6,
         transforms=[
             dict(type='LoadImageFromFile'),
-            dict(type='Resize', img_scale=(800, 448), keep_ratio=True),
-            dict(type='Pad', size_divisor=32)
+            dict(type='Resize', img_scale=(20, 10), keep_ratio=True),
+            #dict(type='Pad', size_divisor=32)
             ]),
-    dict(type='NormalizeMultiviewImage', **img_norm_cfg),
+    #dict(type='NormalizeMultiviewImage', **img_norm_cfg),
     dict(type='PointsRangeFilter', point_cloud_range=point_cloud_range),
     dict(type='ObjectRangeFilter', point_cloud_range=point_cloud_range),
     dict(type='ObjectNameFilter', classes=class_names),
@@ -289,12 +289,13 @@ test_pipeline = [
             #dict(type='Normalize', **img_norm_cfg),
             #dict(type='Pad', size_divisor=32)
             ]),
+    #dict(type='NormalizeMultiviewImage', **img_norm_cfg, train=False),
     dict(type='KittiSetOrigin', point_cloud_range=point_cloud_range),
     dict(type='DefaultFormatBundle3D', class_names=class_names, with_label=False),
     dict(type='Collect3D', keys=['img','points'])]
 
 data = dict(
-    samples_per_gpu=1,
+    samples_per_gpu=4,
     workers_per_gpu=4,
     train=dict(
         type='CBGSDataset',
