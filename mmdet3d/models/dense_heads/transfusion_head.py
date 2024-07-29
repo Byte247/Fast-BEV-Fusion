@@ -910,7 +910,7 @@ class TransFusionHead(nn.Module):
         Returns:
             tuple(list[dict]): Output results. first index by level, second index by layer
         """
-        
+        feats = feats[0]
         res = self.forward_single(feats)
         
         return res
