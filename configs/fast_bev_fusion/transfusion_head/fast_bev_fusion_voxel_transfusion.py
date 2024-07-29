@@ -184,44 +184,42 @@ input_modality = dict(
 
 img_norm_cfg = dict(mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 
-
 file_client_args = dict(backend='disk')
 db_sampler = dict(
-data_root=data_root,
-info_path=data_root + 'nuscenes_dbinfos_train.pkl',
-rate=1.0,
-prepare=dict(
-    filter_by_difficulty=[-1],
-    filter_by_min_points=dict(
-        car=5,
-        truck=5,
-        bus=5,
-        trailer=5,
-        construction_vehicle=5,
-        traffic_cone=5,
-        barrier=5,
-        motorcycle=5,
-        bicycle=5,
-        pedestrian=5)),
-classes=class_names,
-sample_groups=dict(
-    car=2,
-    truck=3,
-    construction_vehicle=7,
-    bus=4,
-    trailer=6,
-    barrier=2,
-    motorcycle=6,
-    bicycle=6,
-    pedestrian=2,
-    traffic_cone=2),
-points_loader=dict(
-    type='LoadPointsFromFile',
-    coord_type='LIDAR',
-    load_dim=5,
-    use_dim=[0, 1, 2, 3, 4],
-    file_client_args=file_client_args))
-
+   data_root=data_root,
+   info_path=data_root + 'nuscenes_dbinfos_train.pkl',
+   rate=1.0,
+   prepare=dict(
+       filter_by_difficulty=[-1],
+       filter_by_min_points=dict(
+           car=5,
+           truck=5,
+           bus=5,
+           trailer=5,
+           construction_vehicle=5,
+           traffic_cone=5,
+           barrier=5,
+           motorcycle=5,
+           bicycle=5,
+           pedestrian=5)),
+   classes=class_names,
+   sample_groups=dict(
+       car=2,
+       truck=3,
+       construction_vehicle=7,
+       bus=4,
+       trailer=6,
+       barrier=2,
+       motorcycle=6,
+       bicycle=6,
+       pedestrian=2,
+       traffic_cone=2),
+   points_loader=dict(
+       type='LoadPointsFromFile',
+       coord_type='LIDAR',
+       load_dim=5,
+       use_dim=[0, 1, 2, 3, 4],
+       file_client_args=file_client_args))
 
 train_pipeline = [
     dict(type='LoadAnnotations3D',
@@ -241,30 +239,29 @@ train_pipeline = [
     dict(type='ObjectSample', db_sampler=db_sampler),
     dict(
        type='GlobalRotScaleTrans',
-       rot_range=[-0.3925 * 2, 0.3925 * 2],
-       scale_ratio_range=[0.9, 1.1],
-       translation_std=[0.5, 0.5, 0.5],
-       update_img2lidar=False),
+       rot_range=[-0.3925, 0.3925],
+       scale_ratio_range=[0.95, 1.05],
+       translation_std=[0.5, 0.5, 0.5]),
     dict(
         type='RandomFlip3D',
         flip_2d=False,
         sync_2d=False,
         flip_ratio_bev_horizontal=0.5,
-        flip_ratio_bev_vertical=0.5,
-        update_img2lidar=False),
-    dict(type='PointsRangeFilter', point_cloud_range=point_cloud_range),
-    dict(type='ObjectRangeFilter', point_cloud_range=point_cloud_range),
-    dict(type='ObjectNameFilter', classes=class_names),
+        flip_ratio_bev_vertical=0.5),
     dict(
         type='MultiViewPipeline',
         n_images=6,
         transforms=[
             dict(type='LoadImageFromFile'),
-            dict(type='Resize', img_scale=(20, 10), keep_ratio=True),
-            #dict(type='Normalize', **img_norm_cfg),
+            dict(type='Resize', img_scale=(100, 80), keep_ratio=True),
             #dict(type='Pad', size_divisor=32)
             ]),
+    
+    dict(type='PointsRangeFilter', point_cloud_range=point_cloud_range),
+    dict(type='ObjectRangeFilter', point_cloud_range=point_cloud_range),
+    dict(type='ObjectNameFilter', classes=class_names),
     dict(type='PointShuffle'),
+    
     dict(type='KittiSetOrigin', point_cloud_range=point_cloud_range),
     dict(type='DefaultFormatBundle3D', class_names=class_names),
     dict(type='Collect3D', keys=['img', 'gt_bboxes', 'gt_labels', 
