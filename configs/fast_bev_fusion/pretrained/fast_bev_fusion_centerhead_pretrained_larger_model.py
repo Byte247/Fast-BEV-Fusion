@@ -244,8 +244,6 @@ train_pipeline = [
                                   'points'])]
 """
 #First Stage Pipeline:
-
-
 file_client_args = dict(backend='disk')
 db_sampler = dict(
    data_root=data_root,

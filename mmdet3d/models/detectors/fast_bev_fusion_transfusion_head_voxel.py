@@ -20,18 +20,18 @@ import ipdb  # noqa
 
 
 @DETECTORS.register_module()
-class FastBEVFusionCenterheadVoxel(BaseDetector):
+class FastBEVFusionTransfusionheadVoxel(BaseDetector):
     def __init__(
         self,
         second_stage,
         backbone,
         neck,
-        neck_fuse,
         neck_3d,
         bbox_head,
         camera_n_voxels,
         camera_voxel_size,
         pts_voxel_layer,
+        neck_fuse = None,
         seg_head=None,
         pts_voxel_encoder=None,
         pts_middle_encoder=None,
@@ -51,7 +51,6 @@ class FastBEVFusionCenterheadVoxel(BaseDetector):
         super().__init__(init_cfg=init_cfg)
 
         self.second_stage = second_stage
-
         #Point
         self.pts_voxel_layer = Voxelization(**pts_voxel_layer)
         self.pts_voxel_encoder = builder.build_voxel_encoder(pts_voxel_encoder)
@@ -59,14 +58,11 @@ class FastBEVFusionCenterheadVoxel(BaseDetector):
                 pts_middle_encoder)
         self.pts_neck = builder.build_neck(pts_neck)
 
-        #Fusion
-
         if self.second_stage:
+            #Fusion
             self.fusion_module = builder.build_fusion_layer(fusion_module)
-
             self.backbone = builder.build_backbone(backbone)
             self.neck = builder.build_neck(neck)
-        
             self.neck_3d = builder.build_neck(neck_3d)
 
         if bbox_head is not None:
@@ -81,7 +77,6 @@ class FastBEVFusionCenterheadVoxel(BaseDetector):
             self.seg_head = build_seg_head(seg_head)
         else:
             self.seg_head = None
-
         if self.second_stage:
             if bbox_head_2d is not None:
                 bbox_head_2d.update(train_cfg=train_cfg_2d)
@@ -94,8 +89,6 @@ class FastBEVFusionCenterheadVoxel(BaseDetector):
         self.camera_voxel_size = camera_voxel_size
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
-
-        self.is_train = None
 
         # test time extrinsic noise
         self.extrinsic_noise = extrinsic_noise
@@ -126,13 +119,16 @@ class FastBEVFusionCenterheadVoxel(BaseDetector):
         return torch.stack(projection)
 
     def extract_feat(self, img, img_metas, mode):
-
         batch_size = img.shape[0]
         img = img.reshape(
             [-1] + list(img.shape)[2:]
         )  # [1, 6, 3, 928, 1600] -> [6, 3, 928, 1600]
         
-        x = self.backbone(img)  # [6, 256, 232, 400]; [6, 512, 116, 200]; [6, 1024, 58, 100]; [6, 2048, 29, 50]
+        x = self.backbone(
+            img
+        )  # [6, 256, 232, 400]; [6, 512, 116, 200]; [6, 1024, 58, 100]; [6, 2048, 29, 50]
+
+        
 
         # use for vovnet
         if isinstance(x, dict):
@@ -151,9 +147,8 @@ class FastBEVFusionCenterheadVoxel(BaseDetector):
         else:
             c1, c2, c3, c4 = _inner_forward(x)
 
-        features_2d = None
-        if self.bbox_head_2d:
-            features_2d = [c1, c2, c3, c4]
+        
+        features_2d = [c1, c2, c3, c4]
 
         c2 = resize(
             c2, size=c1.size()[2:], mode="bilinear", align_corners=False
@@ -215,12 +210,12 @@ class FastBEVFusionCenterheadVoxel(BaseDetector):
         """Extract features of points."""
 
         voxels, num_points, coors = self.voxelize(pts)
+
         voxel_features = self.pts_voxel_encoder(voxels, num_points, coors)
-
         batch_size = coors[-1, 0] + 1
-
+ 
         x = self.pts_middle_encoder(voxel_features, coors, batch_size)
-        #after this again dense tensor
+        
         x = self.pts_neck(x)
 
         return x
@@ -275,16 +270,17 @@ class FastBEVFusionCenterheadVoxel(BaseDetector):
             return self.forward_train(img, img_metas, **kwargs)
         else:
             return self.forward_test(img, img_metas, **kwargs)
-    
+
     def forward_train(
         self, img, img_metas, gt_bboxes_3d, gt_labels_3d, gt_bev_seg=None, points=None, **kwargs
     ):  
-        self.is_train = True
+        
         
         lidar_features = self.extract_pts_feat(points)
 
         if self.second_stage:
             feature_bev, valids, features_2d = self.extract_feat(img, img_metas, "train")
+
 
             """
             feature_bev: [(1, 256, 100, 100)]
@@ -292,19 +288,19 @@ class FastBEVFusionCenterheadVoxel(BaseDetector):
             features_2d: [[6, 64, 232, 400], [6, 64, 116, 200], [6, 64, 58, 100], [6, 64, 29, 50]]
             """
 
+            
             #fuse lidar BEV and camera BEV features
-
-            feature_bev = self.fusion_module(lidar_features, feature_bev) # this framework requires features inside lists for some reason. 
+            feature_bev = self.fusion_module(lidar_features, feature_bev)
         else:
             feature_bev = lidar_features
+
 
         assert self.bbox_head is not None or self.seg_head is not None
 
         losses = dict()
         if self.bbox_head is not None:
-            x = self.bbox_head(feature_bev)
-
-            loss_inputs = [gt_bboxes_3d, gt_labels_3d, x]
+            outs = self.bbox_head(feature_bev, features_2d, img_metas)
+            loss_inputs = [gt_bboxes_3d, gt_labels_3d, outs]
             loss_det = self.bbox_head.loss(*loss_inputs)
             losses.update(loss_det)
             
@@ -387,8 +383,7 @@ class FastBEVFusionCenterheadVoxel(BaseDetector):
             
         return losses
 
-    def forward_test(self, img, img_metas, points,**kwargs):
-        self.is_train = False
+    def forward_test(self, img, img_metas, points,**kwargs): 
         if not self.test_cfg.get('use_tta', False):
             return self.simple_test(img, img_metas, points)
         return self.aug_test(img, img_metas)
@@ -410,7 +405,8 @@ class FastBEVFusionCenterheadVoxel(BaseDetector):
             c4, size=c1.size()[2:], mode="bilinear", align_corners=False
         )  # [6, 64, 232, 400]
         x = torch.cat([c1, c2, c3, c4], dim=1)
-        x = self.neck_fuse(x)
+        if self.neck_fuse is not None:
+            x = self.neck_fuse(x)
 
         if bool(os.getenv("DEPLOY", False)):
             x = x.permute(0, 2, 3, 1)
@@ -443,7 +439,7 @@ class FastBEVFusionCenterheadVoxel(BaseDetector):
             return x
 
         return x
-    
+
 
     def simple_test(self, img, img_metas, points):
         bbox_results = []
@@ -452,13 +448,13 @@ class FastBEVFusionCenterheadVoxel(BaseDetector):
         lidar_features = self.extract_pts_feat(points)
 
         #fuse lidar BEV and camera BEV features
-        feature_bev = self.fusion_module(lidar_features, feature_bev[0])
+        feature_bev = self.fusion_module(lidar_features[0], feature_bev[0])
         feature_bev =[feature_bev]
 
 
         if self.bbox_head is not None:
-            outs = self.bbox_head(feature_bev)
-            bbox_list = self.bbox_head.get_bboxes(outs, img_metas, rescale=True)
+            outs = self.bbox_head(feature_bev, features_2d, img_metas)
+            bbox_list = self.bbox_head.get_bboxes(outs, img_metas, rescale=False)
                                     
             bbox_results = [bbox3d2result(bboxes, scores, labels)for bboxes, scores, labels in bbox_list]
             

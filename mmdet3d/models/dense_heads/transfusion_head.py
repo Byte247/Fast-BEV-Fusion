@@ -802,7 +802,7 @@ class TransFusionHead(nn.Module):
                 build_assigner(res) for res in self.train_cfg.assigner
             ]
 
-    def forward_single(self, inputs, img_inputs, img_metas):
+    def forward_single(self, inputs):
         """Forward function for CenterPoint.
 
         Args:
@@ -912,7 +912,7 @@ class TransFusionHead(nn.Module):
         """
         if img_feats is None:
             img_feats = [None]
-        res = multi_apply(self.forward_single, feats, img_feats, [img_metas])
+        res = multi_apply(self.forward_single, feats)
         assert len(res) == 1, "only support one level features."
         return res
 

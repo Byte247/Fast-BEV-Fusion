@@ -14,8 +14,11 @@ class_names = [
     'motorcycle', 'pedestrian', 'traffic_cone', 'barrier'
 ]
 
+second_stage = False
+
 model = dict(
-    type='FastBEVFusionTransfusionhead',
+    type='FastBEVFusionTransfusionheadVoxel',
+    second_stage = second_stage,
     backbone=dict(
         type='ResNet',
         depth=50,
@@ -48,13 +51,16 @@ model = dict(
     pts_middle_encoder=dict(
         type='SpMiddleResNetFHD',
         in_channels=5,
-        sparse_shape=[41, 1440, 1440]),
+        sparse_shape=[41, 1440, 1440],
+        norm_cfg=dict(type="BN1d", eps=1e-3, momentum=0.01),
+        freeze_layers=second_stage),
 
     pts_neck=dict(
         type='ASPPNeck',
-        in_channels=512,
-        out_channels= 384,
-        norm_cfg=dict(type='SyncBN', requires_grad=True)),
+        in_channels=256,
+        out_channels=512,
+        norm_cfg=dict(type='BN', requires_grad=True),
+        freeze_layers=second_stage),
 
 
     #Fusion layer
@@ -178,6 +184,45 @@ input_modality = dict(
 
 img_norm_cfg = dict(mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 
+
+file_client_args = dict(backend='disk')
+db_sampler = dict(
+data_root=data_root,
+info_path=data_root + 'nuscenes_dbinfos_train.pkl',
+rate=1.0,
+prepare=dict(
+    filter_by_difficulty=[-1],
+    filter_by_min_points=dict(
+        car=5,
+        truck=5,
+        bus=5,
+        trailer=5,
+        construction_vehicle=5,
+        traffic_cone=5,
+        barrier=5,
+        motorcycle=5,
+        bicycle=5,
+        pedestrian=5)),
+classes=class_names,
+sample_groups=dict(
+    car=2,
+    truck=3,
+    construction_vehicle=7,
+    bus=4,
+    trailer=6,
+    barrier=2,
+    motorcycle=6,
+    bicycle=6,
+    pedestrian=2,
+    traffic_cone=2),
+points_loader=dict(
+    type='LoadPointsFromFile',
+    coord_type='LIDAR',
+    load_dim=5,
+    use_dim=[0, 1, 2, 3, 4],
+    file_client_args=file_client_args))
+
+
 train_pipeline = [
     dict(type='LoadAnnotations3D',
          with_bbox=True,
@@ -193,13 +238,20 @@ train_pipeline = [
         sweeps_num=10,
         use_dim=[0, 1, 2, 3, 4],
         pad_empty_sweeps=True),
+    dict(type='ObjectSample', db_sampler=db_sampler),
     dict(
        type='GlobalRotScaleTrans',
        rot_range=[-0.3925 * 2, 0.3925 * 2],
        scale_ratio_range=[0.9, 1.1],
        translation_std=[0.5, 0.5, 0.5],
        update_img2lidar=True),
-
+    dict(
+        type='RandomFlip3D',
+        flip_2d=False,
+        sync_2d=False,
+        flip_ratio_bev_horizontal=0.5,
+        flip_ratio_bev_vertical=0.5,
+        update_img2lidar=True),
     dict(type='PointsRangeFilter', point_cloud_range=point_cloud_range),
     dict(type='ObjectRangeFilter', point_cloud_range=point_cloud_range),
     dict(type='ObjectNameFilter', classes=class_names),
@@ -208,9 +260,10 @@ train_pipeline = [
         n_images=6,
         transforms=[
             dict(type='LoadImageFromFile'),
-            dict(type='Resize', img_scale=(1600, 900), keep_ratio=True),
-            dict(type='Normalize', **img_norm_cfg),
-            dict(type='Pad', size_divisor=32)]),
+            dict(type='Resize', img_scale=(20, 10), keep_ratio=True),
+            #dict(type='Normalize', **img_norm_cfg),
+            #dict(type='Pad', size_divisor=32)
+            ]),
     dict(type='PointShuffle'),
     dict(type='KittiSetOrigin', point_cloud_range=point_cloud_range),
     dict(type='DefaultFormatBundle3D', class_names=class_names),
@@ -233,15 +286,16 @@ test_pipeline = [
         n_images=6,
         transforms=[
             dict(type='LoadImageFromFile'),
-            dict(type='Resize', img_scale=(1600, 900), keep_ratio=True),
-            dict(type='Normalize', **img_norm_cfg),
-            dict(type='Pad', size_divisor=32)]),
+            dict(type='Resize', img_scale=(20, 10), keep_ratio=True),
+            #dict(type='Normalize', **img_norm_cfg),
+            #dict(type='Pad', size_divisor=32)
+            ]),
     dict(type='KittiSetOrigin', point_cloud_range=point_cloud_range),
     dict(type='DefaultFormatBundle3D', class_names=class_names, with_label=False),
     dict(type='Collect3D', keys=['img','points'])]
 
 data = dict(
-    samples_per_gpu=1,
+    samples_per_gpu=12,
     workers_per_gpu=4,
     train=dict(
         type='CBGSDataset',
@@ -253,7 +307,7 @@ data = dict(
             classes=class_names,
             modality=input_modality,
             test_mode=False,
-            with_box2d=True,
+            with_box2d=False,
             box_type_3d='LiDAR')),
     val=dict(
         type=dataset_type,
@@ -263,7 +317,7 @@ data = dict(
         classes=class_names,
         modality=input_modality,
         test_mode=True,
-        with_box2d=True,
+        with_box2d=False,
         box_type_3d='LiDAR'),
     test=dict(
         type=dataset_type,
@@ -274,6 +328,7 @@ data = dict(
         modality=input_modality,
         test_mode=True,
         box_type_3d='LiDAR'))
+"""
 
 optimizer = dict(type='AdamW', lr=1e-4,
                  weight_decay=0.05,
@@ -281,6 +336,7 @@ optimizer = dict(type='AdamW', lr=1e-4,
                  custom_keys={'backbone': dict(lr_mult=0.1, decay_mult=1.0),
                               'pos_embed_camera': dict(lr_mult= 1.0, decay_mult=0.),
                               'pos_embed_lidar': dict(lr_mult= 1.0, decay_mult=0.)})) #try to combat nan even more
+"""
 
 optimizer_config = dict(grad_clip=dict(max_norm=0.1, norm_type=2))
 lr_config = dict(
@@ -308,12 +364,9 @@ log_config = dict(
     ])
 evaluation = dict(interval=1)
 dist_params = dict(backend='nccl')
-find_unused_parameters = True  # todo: fix number of FPN outputs
+find_unused_parameters = False  # todo: fix number of FPN outputs
 log_level = 'INFO'
 # load_from = None
 load_from = 'https://download.openmmlab.com/mmdetection3d/v0.1.0_models/nuimages_semseg/cascade_mask_rcnn_r50_fpn_coco-20e_20e_nuim/cascade_mask_rcnn_r50_fpn_coco-20e_20e_nuim_20201009_124951-40963960.pth'
 resume_from = None
 workflow = [('train', 1)]
-
-# fp16 settings, the loss scale is specifically tuned to avoid Nan
-fp16 = dict(loss_scale='dynamic')

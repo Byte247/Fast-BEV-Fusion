@@ -20,9 +20,10 @@ import ipdb  # noqa
 
 
 @DETECTORS.register_module()
-class FastBEVFusionTransfusionhead(BaseDetector):
+class FastBEVFusionTransfusionheadPillar(BaseDetector):
     def __init__(
         self,
+        second_stage,
         backbone,
         neck,
         neck_3d,
@@ -50,7 +51,8 @@ class FastBEVFusionTransfusionhead(BaseDetector):
     ):
         super().__init__(init_cfg=init_cfg)
 
-        #Pointa
+        self.second_stage = second_stage
+        #Point
         self.pts_voxel_layer = Voxelization(**pts_voxel_layer)
         self.pts_voxel_encoder = builder.build_voxel_encoder(pts_voxel_encoder)
         self.pts_middle_encoder= builder.build_middle_encoder(
