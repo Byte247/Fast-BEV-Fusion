@@ -911,8 +911,8 @@ class TransFusionHead(nn.Module):
             tuple(list[dict]): Output results. first index by level, second index by layer
         """
         
-        res = multi_apply(self.forward_single, feats)
-        assert len(res) == 1, "only support one level features."
+        res = self.forward_single(feats)
+        
         return res
 
     def get_targets(self, gt_bboxes_3d, gt_labels_3d, preds_dict):
