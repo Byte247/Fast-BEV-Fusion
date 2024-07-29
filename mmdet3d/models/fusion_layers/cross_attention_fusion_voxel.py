@@ -280,4 +280,4 @@ class MultiHeadCrossAttentionVoxel(nn.Module):
         output = self.upsample_layer_2(upsampled_once)
         output = torch.add(output, lidar_bev_features)
 
-        return output
+        return [output]
