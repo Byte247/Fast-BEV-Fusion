@@ -939,6 +939,7 @@ class TransFusionHead(nn.Module):
         list_of_pred_dict = []
         for batch_idx in range(len(gt_bboxes_3d)):
             pred_dict = {}
+            print(f"preds_dict: {preds_dict}")
             for key in preds_dict[0].keys():
                 pred_dict[key] = preds_dict[0][key][batch_idx:batch_idx + 1]
             list_of_pred_dict.append(pred_dict)
