@@ -97,7 +97,7 @@ class ASPPNeck(BaseModule):
         self.conv1x1 = nn.Conv2d(
             in_channels, in_channels, kernel_size=1, stride=1, bias=False, padding=0)
         
-        self.post_conv = ConvBlock(in_channels * 6, out_channels, kernel_size=1, stride=1, norm_cfg=self.norm_cfg)
+        self.post_conv = ConvBlock(in_channels * 6, in_channels, kernel_size=1, stride=1, norm_cfg=self.norm_cfg)
 
         self.branch1 = ASPPConv(in_channels, in_channels, dilation=1, norm_cfg=self.norm_cfg)
         self.branch6 = ASPPConv(in_channels, in_channels, dilation=6, norm_cfg=self.norm_cfg)
@@ -105,7 +105,7 @@ class ASPPNeck(BaseModule):
         self.branch18 = ASPPConv(in_channels, in_channels, dilation=18, norm_cfg=self.norm_cfg)
 
         self.upsample_0 = ConvTNormAct(in_channels, in_channels, self.norm_cfg, kernel_size=2, stride=2)
-        self.upsample_1 = ConvTNormAct(in_channels, in_channels, self.norm_cfg, kernel_size=2, stride=2)
+        self.upsample_1 = ConvTNormAct(in_channels, out_channels, self.norm_cfg, kernel_size=2, stride=2)
 
         if freeze_layers:
             for param in self.parameters():
