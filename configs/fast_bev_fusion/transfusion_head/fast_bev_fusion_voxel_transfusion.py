@@ -14,7 +14,7 @@ class_names = [
     'motorcycle', 'pedestrian', 'traffic_cone', 'barrier'
 ]
 
-second_stage = False
+second_stage = True
 
 model = dict(
     type='FastBEVFusionTransfusionheadVoxel',
@@ -53,18 +53,17 @@ model = dict(
         in_channels=5,
         sparse_shape=[41, 1440, 1440],
         norm_cfg=dict(type="BN1d", eps=1e-3, momentum=0.01),
-        freeze_layers=second_stage),
+        freeze_layers=False),
 
     pts_neck=dict(
         type='ASPPNeck',
         in_channels=256,
         out_channels=512,
         norm_cfg=dict(type='BN', requires_grad=True),
-        freeze_layers=second_stage),
-
+        freeze_layers=False),
 
     #Fusion layer
-    fusion_module = dict(type='MultiHeadCrossAttentionVoxel',embed_dim = 2048, num_heads=8, dropout = 0.1),
+    fusion_module = dict(type='MultiHeadCrossAttentionVoxel',embed_dim = 2048, num_heads=8, dropout = 0.1, norm_cfg=dict(type='BN', requires_grad=True)),
 
     bbox_head=dict(
         type='TransFusionHead',
