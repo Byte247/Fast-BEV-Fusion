@@ -803,7 +803,7 @@ class TransFusionHead(nn.Module):
             ]
 
     def forward_single(self, inputs):
-        """Forward function for CenterPoint.
+        """Forward function for TransFusionHead.
 
         Args:
             inputs (torch.Tensor): Input feature map with the shape of
@@ -900,7 +900,7 @@ class TransFusionHead(nn.Module):
                 new_res[key] = ret_dicts[0][key]
         return [new_res]
 
-    def forward(self, feats, img_feats, img_metas):
+    def forward(self, feats):
         """Forward pass.
 
         Args:
@@ -910,8 +910,7 @@ class TransFusionHead(nn.Module):
         Returns:
             tuple(list[dict]): Output results. first index by level, second index by layer
         """
-        if img_feats is None:
-            img_feats = [None]
+        
         res = multi_apply(self.forward_single, feats)
         assert len(res) == 1, "only support one level features."
         return res
