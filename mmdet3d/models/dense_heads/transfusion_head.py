@@ -623,6 +623,7 @@ class TransFusionHead(nn.Module):
                  num_heatmap_convs=2,
                  conv_cfg=dict(type='Conv1d'),
                  norm_cfg=dict(type='BN1d'),
+                 two_d_norm_cfg=dict(type='BN'),
                  bias='auto',
                  # loss
                  loss_cls=dict(type='GaussianFocalLoss', reduction='mean'),
@@ -683,7 +684,7 @@ class TransFusionHead(nn.Module):
                 padding=1,
                 bias=bias,
                 conv_cfg=dict(type='Conv2d'),
-                norm_cfg=dict(type='BN'),
+                norm_cfg=two_d_norm_cfg,
             ))
             layers.append(build_conv_layer(
                 dict(type='Conv2d'),

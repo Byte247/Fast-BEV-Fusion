@@ -79,6 +79,8 @@ model = dict(
         initialize_by_heatmap=True,
         nms_kernel_size=3,
         ffn_channel=256,
+        norm_cfg=dict(type='BN1d'),
+        two_d_norm_cfg=dict(type='BN'),
         dropout=0.1,
         bn_momentum=0.1,
         activation='relu',
@@ -254,7 +256,7 @@ train_pipeline = [
         n_images=6,
         transforms=[
             dict(type='LoadImageFromFile'),
-            dict(type='Resize', img_scale=(100, 80), keep_ratio=True),
+            dict(type='Resize', img_scale=(20, 10), keep_ratio=True),
             #dict(type='Pad', size_divisor=32)
             ]),
     
@@ -293,7 +295,7 @@ test_pipeline = [
     dict(type='Collect3D', keys=['img','points'])]
 
 data = dict(
-    samples_per_gpu=4,
+    samples_per_gpu=1,
     workers_per_gpu=4,
     train=dict(
         type='CBGSDataset',
