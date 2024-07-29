@@ -177,10 +177,10 @@ data_root = 'data/nuscenes/'
 # format which requires the information in input_modality.
 input_modality = dict(
     use_lidar=True,
-    use_camera=False,
+    use_camera=True,
     use_radar=False,
     use_map=False,
-    use_external=False)
+    use_external=True)
 
 img_norm_cfg = dict(mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 
@@ -236,35 +236,36 @@ train_pipeline = [
         sweeps_num=10,
         use_dim=[0, 1, 2, 3, 4],
         pad_empty_sweeps=True),
-    dict(type='ObjectSample', db_sampler=db_sampler),
     dict(
        type='GlobalRotScaleTrans',
        rot_range=[-0.3925, 0.3925],
        scale_ratio_range=[0.95, 1.05],
-       translation_std=[0.5, 0.5, 0.5]),
+       translation_std=[0.5, 0.5, 0.5],
+       update_img2lidar=True),
     dict(
         type='RandomFlip3D',
         flip_2d=False,
         sync_2d=False,
         flip_ratio_bev_horizontal=0.5,
-        flip_ratio_bev_vertical=0.5),
+        flip_ratio_bev_vertical=0.5,
+        update_img2lidar=True),
     dict(
         type='MultiViewPipeline',
         n_images=6,
         transforms=[
             dict(type='LoadImageFromFile'),
-            dict(type='Resize', img_scale=(100, 80), keep_ratio=True),
-            #dict(type='Pad', size_divisor=32)
-            ]),
-    
+            dict(type='Resize', img_scale=(200, 100), keep_ratio=True),
+            dict(type='Pad', size_divisor=32)]),
+    #dict(type='RandomAugImageMultiViewImage', data_config=data_config),
     dict(type='PointsRangeFilter', point_cloud_range=point_cloud_range),
     dict(type='ObjectRangeFilter', point_cloud_range=point_cloud_range),
     dict(type='ObjectNameFilter', classes=class_names),
     dict(type='PointShuffle'),
-    
+    dict(type='NormalizeMultiviewImage', **img_norm_cfg),
     dict(type='KittiSetOrigin', point_cloud_range=point_cloud_range),
     dict(type='DefaultFormatBundle3D', class_names=class_names),
-    dict(type='Collect3D', keys=['img','gt_bboxes_3d', 'gt_labels_3d',
+    dict(type='Collect3D', keys=['img', 'gt_bboxes', 'gt_labels', 
+                                 'gt_bboxes_3d', 'gt_labels_3d',
                                   'points'])]
 test_pipeline = [
     dict(
@@ -303,7 +304,7 @@ data = dict(
             classes=class_names,
             modality=input_modality,
             test_mode=False,
-            with_box2d=False,
+            with_box2d=True,
             box_type_3d='LiDAR')),
     val=dict(
         type=dataset_type,
