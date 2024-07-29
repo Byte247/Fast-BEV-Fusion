@@ -264,8 +264,7 @@ train_pipeline = [
     
     dict(type='KittiSetOrigin', point_cloud_range=point_cloud_range),
     dict(type='DefaultFormatBundle3D', class_names=class_names),
-    dict(type='Collect3D', keys=['img', 'gt_bboxes', 'gt_labels', 
-                                 'gt_bboxes_3d', 'gt_labels_3d',
+    dict(type='Collect3D', keys=['img','gt_bboxes_3d', 'gt_labels_3d',
                                   'points'])]
 test_pipeline = [
     dict(
