@@ -55,6 +55,7 @@ model = dict(
         us_layer_strides=[1, 2],
         us_num_filters=[256, 128], # default 128x128
         num_input_features=[256,512], #num features in the feature maps block 4 and 5
+        norm_cfg=dict(type='SyncBN', requires_grad=True),
         freeze_layers = second_stage,
     ),
 
