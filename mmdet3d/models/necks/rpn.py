@@ -93,14 +93,14 @@ class RPNV3(BaseModule):
                 self._norm_cfg,
                 self._num_upsample_filters[1],
             )[1],
-            nn.ReLU(),
+            nn.LeakyReLU(),
         )
 
         self.deblock_4 = Sequential(
             nn.ZeroPad2d(1),
             nn.Conv2d(self._num_input_features[0], self._num_upsample_filters[0], 3, stride=1, bias=False),
             build_norm_layer(self._norm_cfg, self._num_upsample_filters[0])[1],
-            nn.ReLU(),
+            nn.LeakyReLU(),
         )
         self.block_4, num_out_filters = self._make_layer(
             self._num_upsample_filters[0] + self._num_upsample_filters[1],
@@ -128,13 +128,13 @@ class RPNV3(BaseModule):
             nn.ZeroPad2d(1),
             nn.Conv2d(inplanes, planes, 3, stride=stride, bias=False),
             build_norm_layer(self._norm_cfg, planes)[1],
-            nn.ReLU(),
+            nn.LeakyReLU(),
         )
 
         for j in range(num_blocks):
             block.add(nn.Conv2d(planes, planes, 3, padding=1, bias=False))
             block.add(build_norm_layer(self._norm_cfg, planes)[1])
-            block.add(nn.ReLU())
+            block.add(nn.LeakyReLU())
 
         return block, planes
 
@@ -148,7 +148,7 @@ class RPNV3(BaseModule):
         print("Freeze neck layers")
         for param in self.parameters():
             param.requires_grad = False
-    @auto_fp16()
+    
     def forward(self, x, **kwargs):
         
         #get feature maps of last 2 resolutions 
@@ -178,25 +178,25 @@ class Sequential(torch.nn.Module):
         # Example of using Sequential
         model = Sequential(
                   nn.Conv2d(1,20,5),
-                  nn.ReLU(),
+                  nn.LeakyReLU(),
                   nn.Conv2d(20,64,5),
-                  nn.ReLU()
+                  nn.LeakyReLU()
                 )
 
         # Example of using Sequential with OrderedDict
         model = Sequential(OrderedDict([
                   ('conv1', nn.Conv2d(1,20,5)),
-                  ('relu1', nn.ReLU()),
+                  ('relu1', nn.LeakyReLU()),
                   ('conv2', nn.Conv2d(20,64,5)),
-                  ('relu2', nn.ReLU())
+                  ('relu2', nn.LeakyReLU())
                 ]))
 
         # Example of using Sequential with kwargs(python 3.6+)
         model = Sequential(
                   conv1=nn.Conv2d(1,20,5),
-                  relu1=nn.ReLU(),
+                  relu1=nn.LeakyReLU(),
                   conv2=nn.Conv2d(20,64,5),
-                  relu2=nn.ReLU()
+                  relu2=nn.LeakyReLU()
                 )
     """
 
