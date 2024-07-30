@@ -12,7 +12,7 @@ model = dict(
         num_stages=4,
         out_indices=(0, 1, 2, 3),
         frozen_stages=1,
-        norm_cfg=dict(type='BN', requires_grad=True),
+        norm_cfg=dict(type='SyncBN', requires_grad=True),
         norm_eval=True,
         init_cfg=dict(type='Pretrained', checkpoint='torchvision://resnet50'),
         style='pytorch',
@@ -21,7 +21,7 @@ model = dict(
     ),
     neck=dict(
         type='FPN',
-        norm_cfg=dict(type='BN', requires_grad=True),
+        norm_cfg=dict(type='SyncBN', requires_grad=True),
         in_channels=[256, 512, 1024, 2048],
         out_channels=64,
         num_outs=4),
@@ -38,28 +38,40 @@ model = dict(
         feat_channels=[64, 64],
         with_distance=False,
         voxel_size=(0.2, 0.2, 8),
-        norm_cfg=dict(type='BN1d', eps=1e-3, momentum=0.01, requires_grad=True),
+        norm_cfg=dict(type='SyncBN', requires_grad=True),
         legacy=False,
         freeze_layers = second_stage),
     pts_middle_encoder=dict(
         type='PointPillarsScatter', in_channels=64, output_shape=(512, 512)),
     pts_backbone=dict(type="PointResNet34V2",
                       first_max_pool=False,
-                      norm_cfg = dict(type='BN', requires_grad=True),
+                      norm_cfg = dict(type='SyncBN', requires_grad=True),
                       freeze_layers = second_stage),
     pts_neck=dict(
-        type='ASPPNeck',
-        in_channels=512,
-        out_channels=384,
-        norm_cfg= dict(type='BN', requires_grad=True),
-        freeze_layers = second_stage),  
+        type="RPNV3",
+        layer_nums=[5, 5],
+        ds_layer_strides=[1, 2],
+        ds_num_filters=[256, 256],
+        us_layer_strides=[1, 2],
+        us_num_filters=[256, 128], # default 128x128
+        num_input_features=[256,512], #num features in the feature maps block 4 and 5 that are feed into the structure similar to "FPN"
+        freeze_layers = second_stage,
+    ),
 
+
+    #pts_neck=dict(
+    #    type='ASPPNeck',
+    #    in_channels=512,
+    #    out_channels=384,
+    #    norm_cfg= dict(type='SyncBN', requires_grad=True),
+    #    freeze_layers = second_stage),  
+    
     #Fusion layer
-    fusion_module = dict(type='MultiHeadCrossAttentionNoNeck',embed_dim = 512, num_heads=1, dropout = 0.1, fuse_on_lidar=True, norm_cfg=dict(type='BN', requires_grad=True)),
+    fusion_module = dict(type='MultiHeadCrossAttentionNoNeck',embed_dim = 512, num_heads=1, dropout = 0.1, fuse_on_lidar=True, norm_cfg=dict(type='SyncBN', requires_grad=True)),
 
     bbox_head= dict(
         type='CenterHead',
-        norm_cfg = dict(type='BN', requires_grad=True),
+        norm_cfg = dict(type='SyncBN', requires_grad=True),
         in_channels=384,
         tasks=[
             dict(num_class=1, class_names=['car']),
@@ -394,7 +406,7 @@ data = dict(
 """
 
 data = dict(
-    samples_per_gpu=2,
+    samples_per_gpu=8,
     workers_per_gpu=1,
     train=dict(
         type='RepeatDataset',
@@ -461,7 +473,7 @@ momentum_config = dict(
     step_ratio_up=0.4)
 
 # runtime settings
-runner = dict(type='EpochBasedRunner', max_epochs=20)
+runner = dict(type='EpochBasedRunner', max_epochs=1)
 
 checkpoint_config = dict(interval=1)
 log_config = dict(
