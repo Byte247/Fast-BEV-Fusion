@@ -97,7 +97,7 @@ class ASPPNeck(BaseModule):
         if norm_cfg is not None:
             self.norm_cfg = norm_cfg
         else:
-            self.norm_cfg = dict(type='BN', requires_grad=True),
+            self.norm_cfg = dict(type='BN', requires_grad=True)
 
         self.pre_conv = BasicBlock(in_channels, norm_cfg=self.norm_cfg)
         self.conv1x1 = nn.Conv2d(
