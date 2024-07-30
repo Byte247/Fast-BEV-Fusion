@@ -66,9 +66,9 @@ class PointResNet34V2(nn.Module):
     """
     def __init__(self, block= BasicBlock, layers=[6,6,3,1], in_channels = 64, zero_init_residual=False,
                  groups=1, width_per_group=64, replace_stride_with_dilation=None, 
-                 norm_layer=None, first_max_pool = False, freeze_layers = False):
+                 norm_cfg=None, first_max_pool = False, freeze_layers = False):
         super(PointResNet34V2, self).__init__()
-        norm_cfg = norm_layer
+        
         self.norm_cfg = norm_cfg
         self.first_max_pool = first_max_pool
         self.freeze = freeze_layers
