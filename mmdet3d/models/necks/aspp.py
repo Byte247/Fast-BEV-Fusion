@@ -56,16 +56,22 @@ class BasicBlock(nn.Module):
 
         return out
 
-class ASPPConv(nn.Sequential):
-    def __init__(self, in_channels: int, out_channels: int, dilation: int, norm_cfg = dict(type='BN', requires_grad=True)) -> None:
+class ASPPConv(nn.Module):
+    def __init__(self, in_channels: int, out_channels: int, dilation: int, norm_cfg = dict(type='BN', requires_grad=True)):
 
-        norm  = build_norm_layer(norm_cfg, out_channels)[1]
-        modules = [
-            nn.Conv2d(in_channels, out_channels, 3, padding=dilation, dilation=dilation, bias=False),
-            norm,
-            nn.LeakyReLU(),
-        ]
-        super().__init__(*modules)
+        super(ASPPConv, self).__init__()
+
+        self.conv = nn.Conv2d(in_channels, out_channels, 3, padding=dilation, dilation=dilation, bias=False)
+        self.norm = build_norm_layer(norm_cfg, out_channels)[1]
+        self.act = nn.LeakyReLU()
+    def forward(self, x):
+        x = self.conv(x)
+        x = self.norm(x)
+        x = self.act(x)
+
+        return x
+        
+        
 
 class ConvTNormAct(nn.Module):
     def __init__(self, in_planes, out_planes, norm_cfg, kernel_size=2, stride=2, padding=0):
