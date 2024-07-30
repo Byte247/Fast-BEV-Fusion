@@ -444,13 +444,17 @@ class FastBEVFusionTransfusionheadVoxel(BaseDetector):
 
     def simple_test(self, img, img_metas, points):
         bbox_results = []
-        feature_bev, _, features_2d = self.extract_feat(img, img_metas, "test")
+        
 
         lidar_features = self.extract_pts_feat(points)
 
-        #fuse lidar BEV and camera BEV features
-        feature_bev = self.fusion_module(lidar_features[0], feature_bev[0])
-        feature_bev =[feature_bev]
+        if self.second_stage:
+            feature_bev, _, features_2d = self.extract_feat(img, img_metas, "test")
+            #fuse lidar BEV and camera BEV features
+            feature_bev = self.fusion_module(lidar_features[0], feature_bev[0])
+            feature_bev =[feature_bev]
+        else:
+            feature_bev = lidar_features
 
 
         if self.bbox_head is not None:
