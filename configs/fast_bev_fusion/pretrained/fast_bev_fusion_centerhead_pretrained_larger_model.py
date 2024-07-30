@@ -43,16 +43,24 @@ model = dict(
         freeze_layers = second_stage),
     pts_middle_encoder=dict(
         type='PointPillarsScatter', in_channels=64, output_shape=(512, 512)),
-    pts_backbone=dict(type="PointResNet34V2",
-                      first_max_pool=False,
-                      norm_layer = dict(type='SyncBN', requires_grad=True),
-                      freeze_layers = second_stage),
-    pts_neck=dict(
-        type='ASPPNeck',
-        in_channels=512,
-        out_channels=384,
+    pts_backbone=dict(
+        type='SECOND',
+        in_channels=64,
+        out_channels=[64, 128, 256],
+        layer_nums=[3, 5, 5],
+        layer_strides=[2, 2, 2],
         norm_cfg=dict(type='SyncBN', requires_grad=True),
-        freeze_layers = second_stage),
+        conv_cfg=dict(type='Conv2d', bias=False),
+        freeze_layers=second_stage),
+    pts_neck=dict(
+        type='SECONDFPN',
+        in_channels=[64, 128, 256],
+        out_channels=[128, 128, 128],
+        upsample_strides=[0.5, 1, 2],
+        norm_cfg=dict(type='SyncBN', requires_grad=True),
+        upsample_cfg=dict(type='deconv', bias=False),
+        use_conv_for_no_stride=True,
+        freeze_layers=second_stage),
 
     #Fusion layer
     fusion_module = dict(type='MultiHeadCrossAttentionNoNeck',embed_dim = 512, num_heads=1, dropout = 0.1, fuse_on_lidar=True, norm_cfg=dict(type='SyncBN', requires_grad=True)),
