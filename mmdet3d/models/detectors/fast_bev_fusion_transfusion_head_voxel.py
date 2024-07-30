@@ -69,7 +69,7 @@ class FastBEVFusionTransfusionheadVoxel(BaseDetector):
             bbox_head.update(train_cfg=train_cfg)
             bbox_head.update(test_cfg=test_cfg)
             self.bbox_head = builder.build_head(bbox_head)
-            self.bbox_head.voxel_size = train_cfg.voxel_size
+            self.bbox_head.voxel_size = test_cfg.voxel_size
         else:
             self.bbox_head = None
 
