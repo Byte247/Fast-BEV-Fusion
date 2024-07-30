@@ -313,7 +313,7 @@ train_pipeline = [
         n_images=6,
         transforms=[
             dict(type='LoadImageFromFile'),
-            dict(type='Resize', img_scale=(1600, 900), keep_ratio=True),
+            dict(type='Resize', img_scale=(200, 100), keep_ratio=True),
             dict(type='Pad', size_divisor=32)
             ]),
     
@@ -345,7 +345,7 @@ test_pipeline = [
         n_images=6,
         transforms=[
             dict(type='LoadImageFromFile'),
-            dict(type='Resize', img_scale=(1600, 900), keep_ratio=True),
+            dict(type='Resize', img_scale=(200, 100), keep_ratio=True),
             dict(type='Pad', size_divisor=32)
             ]),
     #dict(type='RandomAugImageMultiViewImage', data_config=data_config, is_train=False),
@@ -355,7 +355,7 @@ test_pipeline = [
     dict(type='Collect3D', keys=['img','points'])]
 
 
-
+"""
 data = dict(
     samples_per_gpu=8,
     workers_per_gpu=1,
@@ -391,8 +391,9 @@ data = dict(
         test_mode=True,
         box_type_3d='LiDAR'))
 """
+
 data = dict(
-    samples_per_gpu=3,
+    samples_per_gpu=8,
     workers_per_gpu=1,
     train=dict(
         type='RepeatDataset',
@@ -405,7 +406,7 @@ data = dict(
             classes=class_names,
             modality=input_modality,
             test_mode=False,
-            with_box2d=True,
+            with_box2d=False,
             box_type_3d='LiDAR')),
     val=dict(
         type=dataset_type,
@@ -415,7 +416,7 @@ data = dict(
         classes=class_names,
         modality=input_modality,
         test_mode=True,
-        with_box2d=True,
+        with_box2d=False,
         box_type_3d='LiDAR'),
     test=dict(
         type=dataset_type,
@@ -426,7 +427,7 @@ data = dict(
         modality=input_modality,
         test_mode=True,
         box_type_3d='LiDAR'))
-"""
+
 """
 optimizer = dict(type='AdamW', lr=0.0001,
                   weight_decay=0.01,
