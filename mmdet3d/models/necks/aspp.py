@@ -4,46 +4,28 @@ from mmdet.models import NECKS
 from mmcv.runner import BaseModule
 from mmcv.cnn import build_norm_layer
 
-class Conv(nn.Module):
-    def __init__(self, inplanes, planes, kernel_size, stride, 
-                 conv_layer=nn.Conv2d, bias=False, **kwargs):
-        super(Conv, self).__init__()
-        padding = kwargs.get('padding', kernel_size // 2)  # dafault same size
-
-        self.conv = conv_layer(inplanes, planes, kernel_size=kernel_size, stride=stride,
-                               padding=padding, bias=bias)
-                        
-    def forward(self, x):
-        return self.conv(x)
-
-
-class ConvBlock(nn.Module):
-    def __init__(self, inplanes, planes, kernel_size, stride=1,
-                 conv_layer=nn.Conv2d,
-                 norm_cfg=dict(type='BN', requires_grad=True),
-                 act_layer=nn.LeakyReLU, **kwargs):
-        super(ConvBlock, self).__init__()
-        padding = kwargs.get('padding', kernel_size // 2)  # dafault same size
-
-        self.conv = Conv(inplanes, planes, kernel_size=kernel_size, stride=stride,
-                               padding=padding, bias=False, conv_layer=conv_layer)
-
-        self.norm = build_norm_layer(norm_cfg, planes)[1]
-        self.act = act_layer()
+    
+class ConvBNRelu(nn.Module):
+    def __init__(self, in_planes, out_planes, norm_cfg, kernel_size=3, stride=1, padding=1):
+        super(ConvBNRelu, self).__init__()
+        
+        self.conv = nn.Conv2d(in_planes, out_planes, kernel_size, stride, padding)
+        self.bn = build_norm_layer(norm_cfg, out_planes)[1]
+        self.relu = nn.LeakyReLU(inplace=True)
 
     def forward(self, x):
-        out = self.conv(x)
-        out = self.norm(out)
-        out = self.act(out)
-        return out
+        x = self.conv(x)
+        x = self.bn(x)
+        x = self.relu(x)
+        return x
 
 
 class BasicBlock(nn.Module):
     def __init__(self, inplanes, kernel_size=3, norm_cfg=dict(type='BN', requires_grad=True)):
         super(BasicBlock, self).__init__()
         
-        self.block1 = ConvBlock(inplanes, inplanes, kernel_size=kernel_size, norm_cfg=norm_cfg)
-        self.block2 = ConvBlock(inplanes, inplanes, kernel_size=kernel_size, norm_cfg=norm_cfg)
+        self.block1 = ConvBNRelu(inplanes, inplanes, kernel_size=kernel_size, norm_cfg=norm_cfg)
+        self.block2 = ConvBNRelu(inplanes, inplanes, kernel_size=kernel_size, norm_cfg=norm_cfg)
     
         self.act = nn.LeakyReLU()
 
@@ -135,7 +117,6 @@ class ASPPNeck(BaseModule):
 
         x = x[0] # x is a list of last 4 ResNet layers, 0 idx being smallest res
 
-        print(f"in aspp:{x.shape}")
         out = self._forward(x)
 
         return [out]
