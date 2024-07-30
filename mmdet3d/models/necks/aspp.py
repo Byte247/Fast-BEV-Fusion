@@ -135,7 +135,7 @@ class ASPPNeck(BaseModule):
 
         x = x[0] # x is a list of last 4 ResNet layers, 0 idx being smallest res
 
-
+        print(f"in aspp:{x.shape}")
         out = self._forward(x)
 
         return [out]

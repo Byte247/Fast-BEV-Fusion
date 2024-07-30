@@ -225,11 +225,11 @@ class FastBEVFusionCenterheadPretrained(BaseDetector):
  
         x = self.pts_middle_encoder(voxel_features, coors, batch_size)
         print(f"x before backbone: {x.shape}")
-        print(f"x[0].shape before backbone: {x[0].shape}")
+        
         x = self.pts_backbone(x)
-        print(f"x before neck: {x.shape}")
+        
         x = self.pts_neck(x)
-        print(f"x after neck: {x.shape}")
+        print(f"x after neck: {x[0].shape}")
 
         return x
     
