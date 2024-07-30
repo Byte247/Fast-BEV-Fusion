@@ -109,7 +109,7 @@ class RPNV3(BaseModule):
             stride=1,
         )
 
-        self.additional_upsample = ConvTBNReLU(num_out_filters, num_out_filters, kernel_size=2, stride=2)
+        self.additional_upsample = ConvTBNReLU(num_out_filters, num_out_filters, kernel_size=2, stride=2, norm_cfg=self._norm_cfg)
 
         if self.freeze:
             # Freeze all layers
