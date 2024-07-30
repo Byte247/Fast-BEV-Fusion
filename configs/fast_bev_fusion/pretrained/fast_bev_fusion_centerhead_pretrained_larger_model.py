@@ -474,7 +474,7 @@ momentum_config = dict(
     step_ratio_up=0.4)
 
 # runtime settings
-runner = dict(type='EpochBasedRunner', max_epochs=1)
+runner = dict(type='EpochBasedRunner', max_epochs=20)
 
 checkpoint_config = dict(interval=1)
 log_config = dict(
