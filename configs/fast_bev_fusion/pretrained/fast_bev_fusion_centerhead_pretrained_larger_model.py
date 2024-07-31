@@ -32,20 +32,26 @@ model = dict(
    #Point Modules:
     pts_voxel_layer=dict(
         max_num_points=20, voxel_size=[0.2, 0.2, 8], max_voxels=(30000, 60000), point_cloud_range=point_cloud_range),
-    pts_voxel_encoder=dict(
-        type='PillarFeatureNet',
-        in_channels=5,
-        feat_channels=[64, 64],
-        with_distance=False,
-        voxel_size=(0.2, 0.2, 8),
-        norm_cfg=dict(type='SyncBN', requires_grad=True),
-        legacy=False,
-        freeze_layers = second_stage),
-    pts_middle_encoder=dict(
-        type='PointPillarsScatter', in_channels=64, output_shape=(512, 512)),
+
+    pts_voxel_encoder=dict(type='DynamicPillarFeatureNet',
+                           pillar_size=0.2,
+                           num_filters=(64,64),
+                           pc_range=point_cloud_range,
+                           num_input_features=5),
+    #pts_voxel_encoder=dict(
+    #    type='PillarFeatureNet',
+    #    in_channels=5,
+    #    feat_channels=[64, 64],
+    #    with_distance=False,
+    #    voxel_size=(0.2, 0.2, 8),
+    #    norm_cfg=dict(type='BN1d', requires_grad=True),
+    #    legacy=False,
+    #    freeze_layers = second_stage),
+    #pts_middle_encoder=dict(
+    #    type='PointPillarsScatter', in_channels=64, output_shape=(512, 512)),
     pts_backbone=dict(type="PointResNet34V2",
                       first_max_pool=False,
-                      norm_cfg = dict(type='SyncBN', requires_grad=True),
+                      norm_cfg = dict(type='BN', requires_grad=True),
                       freeze_layers = second_stage),
     pts_neck=dict(
         type="RPNV3",
@@ -55,7 +61,7 @@ model = dict(
         us_layer_strides=[1, 2],
         us_num_filters=[256, 128], # default 128x128
         num_input_features=[256,512], #num features in the feature maps block 4 and 5
-        norm_cfg=dict(type='SyncBN', requires_grad=True),
+        norm_cfg=dict(type='BN', requires_grad=True),
         freeze_layers = second_stage,
     ),
 
@@ -72,7 +78,7 @@ model = dict(
 
     bbox_head= dict(
         type='CenterHead',
-        norm_cfg = dict(type='SyncBN', requires_grad=True),
+        norm_cfg = dict(type='BN', requires_grad=True),
         in_channels=384,
         tasks=[
             dict(num_class=1, class_names=['car']),
