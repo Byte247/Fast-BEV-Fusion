@@ -33,23 +33,17 @@ model = dict(
     pts_voxel_layer=dict(
         max_num_points=20, voxel_size=[0.2, 0.2, 8], max_voxels=(30000, 60000), point_cloud_range=point_cloud_range),
 
-    pts_voxel_encoder=dict(type='DynamicPillarFeatureNet',
-                           num_input_features=5,
-                           num_filters=[64,64],
-                           voxel_size=[0.2,0.2,8],
-                           pc_range=point_cloud_range,
-                           norm_cfg=dict(type="BN1d", eps=1e-3, momentum=0.01)),
-    #pts_voxel_encoder=dict(
-    #    type='PillarFeatureNet',
-    #    in_channels=5,
-    #    feat_channels=[64, 64],
-    #    with_distance=False,
-    #    voxel_size=(0.2, 0.2, 8),
-    #    norm_cfg=dict(type='BN1d', requires_grad=True),
-    #    legacy=False,
-    #    freeze_layers = second_stage),
-    #pts_middle_encoder=dict(
-    #    type='PointPillarsScatter', in_channels=64, output_shape=(512, 512)),
+    pts_voxel_encoder=dict(
+        type='PillarFeatureNet',
+        in_channels=5,
+        feat_channels=[64, 64],
+        with_distance=False,
+        voxel_size=(0.2, 0.2, 8),
+        norm_cfg=dict(type='BN1d', requires_grad=True),
+        legacy=False,
+        freeze_layers = second_stage),
+    pts_middle_encoder=dict(
+        type='PointPillarsScatter', in_channels=64, output_shape=(512, 512)),
     pts_backbone=dict(type="PointResNet34V2",
                       first_max_pool=False,
                       norm_cfg = dict(type='BN', requires_grad=True),
