@@ -408,11 +408,10 @@ data = dict(
 """
 
 data = dict(
-    samples_per_gpu=2,
+    samples_per_gpu=3,
     workers_per_gpu=1,
     train=dict(
-        type='RepeatDataset',
-        times=1,
+        type='CBGSDataset',
         dataset=dict(
             type=dataset_type,
             data_root=data_root,
@@ -455,7 +454,7 @@ optimizer = dict(type='AdamW', lr=0.0001,
                                'bbox_head': dict(lr_mult=0.1, decay_mult=1.0)}))
 """
 
-optimizer = dict(type='AdamW', lr=0.0001,
+optimizer = dict(type='AdamW', lr=0.00001,
                  weight_decay=0.01)
 
 
@@ -465,7 +464,7 @@ optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
 # learning policy
 lr_config = dict(
     policy='cyclic',
-    target_ratio=(10, 0.0001),
+    target_ratio=(10, 0.00001),
     cyclic_times=1,
     step_ratio_up=0.4)
 momentum_config = dict(
