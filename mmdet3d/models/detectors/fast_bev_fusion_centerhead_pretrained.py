@@ -33,7 +33,7 @@ class FastBEVFusionCenterheadPretrained(BaseDetector):
         pts_voxel_layer,
         seg_head=None,
         pts_voxel_encoder=None,
-        pts_middle_encoder=None,
+        #pts_middle_encoder=None,
         pts_backbone=None,
         pts_neck=None,
         fusion_module=None,
@@ -56,8 +56,8 @@ class FastBEVFusionCenterheadPretrained(BaseDetector):
         #Point
         self.pts_voxel_layer = Voxelization(**pts_voxel_layer)
         self.pts_voxel_encoder = builder.build_voxel_encoder(pts_voxel_encoder)
-        self.pts_middle_encoder= builder.build_middle_encoder(
-                pts_middle_encoder)
+        #self.pts_middle_encoder= builder.build_middle_encoder(
+        #        pts_middle_encoder)
         self.pts_backbone = builder.build_backbone(pts_backbone)
         self.pts_neck = builder.build_neck(pts_neck)
 
@@ -218,10 +218,11 @@ class FastBEVFusionCenterheadPretrained(BaseDetector):
 
         voxels, num_points, coors = self.voxelize(pts)
 
-        voxel_features = self.pts_voxel_encoder(voxels, num_points, coors)
-        batch_size = coors[-1, 0] + 1
+        #voxel_features = self.pts_voxel_encoder(voxels, num_points, coors)
+        #batch_size = coors[-1, 0] + 1
  
-        x = self.pts_middle_encoder(voxel_features, coors, batch_size)
+        #x = self.pts_middle_encoder(voxel_features, coors, batch_size)
+        x = self.pts_voxel_encoder(voxels)
         x = self.pts_backbone(x)
         x = self.pts_neck(x)
 
