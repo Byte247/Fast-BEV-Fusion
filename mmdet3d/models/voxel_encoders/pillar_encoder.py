@@ -267,9 +267,15 @@ class DynamicPillarFeatureNet(nn.Module):
         voxel_size = torch.from_numpy(self.voxel_size).type_as(points).to(device)
         pc_range = torch.from_numpy(self.pc_range).type_as(points).to(device)
 
-        print(f"points[:, 1:3]: {points[:, 1:3].shape}")
-        # attention: points in format (batch_id, x,y,z,...)
-        points_coords = (points[:, 1:3] - pc_range[:2].view(-1, 2))/ voxel_size.view(-1, 2)   #x,y
+        # Extract the first two elements for pc_range and voxel_size
+        pc_range_2d = pc_range[:2].view(1, 2)
+        voxel_size_2d = voxel_size[:2].view(1, 2)
+
+        # Adjust the shape of points[:, 1:3] to ensure it's compatible
+        points_2d = points[:, :2, :2]  # Assuming this is what you need
+
+        # Perform the operation
+        points_coords = (points_2d - pc_range_2d) / voxel_size_2d
         
         mask = reduce(torch.logical_and, (points_coords[:, 0] >= 0,
                                          points_coords[:, 0] < grid_size[0],
