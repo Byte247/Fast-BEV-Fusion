@@ -34,10 +34,11 @@ model = dict(
         max_num_points=20, voxel_size=[0.2, 0.2, 8], max_voxels=(30000, 60000), point_cloud_range=point_cloud_range),
 
     pts_voxel_encoder=dict(type='DynamicPillarFeatureNet',
-                           pillar_size=0.2,
+                           num_input_features=5,
                            num_filters=(64,64),
+                           voxel_size=0.2,
                            pc_range=point_cloud_range,
-                           num_input_features=5),
+                           norm_cfg=dict(type="BN1d", eps=1e-3, momentum=0.01)),
     #pts_voxel_encoder=dict(
     #    type='PillarFeatureNet',
     #    in_channels=5,
