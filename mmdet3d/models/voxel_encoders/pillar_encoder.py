@@ -259,8 +259,8 @@ class DynamicPillarFeatureNet(nn.Module):
         dtype = points.dtype
 
         grid_size = [512,512,1]#(self.pc_range[2:] - self.pc_range[:2])/self.voxel_size # x,  y, z
-        grid_size = np.round(grid_size, 0, grid_size).astype(np.int64)
-        print(f"grid_size: {grid_size}")
+        #grid_size = np.round(grid_size, 0, grid_size).astype(np.int64)
+        
 
         num_voxels = grid_size[0] * grid_size[1]
 
