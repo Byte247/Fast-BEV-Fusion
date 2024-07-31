@@ -35,8 +35,8 @@ model = dict(
 
     pts_voxel_encoder=dict(type='DynamicPillarFeatureNet',
                            num_input_features=5,
-                           num_filters=(64,64),
-                           voxel_size=(0.2,0.2),
+                           num_filters=[64,64],
+                           voxel_size=[0.2,0.2,8],
                            pc_range=point_cloud_range,
                            norm_cfg=dict(type="BN1d", eps=1e-3, momentum=0.01)),
     #pts_voxel_encoder=dict(
