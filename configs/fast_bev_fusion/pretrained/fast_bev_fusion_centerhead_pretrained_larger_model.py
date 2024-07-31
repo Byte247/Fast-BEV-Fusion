@@ -466,12 +466,12 @@ lr_config = dict(
     policy='cyclic',
     target_ratio=(10, 0.00001),
     cyclic_times=1,
-    step_ratio_up=0.4)
+    step_ratio_up=0.3)
 momentum_config = dict(
     policy='cyclic',
     target_ratio=(0.8947368421052632, 1),
     cyclic_times=1,
-    step_ratio_up=0.4)
+    step_ratio_up=0.3)
 
 # runtime settings
 runner = dict(type='EpochBasedRunner', max_epochs=20)
