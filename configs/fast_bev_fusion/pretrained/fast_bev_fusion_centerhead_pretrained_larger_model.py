@@ -408,7 +408,7 @@ data = dict(
 """
 
 data = dict(
-    samples_per_gpu=3,
+    samples_per_gpu=8,
     workers_per_gpu=1,
     train=dict(
         type='CBGSDataset',
