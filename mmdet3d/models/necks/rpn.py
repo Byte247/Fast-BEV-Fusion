@@ -78,7 +78,7 @@ class RPNV3(BaseModule):
             self._layer_nums[1],
             stride=1,
         )
-        print(f"deblock5 filter: {self._num_upsample_filters[1]}")
+       
         norm_deblock5 = build_norm_layer(self._norm_cfg, self._num_upsample_filters[1])[1]
         self.deblock_5 = Sequential(
             nn.ConvTranspose2d(
@@ -92,7 +92,7 @@ class RPNV3(BaseModule):
             nn.LeakyReLU(),
         )
         norm_deblock4 = build_norm_layer(self._norm_cfg, self._num_upsample_filters[0])[1]
-        print(f"norm_deblock4: {norm_deblock4}")
+        
         self.deblock_4 = Sequential(
             nn.Conv2d(self._num_input_features[0], self._num_upsample_filters[0], 3, stride=1, bias=False),
             norm_deblock4,
@@ -106,8 +106,6 @@ class RPNV3(BaseModule):
         )
 
         self.additional_upsample = ConvTBNReLU(num_out_filters, num_out_filters, kernel_size=2, stride=2, norm_cfg=self._norm_cfg)
-
-        print(f"self.additional_upsample: {self.additional_upsample}")
 
         if self.freeze:
             # Freeze all layers
