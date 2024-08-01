@@ -15,10 +15,8 @@ import torch
 
 
 class ConvTBNReLU(nn.Module):
-    def __init__(self, in_planes, out_planes, kernel_size=3, stride=1, padding=None, norm_cfg=None):
+    def __init__(self, in_planes, out_planes, kernel_size=3, stride=1, padding=1, norm_cfg=None):
         super(ConvTBNReLU, self).__init__()
-        if padding is None:
-            padding = (kernel_size - 1) // 2
 
         print(f"padding in ConvTBNRelu:{padding}")
         self.conv = nn.ConvTranspose2d(in_planes, out_planes, kernel_size, stride, padding, bias=False)
@@ -108,6 +106,8 @@ class RPNV3(BaseModule):
         )
 
         self.additional_upsample = ConvTBNReLU(num_out_filters, num_out_filters, kernel_size=2, stride=2, norm_cfg=self._norm_cfg)
+
+        print(f"self.additional_upsample: {self.additional_upsample}")
 
         if self.freeze:
             # Freeze all layers
