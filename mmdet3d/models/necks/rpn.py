@@ -57,7 +57,7 @@ class ResidualBlock(nn.Module):
         return out
 
 @NECKS.register_module()
-class RPNV3(BaseModule):
+class RPNV2(BaseModule):
     def __init__(
          self,
         layer_nums,
@@ -69,7 +69,7 @@ class RPNV3(BaseModule):
         norm_cfg=None,
         freeze_layers = False
     ):
-        super(RPNV3, self).__init__()
+        super(RPNV2, self).__init__()
         self._layer_strides = ds_layer_strides
         self._num_filters = ds_num_filters
         self._layer_nums = layer_nums

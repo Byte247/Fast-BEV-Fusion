@@ -49,7 +49,7 @@ model = dict(
                       norm_cfg = dict(type='SyncBN', requires_grad=True),
                       freeze_layers = second_stage),
     pts_neck=dict(
-        type="RPNV3",
+        type="RPNV2",
         layer_nums=[5, 5],
         ds_layer_strides=[1, 2],
         ds_num_filters=[256, 256],
@@ -309,7 +309,8 @@ train_pipeline = [
         type='LoadPointsFromMultiSweeps',
         sweeps_num=10,
         use_dim=[0, 1, 2, 3, 4],
-        pad_empty_sweeps=True),
+        pad_empty_sweeps=True,
+        remove_close=True),
     dict(type='ObjectSample', db_sampler=db_sampler),
     dict(
         type='GlobalRotScaleTrans',
@@ -354,7 +355,8 @@ test_pipeline = [
         type='LoadPointsFromMultiSweeps',
         sweeps_num=10,
         use_dim=[0, 1, 2, 3, 4],
-        pad_empty_sweeps=True),
+        pad_empty_sweeps=True,
+        remove_close=True),
     dict(
         type='MultiViewPipeline',
         n_images=6,
