@@ -154,11 +154,11 @@ class RPNV3(BaseModule):
         x = self.block_5(x_conv5)
 
         for layer in ups:
-            print(f"before deblock 5: {layer}")
+            print(f"before deblock 5: {layer.shape}")
 
         ups.append(self.deblock_5(x))
 
-        print(f"after deblock 5: {ups[-1]}")
+        print(f"after deblock 5: {ups[-1].shape}")
 
         x = torch.cat(ups, dim=1)
         x = self.block_4(x)
