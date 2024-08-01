@@ -94,7 +94,7 @@ class RPNV3(BaseModule):
         norm_deblock4 = build_norm_layer(self._norm_cfg, self._num_upsample_filters[0])[1]
         
         self.deblock_4 = Sequential(
-            nn.Conv2d(self._num_input_features[0], self._num_upsample_filters[0], 3, stride=1, bias=False),
+            nn.Conv2d(self._num_input_features[0], self._num_upsample_filters[0], 3, stride=1, padding=1, bias=False),
             norm_deblock4,
             nn.LeakyReLU(),
         )
@@ -104,6 +104,8 @@ class RPNV3(BaseModule):
             self._layer_nums[0],
             stride=1,
         )
+
+        print(f"block 4:{self.block_4}")
 
         self.additional_upsample = ConvTBNReLU(num_out_filters, num_out_filters, kernel_size=2, stride=2, norm_cfg=self._norm_cfg)
 
@@ -153,12 +155,8 @@ class RPNV3(BaseModule):
         ups = [self.deblock_4(x_conv4)]
         x = self.block_5(x_conv5)
 
-        for layer in ups:
-            print(f"before deblock 5: {layer.shape}")
 
         ups.append(self.deblock_5(x))
-
-        print(f"after deblock 5: {ups[-1].shape}")
 
         x = torch.cat(ups, dim=1)
         x = self.block_4(x)
