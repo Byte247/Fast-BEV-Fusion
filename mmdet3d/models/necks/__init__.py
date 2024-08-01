@@ -5,9 +5,9 @@ from .second_fpn import SECONDFPN
 from .m2bev_neck import M2BevNeck
 from .fpn_with_cp import *
 from .m2bev_neck_v2 import M2BevNeckLeakyRelu
-from .rpn import RPNV3
+from .rpn import RPNV2
 from .m2bev_neck_trans_only import M2BevNeckTransOnly
 from .aspp import ASPPNeck
 
 
-__all__ = ['FPN', 'SECONDFPN', 'OutdoorImVoxelNeck', 'FPNWithCP', "M2BevNeck",'RPNV3', "M2BevNeckLeakyRelu", "M2BevNeckTransOnly", "ASPPNeck"]
+__all__ = ['FPN', 'SECONDFPN', 'OutdoorImVoxelNeck', 'FPNWithCP', "M2BevNeck",'RPNV2', "M2BevNeckLeakyRelu", "M2BevNeckTransOnly", "ASPPNeck"]
