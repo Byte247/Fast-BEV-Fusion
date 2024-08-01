@@ -161,6 +161,8 @@ class PointResNet34V2(nn.Module):
 
     def _forward_impl(self, x):
         # See note [TorchScript super()]
+
+        print(f"input in backbone:{x.shape}")
         
         x = self.conv1(x)
         x = self.bn1(x)
