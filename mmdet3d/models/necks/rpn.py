@@ -192,6 +192,136 @@ class RPNV2(BaseModule):
         print(x.shape)
         return [x]
     
+@NECKS.register_module()
+class RPNV3(BaseModule):
+    def __init__(
+         self,
+        layer_nums,
+        ds_layer_strides,
+        ds_num_filters,
+        us_layer_strides,
+        us_num_filters,
+        num_input_features,
+        norm_cfg=None,
+        freeze_layers = False
+    ):
+        super(RPNV3, self).__init__()
+        self._layer_strides = ds_layer_strides
+        self._num_filters = ds_num_filters
+        self._layer_nums = layer_nums
+        self._upsample_strides = us_layer_strides
+        self._num_upsample_filters = us_num_filters
+        self._num_input_features = num_input_features
+        self.freeze = freeze_layers
+
+        if norm_cfg is None:
+            norm_cfg = dict(type="BN", eps=1e-3, momentum=0.01)
+        self._norm_cfg = norm_cfg
+
+        assert len(self._layer_strides) == len(self._layer_nums)
+        assert len(self._num_filters) == len(self._layer_nums)
+        assert len(self._num_upsample_filters) == len(self._upsample_strides)
+
+        self._upsample_start_idx = len(self._layer_nums) - len(self._upsample_strides)
+
+        must_equal_list = []
+        for i in range(len(self._upsample_strides)):
+            # print(upsample_strides[i])
+            must_equal_list.append(
+                self._upsample_strides[i]
+                / np.prod(self._layer_strides[: i + self._upsample_start_idx + 1])
+            )
+
+        for val in must_equal_list:
+            assert val == must_equal_list[0]
+
+        self.block_5, num_out_filters = self._make_layer(
+            self._num_input_features[1],
+            self._num_filters[1],
+            self._layer_nums[1],
+            stride=1,
+        )
+       
+        norm_deblock5 = build_norm_layer(self._norm_cfg, self._num_upsample_filters[1])[1]
+        self.deblock_5 = Sequential(
+            nn.ConvTranspose2d(
+                num_out_filters,
+                self._num_upsample_filters[1],
+                2,
+                stride=2,
+                bias=False,
+            ),
+            norm_deblock5,
+            nn.LeakyReLU(),
+        )
+        norm_deblock4 = build_norm_layer(self._norm_cfg, self._num_upsample_filters[0])[1]
+        
+        self.deblock_4 = Sequential(
+            nn.Conv2d(self._num_input_features[0], self._num_upsample_filters[0], 3, stride=1, padding=1, bias=False),
+            norm_deblock4,
+            nn.LeakyReLU(),
+        )
+        self.block_4, num_out_filters = self._make_layer(
+            self._num_upsample_filters[0] + self._num_upsample_filters[1],
+            self._num_upsample_filters[0] + self._num_upsample_filters[1],
+            self._layer_nums[0],
+            stride=1,
+        )
+
+        if self.freeze:
+            # Freeze all layers
+            self.freeze_layers()
+
+    @property
+    def downsample_factor(self):
+        factor = np.prod(self._layer_strides)
+        if len(self._upsample_strides) > 0:
+            factor /= self._upsample_strides[-1]
+        return factor
+
+    def _make_layer(self, inplanes, planes, num_blocks, stride=1):
+
+        layers = []
+
+        # Initial Conv Layer
+        layers.append(nn.Conv2d(inplanes, planes, 3, stride=stride, padding=1, bias=False))
+        layers.append(build_norm_layer(self._norm_cfg, planes)[1])
+        layers.append(nn.LeakyReLU())
+
+        # Add residual blocks
+        for _ in range(num_blocks):
+            layers.append(ResidualBlock(planes, planes, stride, self._norm_cfg))
+
+        return nn.Sequential(*layers), planes
+
+    # default init_weights for conv(msra) and norm in ConvModule
+    def init_weights(self):
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                xavier_init(m, distribution="uniform")
+
+    def freeze_layers(self):
+        print("Freeze neck layers")
+        for param in self.parameters():
+            param.requires_grad = False
+    
+    def forward(self, x, **kwargs):
+        
+        #get feature maps of last 2 resolutions 
+        x_conv4 = x[1] 
+        x_conv5 = x[0]
+
+        ups = [self.deblock_4(x_conv4)]
+        x = self.block_5(x_conv5)
+
+
+        ups.append(self.deblock_5(x))
+
+        x = torch.cat(ups, dim=1)
+        x = self.block_4(x)
+
+        return [x]
+    
 
 class Sequential(torch.nn.Module):
     r"""A sequential container.

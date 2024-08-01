@@ -56,7 +56,7 @@ model = dict(
         freeze_layers=second_stage),
 
     pts_neck=dict(
-        type="RPNV2",
+        type="RPNV3",
         layer_nums=[5, 5],
         ds_layer_strides=[1, 2],
         ds_num_filters=[256, 256],
@@ -302,7 +302,7 @@ test_pipeline = [
     dict(type='Collect3D', keys=['img','points'])]
 
 data = dict(
-    samples_per_gpu=1,
+    samples_per_gpu=2,
     workers_per_gpu=4,
     train=dict(
         type='CBGSDataset',
