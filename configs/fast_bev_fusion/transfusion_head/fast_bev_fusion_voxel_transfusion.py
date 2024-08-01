@@ -62,7 +62,7 @@ model = dict(
         ds_num_filters=[256, 256],
         us_layer_strides=[1, 2],
         us_num_filters=[128, 256], # default 128x128
-        num_input_features=[640,704], #num features in the feature maps block 4 and 5
+        num_input_features=[640,256], #num features in the feature maps block 4 and 5
         norm_cfg=dict(type='BN', requires_grad=True),
         freeze_layers = second_stage,
     ),
