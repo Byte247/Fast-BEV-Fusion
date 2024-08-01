@@ -94,8 +94,8 @@ class RPNV3(BaseModule):
             nn.LeakyReLU(),
         )
         norm_deblock4 = build_norm_layer(self._norm_cfg, self._num_upsample_filters[0])[1],
+        print(f"norm_deblock4: {norm_deblock4}")
         self.deblock_4 = Sequential(
-            nn.ZeroPad2d(1),
             nn.Conv2d(self._num_input_features[0], self._num_upsample_filters[0], 3, stride=1, bias=False),
             norm_deblock4,
             nn.LeakyReLU(),
