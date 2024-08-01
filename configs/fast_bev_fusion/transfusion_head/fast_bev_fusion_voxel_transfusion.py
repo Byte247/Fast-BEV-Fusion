@@ -56,11 +56,16 @@ model = dict(
         freeze_layers=second_stage),
 
     pts_neck=dict(
-        type='ASPPNeck',
-        in_channels=256,
-        out_channels=512,
-        norm_cfg=dict(type='BN', requires_grad=True),
-        freeze_layers=second_stage),
+        type="RPNV2",
+        layer_nums=[5, 5],
+        ds_layer_strides=[1, 2],
+        ds_num_filters=[256, 256],
+        us_layer_strides=[1, 2],
+        us_num_filters=[128, 256], # default 128x128
+        num_input_features=[256,512], #num features in the feature maps block 4 and 5
+        norm_cfg=dict(type='SyncBN', requires_grad=True),
+        freeze_layers = second_stage,
+    ),
 
     #Fusion layer
     fusion_module = dict(type='MultiHeadCrossAttentionVoxel',embed_dim = 2048, num_heads=8, dropout = 0.1, norm_cfg=dict(type='BN', requires_grad=True)),
