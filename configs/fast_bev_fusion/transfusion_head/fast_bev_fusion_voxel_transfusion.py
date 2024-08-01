@@ -62,7 +62,7 @@ model = dict(
         ds_num_filters=[256, 256],
         us_layer_strides=[1, 2],
         us_num_filters=[128, 256], # default 128x128
-        num_input_features=[704,512], #num features in the feature maps block 4 and 5
+        num_input_features=[640,704], #num features in the feature maps block 4 and 5
         norm_cfg=dict(type='BN', requires_grad=True),
         freeze_layers = second_stage,
     ),
@@ -283,7 +283,7 @@ test_pipeline = [
         use_dim=5,),
     dict(
         type='LoadPointsFromMultiSweeps',
-        sweeps_num=10,
+        sweeps_num=9,
         use_dim=[0, 1, 2, 3, 4],
         pad_empty_sweeps=True,
         remove_close=True),
