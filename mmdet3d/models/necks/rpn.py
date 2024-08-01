@@ -28,6 +28,33 @@ class ConvTBNReLU(nn.Module):
         x = self.bn(x)
         x = self.relu(x)
         return x
+    
+
+class ResidualBlock(nn.Module):
+    def __init__(self, inplanes, planes, stride=1, norm_cfg=None):
+        super(ResidualBlock, self).__init__()
+        self.conv1 = nn.Conv2d(inplanes, planes, 3, stride=stride, padding=1, bias=False)
+        self.bn1 = build_norm_layer(norm_cfg, planes)[1]
+        self.relu = nn.LeakyReLU()
+        
+        self.conv2 = nn.Conv2d(planes, planes, 3, padding=1, bias=False)
+        self.bn2 = build_norm_layer(norm_cfg, planes)[1]
+        
+        # Define a shortcut layer for the residual connection
+        self.shortcut = nn.Identity()
+        if stride != 1 or inplanes != planes:
+            self.shortcut = nn.Sequential(
+                nn.Conv2d(inplanes, planes, kernel_size=1, stride=stride, bias=False),
+                build_norm_layer(norm_cfg, planes)[1]
+            )
+
+    def forward(self, x):
+        identity = self.shortcut(x)
+        out = self.relu(self.bn1(self.conv1(x)))
+        out = self.bn2(self.conv2(out))
+        out += identity
+        out = self.relu(out)
+        return out
 
 @NECKS.register_module()
 class RPNV3(BaseModule):
@@ -122,18 +149,18 @@ class RPNV3(BaseModule):
 
     def _make_layer(self, inplanes, planes, num_blocks, stride=1):
 
-        block = Sequential(
-            nn.Conv2d(inplanes, planes, 3, stride=stride, padding=1, bias=False),
-            build_norm_layer(self._norm_cfg, planes)[1],
-            nn.LeakyReLU(),
-        )
+        layers = []
 
-        for j in range(num_blocks):
-            block.add(nn.Conv2d(planes, planes, 3, padding=1, bias=False))
-            block.add(build_norm_layer(self._norm_cfg, planes)[1])
-            block.add(nn.LeakyReLU())
+        # Initial Conv Layer
+        layers.append(nn.Conv2d(inplanes, planes, 3, stride=stride, padding=1, bias=False))
+        layers.append(build_norm_layer(self._norm_cfg, planes)[1])
+        layers.append(nn.LeakyReLU())
 
-        return block, planes
+        # Add residual blocks
+        for _ in range(num_blocks):
+            layers.append(ResidualBlock(planes, planes, stride, self._norm_cfg))
+
+        return nn.Sequential(*layers), planes
 
     # default init_weights for conv(msra) and norm in ConvModule
     def init_weights(self):
