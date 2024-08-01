@@ -361,7 +361,6 @@ test_pipeline = [
         transforms=[
             dict(type='LoadImageFromFile'),
             dict(type='Resize', img_scale=(20, 10), keep_ratio=True),
-            #dict(type='Normalize', **img_norm_cfg),
             #dict(type='Pad', size_divisor=32)
             ]),
     #dict(type='NormalizeMultiviewImage', **img_norm_cfg, train=False),

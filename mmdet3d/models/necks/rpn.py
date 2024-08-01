@@ -19,6 +19,8 @@ class ConvTBNReLU(nn.Module):
         super(ConvTBNReLU, self).__init__()
         if padding is None:
             padding = (kernel_size - 1) // 2
+
+        print(f"padding in ConvTBNRelu:{padding}")
         self.conv = nn.ConvTranspose2d(in_planes, out_planes, kernel_size, stride, padding, bias=False)
         self.bn = build_norm_layer(norm_cfg, out_planes)[1]
         self.relu = nn.LeakyReLU(inplace=True)
@@ -40,10 +42,7 @@ class RPNV3(BaseModule):
         us_num_filters,
         num_input_features,
         norm_cfg=None,
-        name="rpn",
-        logger=None,
-        freeze_layers = False,
-        **kwargs
+        freeze_layers = False
     ):
         super(RPNV3, self).__init__()
         self._layer_strides = ds_layer_strides
@@ -81,6 +80,8 @@ class RPNV3(BaseModule):
             self._layer_nums[1],
             stride=1,
         )
+        print(f"deblock5 filter: {self._num_upsample_filters[1]}")
+        norm_deblock5 = build_norm_layer(self._norm_cfg, self._num_upsample_filters[1])[1]
         self.deblock_5 = Sequential(
             nn.ConvTranspose2d(
                 num_out_filters,
@@ -89,17 +90,14 @@ class RPNV3(BaseModule):
                 stride=2,
                 bias=False,
             ),
-            build_norm_layer(
-                self._norm_cfg,
-                self._num_upsample_filters[1],
-            )[1],
+            norm_deblock5,
             nn.LeakyReLU(),
         )
-
+        norm_deblock4 = build_norm_layer(self._norm_cfg, self._num_upsample_filters[0])[1],
         self.deblock_4 = Sequential(
             nn.ZeroPad2d(1),
             nn.Conv2d(self._num_input_features[0], self._num_upsample_filters[0], 3, stride=1, bias=False),
-            build_norm_layer(self._norm_cfg, self._num_upsample_filters[0])[1],
+            norm_deblock4,
             nn.LeakyReLU(),
         )
         self.block_4, num_out_filters = self._make_layer(
@@ -125,8 +123,7 @@ class RPNV3(BaseModule):
     def _make_layer(self, inplanes, planes, num_blocks, stride=1):
 
         block = Sequential(
-            nn.ZeroPad2d(1),
-            nn.Conv2d(inplanes, planes, 3, stride=stride, bias=False),
+            nn.Conv2d(inplanes, planes, 3, stride=stride, padding=1, bias=False),
             build_norm_layer(self._norm_cfg, planes)[1],
             nn.LeakyReLU(),
         )
