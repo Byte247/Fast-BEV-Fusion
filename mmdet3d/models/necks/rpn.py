@@ -155,13 +155,14 @@ class RPNV3(BaseModule):
 
         ups.append(self.deblock_5(x))
 
+        for layer in ups:
+            print(layer.shape)
+
         x = torch.cat(ups, dim=1)
         x = self.block_4(x)
         x = self.additional_upsample(x)
         return [x]
     
-
-
 
 class Sequential(torch.nn.Module):
     r"""A sequential container.
