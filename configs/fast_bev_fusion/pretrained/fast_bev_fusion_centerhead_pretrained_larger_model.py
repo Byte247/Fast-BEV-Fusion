@@ -54,7 +54,7 @@ model = dict(
         ds_layer_strides=[1, 2],
         ds_num_filters=[256, 256],
         us_layer_strides=[1, 2],
-        us_num_filters=[256, 128], # default 128x128
+        us_num_filters=[256, 256], # default 128x128
         num_input_features=[256,512], #num features in the feature maps block 4 and 5
         norm_cfg=dict(type='SyncBN', requires_grad=True),
         freeze_layers = second_stage,
@@ -74,7 +74,7 @@ model = dict(
     bbox_head= dict(
         type='CenterHead',
         norm_cfg = dict(type='SyncBN', requires_grad=True),
-        in_channels=384,
+        in_channels=512,
         tasks=[
             dict(num_class=1, class_names=['car']),
             dict(num_class=2, class_names=['truck', 'construction_vehicle']),
