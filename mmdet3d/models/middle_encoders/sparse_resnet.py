@@ -224,7 +224,7 @@ class SpMiddleResNetFHD(nn.Module):
         x_conv4 = self.conv4(x_conv3)
 
 
-        second_output = x_conv3.clone().dense().requires_grad_(True)
+        second_output = x_conv3.dense()
         N, C, D, H, W = second_output.shape
         second_output = second_output.view(N, C * D, H, W)
 
