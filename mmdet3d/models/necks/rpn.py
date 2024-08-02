@@ -132,8 +132,6 @@ class RPNV2(BaseModule):
             stride=1,
         )
 
-        print(f"block 4:{self.block_4}")
-
         self.additional_upsample = ConvTBNReLU(num_out_filters, num_out_filters, kernel_size=2, stride=2, padding=0, norm_cfg=self._norm_cfg)
 
         if self.freeze:
@@ -189,7 +187,6 @@ class RPNV2(BaseModule):
         x = self.block_4(x)
         x = self.additional_upsample(x)
 
-        print(x.shape)
         return [x]
     
 @NECKS.register_module()
