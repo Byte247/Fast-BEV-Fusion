@@ -45,7 +45,6 @@ model = dict(
     pts_middle_encoder=dict(
         type='PointPillarsScatter', in_channels=64, output_shape=(512, 512)),
     pts_backbone=dict(type="PointResNet34V2",
-                      first_max_pool=False,
                       norm_cfg = dict(type='SyncBN', requires_grad=True),
                       freeze_layers = second_stage),
     pts_neck=dict(
@@ -455,8 +454,8 @@ optimizer = dict(type='AdamW', lr=0.0001,
                                'bbox_head': dict(lr_mult=0.1, decay_mult=1.0)}))
 """
 
-optimizer = dict(type='AdamW', lr=0.001,
-                 weight_decay=0.01)
+optimizer = dict(type='AdamW', lr=0.0001,
+                 weight_decay=0.05)
 
 
 # max_norm=10 is better for SECOND
