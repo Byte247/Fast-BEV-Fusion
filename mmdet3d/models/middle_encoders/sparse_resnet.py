@@ -315,23 +315,23 @@ class SparseResNet18(nn.Module):
     def forward(self, pillar_features):
 
         
-        assert pillar_features.ndim == 4, "Input tensor must be 4-dimensional (batch, channels, height, width)"
-        print(f"Initial pillar_features shape: {pillar_features.shape}")
+        torchTensorSp = pillar_features.to_sparse() # no channel axis here. equalivant to torchTensor.ndim
 
-        # Convert to sparse tensor
-        torchTensorSp = pillar_features.to_sparse()
         print(f"Sparse indices shape: {torchTensorSp.indices().shape}")
         print(f"Sparse values shape: {torchTensorSp.values().shape}")
 
-        # Get indices and features from the sparse tensor
+
         indices_dense = torchTensorSp.indices().permute(1, 0).contiguous().int()
-        features_dense = torchTensorSp.values().view(-1, pillar_features.shape[1])  # View as (num_points, channels)
+        features_dense = torchTensorSp.values().view(-1, 1)
+
         print(f"indices_dense shape: {indices_dense.shape}")
         print(f"features_dense shape: {features_dense.shape}")
+        x = spconv.pytorch.SparseConvTensor(features_dense, indices_dense, pillar_features.shape[1:], batch_size = pillar_features.shape[0])
 
-        # Create SparseConvTensor
-        x = spconv.SparseConvTensor(features_dense, indices_dense, pillar_features.shape[1:], batch_size=pillar_features.shape[0])
         print(f"SparseConvTensor shape: {x.features.shape}")
+
+
+        print(x)
 
         for i in range(len(self.blocks)):
             print(f"self.blocks[i]: {self.blocks[i]}")
