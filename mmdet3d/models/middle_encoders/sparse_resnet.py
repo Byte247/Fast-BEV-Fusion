@@ -65,6 +65,7 @@ class SparseConvBlock(spconv.pytorch.SparseModule):
 
     def forward(self, x):
         print(f"in sparse ConvBlock {x.features.shape}")
+        print(f"conv:{self.conv}")
         out = self.conv(x)
         out = out.replace_feature(self.norm(out.features))
         out = out.replace_feature(self.act(out.features))
