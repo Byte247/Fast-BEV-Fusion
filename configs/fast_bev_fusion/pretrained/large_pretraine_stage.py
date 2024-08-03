@@ -1,5 +1,5 @@
 _base_ = [
-    '../_base_/datasets/nus-3d.py'
+    '../../_base_/datasets/nus-3d.py'
 ]
 
 # If point cloud range is changed, the models should also change their point
