@@ -322,9 +322,9 @@ class SparseResNet18(nn.Module):
         features_th = torchTensorSp.values().view(-1, 1)
         # after to_sparse, spatial shape is [5, 10, 10], batch size is 2
         # sparse tensor must have a batch axis, spatial shape dont contain batch axis.
-        x = spconv.SparseConvTensor(features_th, indices_th, pillar_features.shape[1:], 2)
+        x = spconv.pytorch.SparseConvTensor(features_th, indices_th, pillar_features.shape[1:], 2)
         
-        
+    
         for i in range(len(self.blocks)):
             x = self.blocks[i](x)
         
