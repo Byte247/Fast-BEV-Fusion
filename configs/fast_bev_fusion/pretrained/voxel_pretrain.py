@@ -238,7 +238,7 @@ eval_pipeline = [
 
 data = dict(
     samples_per_gpu=2,
-    workers_per_gpu=4,
+    workers_per_gpu=1,
     train=dict(
          type='CBGSDataset',
          dataset=dict(
@@ -263,7 +263,7 @@ input_modality = dict(
     use_map=False,
     use_external=False)
 
-optimizer = dict(type='AdamW', lr=0.0001, weight_decay=0.01)  # for 8gpu * 2sample_per_gpu
+optimizer = dict(type='AdamW', lr=0.0001, weight_decay=0.01)  # for 8gpu * 2sample_per_gpu (in my case 4 during pretraining)
 optimizer_config = dict(grad_clip=dict(max_norm=0.1, norm_type=2))
 lr_config = dict(
     policy='cyclic',
