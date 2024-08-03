@@ -324,7 +324,7 @@ class SparseResNet18(nn.Module):
         torch_tensor_dense_to_sp = pillar_features.to_sparse() 
 
         indices_dense = torch_tensor_dense_to_sp.indices().permute(1, 0).contiguous().int()
-        features_dense = torch_tensor_dense_to_sp.values().view(-1, 1)
+        features_dense = torch_tensor_dense_to_sp.values().view(-1, pillar_features.shape[1])
 
         x = SparseConvTensor(features_dense, indices_dense, pillar_features.shape[1:], batch_size = pillar_features.shape[0])
 
