@@ -139,7 +139,7 @@ class TransFusionHeadPretrain(MVXTwoStageDetector):
         losses = self.bbox_head.loss(*loss_inputs)
         
         return losses
-
+    
     def simple_test_pts(self, x, img_metas, rescale=False):
         """Test function of point cloud branch."""
 

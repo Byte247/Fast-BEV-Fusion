@@ -414,11 +414,11 @@ class MVXTwoStageDetector(Base3DDetector):
                 pts_feats, img_metas, rescale=rescale)
             for result_dict, pts_bbox in zip(bbox_list, bbox_pts):
                 result_dict['pts_bbox'] = pts_bbox
-        if img_feats and self.with_img_bbox:
-            bbox_img = self.simple_test_img(
-                img_feats, img_metas, rescale=rescale)
-            for result_dict, img_bbox in zip(bbox_list, bbox_img):
-                result_dict['img_bbox'] = img_bbox
+        #if img_feats and self.with_img_bbox:
+        #    bbox_img = self.simple_test_img(
+        #        img_feats, img_metas, rescale=rescale)
+        #    for result_dict, img_bbox in zip(bbox_list, bbox_img):
+        #        result_dict['img_bbox'] = img_bbox
         return bbox_list
 
     def aug_test(self, points, img_metas, imgs=None, rescale=False):
