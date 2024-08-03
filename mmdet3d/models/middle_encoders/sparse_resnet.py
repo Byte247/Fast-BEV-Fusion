@@ -320,8 +320,6 @@ class SparseResNet18(nn.Module):
         #only int32 supported:
         indicesNc = indicesNc.type(torch.int32)
 
-        print(f"indicesNc: {type(indicesNc)}")
-
         # Create features vector with shape [nPoints, nChannels]
         featuresOut = torch.zeros((len(featuresNc), x.shape[1]))
 
@@ -336,11 +334,8 @@ class SparseResNet18(nn.Module):
 
     def forward(self, pillar_features):
 
-        print(f"pillar_features: {pillar_features.shape}")
         #Convert dense to sparse tensor:
         x = self.torchTensor2spconvTensor(pillar_features)
-
-        print(f"sparse tensor shape: {x.shape}")
         
         for i in range(len(self.blocks)):
             x = self.blocks[i](x)
