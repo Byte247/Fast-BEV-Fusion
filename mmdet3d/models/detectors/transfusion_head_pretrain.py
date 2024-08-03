@@ -9,7 +9,7 @@ import torch.nn.functional as F
 from .. import builder
 
 @DETECTORS.register_module()
-class TransFusionHeadPillarPretrain(MVXTwoStageDetector):
+class TransFusionHeadPretrain(MVXTwoStageDetector):
     """Base class of Multi-modality VoxelNet."""
 
     def __init__(self,
@@ -28,7 +28,7 @@ class TransFusionHeadPillarPretrain(MVXTwoStageDetector):
                  test_cfg=None,
                  pretrained=None,
                  init_cfg=None):
-        super(TransFusionHeadPillarPretrain,
+        super(TransFusionHeadPretrain,
               self).__init__(pts_voxel_layer, pts_voxel_encoder,
                              pts_middle_encoder, pts_fusion_layer,
                              img_backbone, pts_backbone, img_neck, pts_neck,
@@ -76,7 +76,8 @@ class TransFusionHeadPillarPretrain(MVXTwoStageDetector):
         batch_size = coors[-1, 0] + 1
 
         x = self.pts_middle_encoder(voxel_features, coors, batch_size)
-        x = self.pts_backbone(x)
+        if self.pts_backbone:
+            x = self.pts_backbone(x)
         
         x = self.pts_neck(x)
 

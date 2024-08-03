@@ -2,9 +2,8 @@ _base_ = [
     '../../_base_/datasets/nus-3d.py'
 ]
 
-point_cloud_range = [-51.2, -51.2, -5.0, 51.2, 51.2, 3.0]
-
-voxel_size = [0.2, 0.2, 8]
+point_cloud_range = [-54.0, -54.0, -5.0, 54.0, 54.0, 3.0]
+voxel_size = [0.075, 0.075, 0.2]
 out_size_factor = 4
 
 # For nuScenes we usually do 10-class detection
@@ -81,8 +80,8 @@ model = dict(
     # model training and testing settings
     # model training and testing settings for the head
     train_cfg=dict(
-            pts=dict(
-            grid_size=[512, 512, 8],
+         pts=dict(
+            grid_size=[1440, 1440, 40],
             assigner=dict(
                 type='HungarianAssigner3D',
                 iou_calculator=dict(type='BboxOverlaps3D', coordinate='lidar'),
@@ -90,7 +89,7 @@ model = dict(
                 reg_cost=dict(type='BBoxBEVL1Cost', weight=0.25),
                 iou_cost=dict(type='IoU3DCost', weight=0.25)
             ),
-            voxel_size=[0.2, 0.2],
+            voxel_size=[0.075, 0.075],
             out_size_factor=out_size_factor,
             dense_reg=1,
             gaussian_overlap=0.1,
@@ -100,8 +99,8 @@ model = dict(
             code_weights=[1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.2, 0.2],
             point_cloud_range = point_cloud_range)),
      test_cfg=dict(
-         pts=dict(
-            grid_size=[512, 512, 1],
+          pts=dict(
+            grid_size=[1440, 1440, 1],
             post_center_limit_range=[-61.2, -61.2, -10.0, 61.2, 61.2, 10.0],
             max_per_img=500,
             max_pool_nms=False,
@@ -109,11 +108,11 @@ model = dict(
             score_threshold=0.0,
             pc_range=point_cloud_range[:2],
             out_size_factor=out_size_factor,
-            voxel_size=[0.2, 0.2],
+            voxel_size=[0.075, 0.075],
             nms_type=None,
             pre_max_size=1000,
             post_max_size=83,
-            nms_thr=0.2))
+            nms_thr=0.2))    
     )
 
 
