@@ -177,6 +177,7 @@ class TransFusionHeadPretrain(MVXTwoStageDetector):
         # only support aug_test for one sample
         outs_list = []
         for x, img_meta in zip(feats, img_metas):
+            print(f"in aug_test_pts")
             outs = self.bbox_head(x)
             # merge augmented outputs before decoding bboxes
             for task_id, out in enumerate(outs):
