@@ -60,7 +60,7 @@ class TransFusionHeadPillarPretrain(MVXTwoStageDetector):
         coors_batch = torch.cat(coors_batch, dim=0)
         return voxels, coors_batch, grid_size
 
-    def extract_pts_feat(self, pts):
+    def extract_pts_feat(self, pts, img_feat, img_metas):
         """Extract features of points."""
 
         voxels, num_points, coors = self.voxelize(pts)
