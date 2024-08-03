@@ -301,6 +301,6 @@ load_from = None
 resume_from = None
 workflow = [('train', 1)]
 
-find_unused_parameters = True
+find_unused_parameters = True  # as pts_box head still exists but is not used
 
 evaluation = dict(interval=1, pipeline=eval_pipeline)
