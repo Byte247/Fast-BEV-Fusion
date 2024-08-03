@@ -3,6 +3,7 @@ import torch
 from mmcv.cnn import build_norm_layer
 from mmcv.runner import force_fp32
 from torch import nn
+from torch.nn import functional as F
 import numpy as np
 
 import torch_scatter
@@ -163,6 +164,43 @@ class PillarFeatureNet(nn.Module):
         return features.squeeze()
     
 
+class PillarNextPFNLayer(nn.Module):
+    """
+    Pillar Feature Net Layer.
+    The Pillar Feature Net could be composed of a series of these layers, but the PointPillars paper results only
+    used a single PFNLayer. This layer performs a similar role as second.pytorch.voxelnet.VFELayer.
+    :param in_channels: <int>. Number of input channels.
+    :param out_channels: <int>. Number of output channels.
+    :param last_layer: <bool>. If last_layer, there is no concatenation of features.
+    """
+
+    def __init__(self, in_channels, out_channels, norm_cfg=None, last_layer=False):
+        super().__init__()
+        self.last_vfe = last_layer
+        if not self.last_vfe:
+            out_channels = out_channels // 2
+        self.units = out_channels
+
+        self.linear = nn.Linear(in_channels, out_channels, bias=False)
+        self.norm = nn.BatchNorm1d(out_channels, eps=1e-3, momentum=0.01)
+
+    def forward(self, inputs, unq_inv):
+        torch.backends.cudnn.enabled = False
+        x = self.linear(inputs)
+        x = self.norm(x)
+        x = F.relu(x)
+        torch.backends.cudnn.enabled = True
+
+        # max pooling
+        feat_max = torch_scatter.scatter_max(x, unq_inv, dim=0)[0]
+        x_max = feat_max[unq_inv]
+
+        if self.last_vfe:
+            return x_max
+        else:
+            x_concatenated = torch.cat([x, x_max], dim=1)
+            return x_concatenated
+
 
 
 class PillarNet(nn.Module):
@@ -273,7 +311,7 @@ class PillarNextPillarFeatureNet(nn.Module):
             else:
                 last_layer = True
             pfn_layers.append(
-                PFNLayer(
+                PillarNextPFNLayer(
                     in_filters, out_filters, norm_cfg=norm_cfg, last_layer=last_layer
                 )
             )
@@ -287,8 +325,6 @@ class PillarNextPillarFeatureNet(nn.Module):
         self.voxelization = PillarNet(num_input_features, voxel_size, pc_range)
 
     def forward(self, points):
-
-        points = torch.tensor(points, device='cuda')
 
         features, coords, unq_inv, grid_size = self.voxelization(points)
         # Forward pass through PFNLayers
