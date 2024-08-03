@@ -321,7 +321,12 @@ class SparseResNet18(nn.Module):
         indicesNc = indicesNc.type(torch.int32)
 
         # Create features vector with shape [nPoints, nChannels]
-        featuresOut = torch.zeros((len(featuresNc), x.shape[1]))
+        #featuresOut = torch.zeros((len(featuresNc), x.shape[1]))
+
+         # Create features vector with shape [nPoints, nChannels]
+        nPoints = indicesNc.shape[0]
+        nChannels = x.shape[1]
+        featuresOut = torch.zeros((nPoints, nChannels), device=x.device)
 
         # Get all channels from each sparse point, from the original dense tensor x
         for nPoint in range(len(featuresNc)):
@@ -329,6 +334,7 @@ class SparseResNet18(nn.Module):
             featuresOut[nPoint, :]  = x[coord[0],:,coord[1], coord[2]]
 
         spatial_shape = x.shape[-2:]
+        print(f"spatial_shape: {spatial_shape}")
         batch_size = x.shape[0]
         return spconv.pytorch.SparseConvTensor(featuresOut, indicesNc, spatial_shape, batch_size)
 
