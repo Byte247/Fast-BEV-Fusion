@@ -26,7 +26,7 @@ from .fast_bev_fusion_centerhead_voxel import FastBEVFusionCenterheadVoxel
 from .fast_bev_fusion_transfusion_head_pillar import FastBEVFusionTransfusionheadPillar
 from .fast_bev_fusion_transfusion_head_voxel import FastBEVFusionTransfusionheadVoxel
 from .fast_bev_fusion_no_neck import FastBEVFusionNoNeck
-from .fast_bev_fusion_transfusion_head_pillar import TransFusionHeadPillarPretrain
+from .transfusion_head_pillar_pretrain import TransFusionHeadPillarPretrain
 
 
 __all__ = [
