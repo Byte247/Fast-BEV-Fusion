@@ -391,9 +391,9 @@ class MVXTwoStageDetector(Base3DDetector):
         proposal_inputs = rpn_outs + (img_metas, rpn_test_cfg)
         proposal_list = self.img_rpn_head.get_bboxes(*proposal_inputs)
         return proposal_list
-    """
+
     def simple_test_pts(self, x, img_metas, rescale=False):
-        
+        """Test function of point cloud branch."""
         outs = self.pts_bbox_head(x)
         bbox_list = self.pts_bbox_head.get_bboxes(
             *outs, img_metas, rescale=rescale)
@@ -402,7 +402,6 @@ class MVXTwoStageDetector(Base3DDetector):
             for bboxes, scores, labels in bbox_list
         ]
         return bbox_results
-    """
 
     def simple_test(self, points, img_metas, img=None, rescale=False):
         """Test function without augmentaiton."""
@@ -411,10 +410,11 @@ class MVXTwoStageDetector(Base3DDetector):
 
         bbox_list = [dict() for i in range(len(img_metas))]
         print(f" in simple_test")
-        
-        bbox_pts = self.simple_test_pts(
+        if pts_feats and self.with_pts_bbox:
+            print("in loop")
+            bbox_pts = self.simple_test_pts(
                 pts_feats, img_metas, rescale=rescale)
-        for result_dict, pts_bbox in zip(bbox_list, bbox_pts):
+            for result_dict, pts_bbox in zip(bbox_list, bbox_pts):
                 result_dict['pts_bbox'] = pts_bbox
         #if img_feats and self.with_img_bbox:
         #    bbox_img = self.simple_test_img(
