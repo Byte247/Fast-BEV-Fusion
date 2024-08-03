@@ -64,7 +64,7 @@ class CenterPointPretrain(MVXTwoStageDetector):
         """Extract features of points."""
 
        
-        x = self.pts_voxel_encoder(x)
+        x = self.pts_voxel_encoder(pts)
 
         if self.pts_backbone is not None:
             x = self.pts_backbone(*x)
