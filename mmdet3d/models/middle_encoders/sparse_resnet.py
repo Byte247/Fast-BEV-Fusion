@@ -319,7 +319,7 @@ class SparseResNet18(nn.Module):
         
     def forward(self, pillar_features):
         
-
+        print(f"pillar_features: {pillar_features.shape}")
         # Convert the tensor to a sparse tensor
         torchTensorSp = pillar_features.to_sparse()
 
@@ -327,6 +327,7 @@ class SparseResNet18(nn.Module):
         indices_th = torchTensorSp.indices().permute(1, 0).contiguous().int()
         values_th = torchTensorSp.values()
 
+        print(f"values_th.shape: {values_th.shape}")
         # Reshape values to include the channel axis
         # We will view the values as [num_nonzero_elements, channels]
         values_th = values_th.view(-1, pillar_features.shape[1])
