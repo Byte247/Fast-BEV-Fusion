@@ -313,6 +313,8 @@ class SparseResNet18(nn.Module):
 
     
     def forward(self, pillar_features):
+
+        
         
         print(f"pillar_features: {pillar_features.shape}")
         
@@ -327,12 +329,15 @@ class SparseResNet18(nn.Module):
 
         print(f"indices_dense shape: {indices_dense.shape}")
         print(f"features_dense shape: {features_dense.shape}")
-        x = spconv.pytorch.SparseConvTensor(features_dense, indices_dense, pillar_features.shape[1:], batch_size = pillar_features.shape[0])
+        x = SparseConvTensor(features_dense, indices_dense, pillar_features.shape[1:], batch_size = pillar_features.shape[0])
 
         print(f"SparseConvTensor shape: {x.features.shape}")
 
 
         print(x)
+
+        #coors = coors.int()
+        #ret = SparseConvTensor(voxel_features, coors, self.sparse_shape, batch_size)
 
         for i in range(len(self.blocks)):
             print(f"self.blocks[i]: {self.blocks[i]}")
