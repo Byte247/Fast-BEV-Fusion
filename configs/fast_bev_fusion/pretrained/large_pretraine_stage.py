@@ -41,7 +41,7 @@ model = dict(
         in_channels=256, 
         out_channel=384,
         norm_cfg=dict(type='BN', requires_grad=True)),
-    pts_bbox_head= dict(
+    bbox_head= dict(
         type='CenterHead',
         in_channels=384,
         tasks=[
