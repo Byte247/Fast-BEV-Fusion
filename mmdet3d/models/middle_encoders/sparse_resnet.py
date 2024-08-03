@@ -316,14 +316,14 @@ class SparseResNet18(nn.Module):
 
         
         torchTensorSp = pillar_features.to_sparse() # no channel axis here. equalivant to torchTensor.ndim
-        indices_th = torchTensorSp.indices().permute(1, 0).contiguous()
-        indices_th = indices_th.type(torch.int32)
-        # sparse tensor features need to have one channel axis.
-        features_th = torchTensorSp.values().view(-1, 1)
-        # after to_sparse, spatial shape is [5, 10, 10], batch size is 2
-        # sparse tensor must have a batch axis, spatial shape dont contain batch axis.
-        x = spconv.pytorch.SparseConvTensor(features_th, indices_th, pillar_features.shape[1:], 2)
-        
+
+
+        indices_dense = torchTensorSp.indices().permute(1, 0).contiguous().int()
+        features_dense = torchTensorSp.values().view(-1, 1)
+
+        x = spconv.pytorch.SparseConvTensor(features_dense, indices_dense, pillar_features.shape[1:], batch_size = pillar_features.shape[0])
+
+
         print(x)
 
         for i in range(len(self.blocks)):
