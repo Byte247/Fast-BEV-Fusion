@@ -36,11 +36,11 @@ class CenterPointPretrain(MVXTwoStageDetector):
     def extract_pts_feat(self, pts, img_feats, img_metas):
         """Extract features of points."""
 
-        x = self.reader(pts)
-        if self.backbone is not None:
-            x = self.backbone(*x)
-        if self.neck is not None:
-            x = self.neck(x)
+        x = self.pts_voxel_encoder(pts)
+        if self.pts_backbone is not None:
+            x = self.pts_backbone(*x)
+        if self.pts_neck is not None:
+            x = self.pts_neck(x)
         return x
 
     def forward_pts_train(self,
