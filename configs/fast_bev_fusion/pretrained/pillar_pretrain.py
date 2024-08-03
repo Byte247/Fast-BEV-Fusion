@@ -173,10 +173,10 @@ train_pipeline = [
     dict(type='LoadAnnotations3D', with_bbox_3d=True, with_label_3d=True),
     dict(type='ObjectSample', db_sampler=db_sampler),
     dict(
-       type='GlobalRotScaleTrans',
-       rot_range=[-0.3925, 0.3925],
-       scale_ratio_range=[0.95, 1.05],
-       translation_std=[0.5, 0.5, 0.5]),
+        type='GlobalRotScaleTrans',
+        rot_range=[-0.3925 * 2, 0.3925 * 2],
+        scale_ratio_range=[0.9, 1.1],
+        translation_std=[0.5, 0.5, 0.5]),
     dict(
         type='RandomFlip3D',
         flip_2d=False,

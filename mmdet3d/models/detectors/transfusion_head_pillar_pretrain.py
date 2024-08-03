@@ -6,6 +6,7 @@ from mmdet.models import DETECTORS
 from .mvx_two_stage import MVXTwoStageDetector
 from IPython import embed
 import torch.nn.functional as F
+from .. import builder
 
 @DETECTORS.register_module()
 class TransFusionHeadPillarPretrain(MVXTwoStageDetector):
@@ -34,6 +35,12 @@ class TransFusionHeadPillarPretrain(MVXTwoStageDetector):
                              bbox_head, img_roi_head, img_rpn_head,
                              train_cfg, test_cfg, pretrained, init_cfg)
         
+        pts_train_cfg = train_cfg.pts if train_cfg else None
+        bbox_head.update(train_cfg=pts_train_cfg)
+        pts_test_cfg = test_cfg.pts if test_cfg else None
+        bbox_head.update(test_cfg=pts_test_cfg)
+        self.bbox_head = builder.build_head(bbox_head)
+    
     
     def voxelize(self, points):
         """Apply dynamic voxelization to points.
