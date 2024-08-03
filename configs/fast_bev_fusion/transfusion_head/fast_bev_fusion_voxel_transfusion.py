@@ -84,7 +84,7 @@ model = dict(
         nms_kernel_size=3,
         ffn_channel=256,
         norm_cfg=dict(type='SyncBN', requires_grad=True),
-        norm_cfg=dict(type='SyncBN', requires_grad=True),
+        two_d_norm_cfg=dict(type='SyncBN', requires_grad=True),
         dropout=0.1,
         bn_momentum=0.1,
         activation='relu',
