@@ -55,7 +55,7 @@ class SparseConvBlock(spconv.pytorch.SparseModule):
 
         if stride == 1 and use_subm:
             self.conv = spconv.pytorch.SubMConv2d(in_channels, out_channels, kernel_size,
-                                                  padding=kernel_size//2, stride=1, bias=bias,)
+                                                  padding=kernel_size//2, stride=1, bias=bias)
         else:
             self.conv = spconv.pytorch.SparseConv2d(in_channels, out_channels, kernel_size,
                                                     padding=kernel_size//2, stride=stride, bias=bias)
