@@ -336,8 +336,12 @@ class SparseResNet18(nn.Module):
 
         #Convert dense to sparse tensor:
         x = self.torchTensor2spconvTensor(pillar_features)
-        
+        print(f"first x: {x}")
         for i in range(len(self.blocks)):
+            print(f"in i: {i}")
             x = self.blocks[i](x)
+            print(f"x in {i}: {x}")
+        print(f"before mapping")
         x = self.mapping(x)
+        print(f"after mapping")
         return x.dense()
