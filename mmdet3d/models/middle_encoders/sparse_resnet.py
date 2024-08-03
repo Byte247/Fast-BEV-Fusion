@@ -317,6 +317,9 @@ class SparseResNet18(nn.Module):
         featuresNc = xNoChans._values()
         indicesNc = xNoChans._indices().transpose(0,1)
 
+        #only int32 supported:
+        indicesNc = indicesNc.type(torch.int32)
+
         print(f"indicesNc: {type(indicesNc)}")
 
         # Create features vector with shape [nPoints, nChannels]
