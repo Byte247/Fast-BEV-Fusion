@@ -309,12 +309,34 @@ class SparseResNet18(nn.Module):
             layers.append(SparseBasicBlock(planes, kernel_size=kernel_size, norm_cfg=self.norm_cfg))
 
         return spconv.pytorch.SparseSequential(*layers)
+    
+    def torchTensor2spconvTensor(self, x):
+        # Sum accross channel dimension
+        # to find out how many individual points are there
+        xNoChans = x.sum(1).to_sparse()
+        featuresNc = xNoChans._values()
+        indicesNc = xNoChans._indices().transpose(0,1)
 
-    def forward(self, pillar_features, coors, input_shape):
-        batch_size = len(torch.unique(coors[:, 0]))
+        # Create features vector with shape [nPoints, nChannels]
+        featuresOut = torch.zeros((len(featuresNc), x.shape[1]))
+
+        # Get all channels from each sparse point, from the original dense tensor x
+        for nPoint in range(len(featuresNc)):
+            coord = indicesNc[nPoint,...]
+            featuresOut[nPoint, :]  = x[coord[0],:,coord[1], coord[2]]
+
+        spatial_shape = x.shape[-2:]
+        batch_size = x.shape[0]
+        return spconv.pytorch.SparseConvTensor(featuresOut, indicesNc, spatial_shape, batch_size)
+
+    def forward(self, pillar_features):
+
         print(f"pillar_features: {pillar_features.shape}")
-        x = spconv.pytorch.SparseConvTensor(
-            pillar_features, coors, input_shape, batch_size)
+        #Convert dense to sparse tensor:
+        x = self.torchTensor2spconvTensor(pillar_features)
+
+        print(f"sparse tensor shape: {x.shape}")
+        
         for i in range(len(self.blocks)):
             x = self.blocks[i](x)
         x = self.mapping(x)
