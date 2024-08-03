@@ -313,7 +313,8 @@ class SparseResNet18(nn.Module):
 
     
     def forward(self, pillar_features):
-
+        
+        print(f"pillar_features: {pillar_features.shape}")
         
         torchTensorSp = pillar_features.to_sparse() # no channel axis here. equalivant to torchTensor.ndim
 
