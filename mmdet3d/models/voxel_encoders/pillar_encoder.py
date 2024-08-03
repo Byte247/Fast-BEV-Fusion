@@ -239,7 +239,7 @@ class PillarNet(nn.Module):
 
         return features, unq[:, [0, 2, 1]], unq_inv, grid_size[[1, 0]]
     
-
+@VOXEL_ENCODERS.register_module()
 class PillarNextPillarFeatureNet(nn.Module):
     def __init__(
         self,
