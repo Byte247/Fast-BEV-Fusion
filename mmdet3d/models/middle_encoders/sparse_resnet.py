@@ -256,6 +256,7 @@ class SparseResNet18(nn.Module):
             num_input_features,
             kernel_size=[3, 3, 3, 3],
             out_channels=256,
+            sparse_shape=[1, 512, 512],
             norm_cfg=None):
 
         super(SparseResNet18, self).__init__()
@@ -263,6 +264,7 @@ class SparseResNet18(nn.Module):
         self._num_filters = ds_num_filters
         self._layer_nums = layer_nums
         self._num_input_features = num_input_features
+        self.sparse_shape = sparse_shape
 
         if norm_cfg is not None:
             self.norm_cfg = norm_cfg
@@ -311,36 +313,19 @@ class SparseResNet18(nn.Module):
         return spconv.pytorch.SparseSequential(*layers)
     
 
-    
-    def forward(self, pillar_features):
+
 
         
         
-        print(f"pillar_features: {pillar_features.shape}")
-        
-        torchTensorSp = pillar_features.to_sparse() # no channel axis here. equalivant to torchTensor.ndim
+    def forward(self, voxel_features, coors, batch_size):
 
-        print(f"Sparse indices shape: {torchTensorSp.indices().shape}")
-        print(f"Sparse values shape: {torchTensorSp.values().shape}")
+        coors = coors.int()
+        x = SparseConvTensor(voxel_features, coors, self.sparse_shape, batch_size)
 
 
-        indices_dense = torchTensorSp.indices().permute(1, 0).contiguous().int()
-        features_dense = torchTensorSp.values().view(-1, 1)
-
-        print(f"indices_dense shape: {indices_dense.shape}")
-        print(f"features_dense shape: {features_dense.shape}")
-        x = SparseConvTensor(features_dense, indices_dense, pillar_features.shape[1:], batch_size = pillar_features.shape[0])
-
-        print(f"SparseConvTensor shape: {x.features.shape}")
-
-
-        print(x)
-
-        #coors = coors.int()
-        #ret = SparseConvTensor(voxel_features, coors, self.sparse_shape, batch_size)
 
         for i in range(len(self.blocks)):
-            print(f"self.blocks[i]: {self.blocks[i]}")
+            
             x = self.blocks[i](x)
         
         x = self.mapping(x)
