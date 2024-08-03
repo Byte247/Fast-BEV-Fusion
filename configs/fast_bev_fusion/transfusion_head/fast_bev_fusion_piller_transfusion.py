@@ -77,7 +77,7 @@ model = dict(
     #Fusion layer
     fusion_module = dict(type='MultiHeadCrossAttentionV2',embed_dim = 512, num_heads=1, dropout = 0.1, fuse_on_lidar=True, norm_cfg=dict(type='SyncBN', requires_grad=True)),
 
-     bbox_head=dict(
+    bbox_head=dict(
         type='TransFusionHead',
         num_proposals=200,
         auxiliary=True,

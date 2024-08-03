@@ -2,97 +2,116 @@ _base_ = [
     '../../_base_/datasets/nus-3d.py'
 ]
 
-# If point cloud range is changed, the models should also change their point
-# cloud range accordingly
 point_cloud_range = [-51.2, -51.2, -5.0, 51.2, 51.2, 3.0]
+
+voxel_size = [0.2, 0.2, 8]
+out_size_factor = 4
+
 # For nuScenes we usually do 10-class detection
 class_names = [
-    'car', 'truck', 'construction_vehicle', 'bus', 'trailer', 'barrier',
-    'motorcycle', 'bicycle', 'pedestrian', 'traffic_cone'
+    'car', 'truck', 'trailer', 'bus', 'construction_vehicle', 'bicycle',
+    'motorcycle', 'pedestrian', 'traffic_cone', 'barrier'
 ]
-
 
 voxel_size = [0.2, 0.2, 8]
 model = dict(
-    type='CenterPointPretrain',
+    type='TransFusionHeadPillarPretrain',
     #Point Modules:
     pts_voxel_layer=dict(
-        max_num_points=20, voxel_size=[0.2, 0.2, 8], max_voxels=(30000, 60000), point_cloud_range=point_cloud_range),
+        max_num_points=20, voxel_size=voxel_size, max_voxels=(30000, 60000), point_cloud_range=point_cloud_range),
     pts_voxel_encoder=dict(
-        type='PillarNextPillarFeatureNet',
-        num_input_features=5,
-        num_filters=[64,64],
+        type='PillarFeatureNet',
+        in_channels=5,
+        feat_channels=[64,64],
+        with_distance=False,
         voxel_size=(0.2, 0.2, 8),
-        pc_range=point_cloud_range,
-        norm_cfg=dict(type='BN1d', requires_grad=True)),
+        norm_cfg=dict(type='SyncBN', requires_grad=True),
+        legacy=False),
+    pts_middle_encoder=dict(
+        type='PointPillarsScatter', in_channels=64, output_shape=(512, 512)),
     pts_backbone=dict(
-        type='SparseResNet18',
-        num_input_features=64,
-        layer_nums=[2,2,2,2],
-        ds_layer_strides=[1,2,2,2],
-        ds_num_filters=[64,128,256,256],
-        out_channels=256,
-        sparse_shape=[1, 512, 512],
-        norm_cfg=dict(type='BN', requires_grad=True)),
+        type='SECOND',
+        in_channels=64,
+        out_channels=[64, 128, 256],
+        layer_nums=[3, 5, 5],
+        layer_strides=[2, 2, 2],
+        norm_cfg=dict(type='SyncBN', requires_grad=True),
+        conv_cfg=dict(type='Conv2d', bias=False)),
     pts_neck=dict(
-        type='ASPPNeck',
-        in_channels=256, 
-        out_channels=384,
-        norm_cfg=dict(type='BN', requires_grad=True)),
-    bbox_head= dict(
-        type='CenterHead',
+        type='SECONDFPN',
+        in_channels=[64, 128, 256],
+        out_channels=[128, 128, 128],
+        upsample_strides=[0.5, 1, 2],
+        norm_cfg=dict(type='SyncBN', requires_grad=True),
+        upsample_cfg=dict(type='deconv', bias=False),
+        use_conv_for_no_stride=True),
+    bbox_head=dict(
+        type='TransFusionHead',
+        num_proposals=200,
+        auxiliary=True,
         in_channels=384,
-        tasks=[
-            dict(num_class=1, class_names=['car']),
-            dict(num_class=2, class_names=['truck', 'construction_vehicle']),
-            dict(num_class=2, class_names=['bus', 'trailer']),
-            dict(num_class=1, class_names=['barrier']),
-            dict(num_class=2, class_names=['motorcycle', 'bicycle']),
-            dict(num_class=2, class_names=['pedestrian', 'traffic_cone']),
-        ],
-        common_heads=dict(
-            reg=(2, 2), height=(1, 2), dim=(3, 2), rot=(2, 2), vel=(2, 2)),
-        share_conv_channel=128,
+        hidden_channel=128,
+        num_classes=len(class_names),
+        num_decoder_layers=1,
+        num_heads=8,
+        learnable_query_pos=False,
+        initialize_by_heatmap=True,
+        nms_kernel_size=3,
+        ffn_channel=256,
+        dropout=0.1,
+        bn_momentum=0.1,
+        activation='relu',
+        norm_cfg = dict(type='SyncBN', requires_grad=True),
+        common_heads=dict(center=(2, 2), height=(1, 2), dim=(3, 2), rot=(2, 2), vel=(2, 2)),
         bbox_coder=dict(
-            type='CenterPointBBoxCoder',
-            post_center_range=[-61.2, -61.2, -10.0, 61.2, 61.2, 10.0],
-            max_num=500,
-            score_threshold=0.1,
-            out_size_factor=4,
+            type='TransFusionBBoxCoder',
+            pc_range=point_cloud_range[:2],
             voxel_size=[0.2, 0.2],
-            pc_range=[-51.2, -51.2],
-            code_size=9),
-        separate_head=dict(
-            type='SeparateHead', init_bias=-2.19, final_kernel=3),
-        loss_cls=dict(type='GaussianFocalLoss', reduction='mean'),
+            out_size_factor=out_size_factor,
+            post_center_range=[-61.2, -61.2, -10.0, 61.2, 61.2, 10.0],
+            score_threshold=0.0,
+            code_size=10,
+        ),
+        loss_cls=dict(type='FocalLoss', use_sigmoid=True, gamma=2, alpha=0.25, reduction='mean', loss_weight=1.0),
+        # loss_iou=dict(type='CrossEntropyLoss', use_sigmoid=True, reduction='mean', loss_weight=0.0),
         loss_bbox=dict(type='L1Loss', reduction='mean', loss_weight=0.25),
-        norm_bbox=True),
+        loss_heatmap=dict(type='GaussianFocalLoss', reduction='mean', loss_weight=1.0),
+    ),
     # model training and testing settings
+    # model training and testing settings for the head
     train_cfg=dict(
-        pts=dict(
-            grid_size=[512, 512, 1],
-            voxel_size=voxel_size,
-            out_size_factor=4,
+            grid_size=[512, 512, 8],
+            assigner=dict(
+                type='HungarianAssigner3D',
+                iou_calculator=dict(type='BboxOverlaps3D', coordinate='lidar'),
+                cls_cost=dict(type='FocalLossCost', gamma=2, alpha=0.25, weight=0.15),
+                reg_cost=dict(type='BBoxBEVL1Cost', weight=0.25),
+                iou_cost=dict(type='IoU3DCost', weight=0.25)
+            ),
+            voxel_size=[0.2, 0.2],
+            out_size_factor=out_size_factor,
             dense_reg=1,
             gaussian_overlap=0.1,
-            point_cloud_range=point_cloud_range,
             max_objs=500,
             min_radius=2,
-            code_weights=[1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.2, 0.2])),
-    test_cfg=dict(
-        pts=dict(
+            pos_weight=-1,
+            code_weights=[1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.2, 0.2],
+            point_cloud_range = point_cloud_range),
+     test_cfg=dict(
+            grid_size=[512, 512, 1],
             post_center_limit_range=[-61.2, -61.2, -10.0, 61.2, 61.2, 10.0],
             max_per_img=500,
             max_pool_nms=False,
             min_radius=[4, 12, 10, 1, 0.85, 0.175],
-            score_threshold=0.1,
+            score_threshold=0.0,
             pc_range=point_cloud_range[:2],
-            out_size_factor=4,
-            voxel_size=voxel_size[:2],
-            nms_type='rotate',
+            out_size_factor=out_size_factor,
+            voxel_size=[0.2, 0.2],
+            nms_type=None,
             pre_max_size=1000,
             post_max_size=83,
-            nms_thr=0.2)))
+            nms_thr=0.2)
+)
 
 
 dataset_type = 'NuScenesDataset'

@@ -8,7 +8,7 @@ from IPython import embed
 import torch.nn.functional as F
 
 @DETECTORS.register_module()
-class CenterPointPretrain(MVXTwoStageDetector):
+class TransFusionHeadPillarPretrain(MVXTwoStageDetector):
     """Base class of Multi-modality VoxelNet."""
 
     def __init__(self,
@@ -27,7 +27,7 @@ class CenterPointPretrain(MVXTwoStageDetector):
                  test_cfg=None,
                  pretrained=None,
                  init_cfg=None):
-        super(CenterPointPretrain,
+        super(TransFusionHeadPillarPretrain,
               self).__init__(pts_voxel_layer, pts_voxel_encoder,
                              pts_middle_encoder, pts_fusion_layer,
                              img_backbone, pts_backbone, img_neck, pts_neck,
@@ -60,17 +60,45 @@ class CenterPointPretrain(MVXTwoStageDetector):
         coors_batch = torch.cat(coors_batch, dim=0)
         return voxels, coors_batch, grid_size
 
-    def extract_pts_feat(self, pts, img_feats, img_metas):
+    def extract_pts_feat(self, pts):
         """Extract features of points."""
 
-       
-        x = self.pts_voxel_encoder(pts)
+        voxels, num_points, coors = self.voxelize(pts)
 
-        if self.pts_backbone is not None:
-            x = self.pts_backbone(*x)
-        if self.pts_neck is not None:
-            x = self.pts_neck(x)
+        voxel_features = self.pts_voxel_encoder(voxels, num_points, coors)
+        batch_size = coors[-1, 0] + 1
+
+        x = self.pts_middle_encoder(voxel_features, coors, batch_size)
+        
+        x = self.pts_neck(x)
+
         return x
+    
+    @torch.no_grad()
+    def voxelize(self, points):
+        """Apply dynamic voxelization to points.
+
+        Args:
+            points (list[torch.Tensor]): Points of each sample.
+
+        Returns:
+            tuple[torch.Tensor]: Concatenated points, number of points
+                per voxel, and coordinates.
+        """
+        voxels, coors, num_points = [], [], []
+        for res in points:
+            res_voxels, res_coors, res_num_points = self.pts_voxel_layer(res)
+            voxels.append(res_voxels)
+            coors.append(res_coors)
+            num_points.append(res_num_points)
+        voxels = torch.cat(voxels, dim=0)
+        num_points = torch.cat(num_points, dim=0)
+        coors_batch = []
+        for i, coor in enumerate(coors):
+            coor_pad = F.pad(coor, (1, 0), mode='constant', value=i)
+            coors_batch.append(coor_pad)
+        coors_batch = torch.cat(coors_batch, dim=0)
+        return voxels, num_points, coors_batch
 
     def forward_pts_train(self,
                           pts_feats,
@@ -96,6 +124,7 @@ class CenterPointPretrain(MVXTwoStageDetector):
         outs = self.bbox_head(pts_feats)
         loss_inputs = [gt_bboxes_3d, gt_labels_3d, outs]
         losses = self.bbox_head.loss(*loss_inputs)
+        
         return losses
 
     def simple_test_pts(self, x, img_metas, rescale=False):
