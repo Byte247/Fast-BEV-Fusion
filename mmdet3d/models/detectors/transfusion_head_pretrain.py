@@ -40,6 +40,9 @@ class TransFusionHeadPretrain(MVXTwoStageDetector):
         pts_test_cfg = test_cfg.pts if test_cfg else None
         bbox_head.update(test_cfg=pts_test_cfg)
         self.bbox_head = builder.build_head(bbox_head)
+
+        if bbox_head is not None:
+            del self.pts_bbox_head
     
     
     def voxelize(self, points):
