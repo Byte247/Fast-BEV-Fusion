@@ -424,7 +424,7 @@ runner = dict(type='EpochBasedRunner', max_epochs=10)
 
 checkpoint_config = dict(interval=1)
 log_config = dict(
-    interval=200,
+    interval=10,
     hooks=[
         dict(type='TextLoggerHook'),
         dict(type='TensorboardLoggerHook'),

@@ -313,24 +313,22 @@ class SparseResNet18(nn.Module):
 
     
     def forward(self, pillar_features):
-        # Assuming `pillar_features` is a dense tensor
-        coors = []
-        for b in range(pillar_features.shape[0]):
-            for z in range(pillar_features.shape[1]):
-                for y in range(pillar_features.shape[2]):
-                    for x in range(pillar_features.shape[3]):
-                        if pillar_features[b, z, y, x] != 0:
-                            coors.append([b, z, y, x])
 
-        coors = torch.tensor(coors, dtype=torch.int32)
-        features = pillar_features[pillar_features != 0]
-        input_shape = pillar_features.shape[1:]  # spatial shape
-
-        batch_size = pillar_features.shape[0]
-        x = spconv.SparseConvTensor(features, coors, input_shape, batch_size)
+        
+        torchTensorSp = pillar_features.to_sparse() # no channel axis here. equalivant to torchTensor.ndim
+        indices_th = torchTensorSp.indices().permute(1, 0).contiguous()
+        indices_th = indices_th.type(torch.int32)
+        # sparse tensor features need to have one channel axis.
+        features_th = torchTensorSp.values().view(-1, 1)
+        # after to_sparse, spatial shape is [5, 10, 10], batch size is 2
+        # sparse tensor must have a batch axis, spatial shape dont contain batch axis.
+        x = spconv.SparseConvTensor(features_th, indices_th, pillar_features.shape[1:], 2)
+        
         
         for i in range(len(self.blocks)):
             x = self.blocks[i](x)
         
         x = self.mapping(x)
-        return x.dense()
+
+        dense_tensor = x.dense(channels_first=False)
+        return dense_tensor
