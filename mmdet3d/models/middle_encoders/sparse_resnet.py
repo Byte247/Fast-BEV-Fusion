@@ -326,7 +326,7 @@ class SparseResNet18(nn.Module):
          # Create features vector with shape [nPoints, nChannels]
         nPoints = indicesNc.shape[0]
         nChannels = x.shape[1]
-        featuresOut = torch.zeros((nPoints, nChannels), device=x.device)
+        featuresOut = torch.zeros(nPoints, nChannels, device=x.device)
 
         # Get all channels from each sparse point, from the original dense tensor x
         for nPoint in range(len(featuresNc)):
