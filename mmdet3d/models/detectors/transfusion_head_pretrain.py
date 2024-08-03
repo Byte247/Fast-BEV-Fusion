@@ -142,15 +142,16 @@ class TransFusionHeadPretrain(MVXTwoStageDetector):
 
     def simple_test_pts(self, x, img_metas, rescale=False):
         """Test function of point cloud branch."""
-        outs = self.bbox_head(x)
-        bbox_list = self.bbox_head.get_bboxes(
-            outs, img_metas, rescale=rescale)
-        bbox_results = [
-            bbox3d2result(bboxes, scores, labels)
-            for bboxes, scores, labels in bbox_list
-        ]
-        return bbox_results
 
+        outs = self.bbox_head(x)
+        bbox_list = self.bbox_head.get_bboxes(outs, img_metas, rescale=False)
+
+        print(f"bbox_list: {bbox_list}")
+                                    
+        bbox_results = [bbox3d2result(bboxes, scores, labels)for bboxes, scores, labels in bbox_list]
+
+        return bbox_results
+    
     def aug_test_pts(self, feats, img_metas, rescale=False):
         """Test function of point cloud branch with augmentaiton.
 
