@@ -327,9 +327,10 @@ class SparseResNet18(nn.Module):
         print(x)
 
         for i in range(len(self.blocks)):
+            print(f"self.blocks[i]: {self.blocks[i]}")
             x = self.blocks[i](x)
         
         x = self.mapping(x)
 
-        dense_tensor = x.dense(channels_first=False)
+        dense_tensor = x.dense()
         return dense_tensor
