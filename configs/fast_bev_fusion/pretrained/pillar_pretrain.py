@@ -25,7 +25,7 @@ model = dict(
         feat_channels=[64,64],
         with_distance=False,
         voxel_size=(0.2, 0.2, 8),
-        norm_cfg=dict(type='BN', requires_grad=True),
+        norm_cfg=dict(type='BN1d', eps=1e-3, momentum=0.01),
         legacy=False),
     pts_middle_encoder=dict(
         type='PointPillarsScatter', in_channels=64, output_shape=(512, 512)),
