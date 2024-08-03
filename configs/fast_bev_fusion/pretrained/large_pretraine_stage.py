@@ -19,15 +19,11 @@ model = dict(
     pts_voxel_layer=dict(
         max_num_points=20, voxel_size=[0.2, 0.2, 8], max_voxels=(30000, 60000), point_cloud_range=point_cloud_range),
     pts_voxel_encoder=dict(
-        type='PillarFeatureNet',
-        in_channels=5,
-        feat_channels=[64,64],
-        with_distance=False,
+        type='PillarNextPillarFeatureNet',
+        num_input_features=5,
+        num_filters=[64,64],
         voxel_size=(0.2, 0.2, 8),
-        norm_cfg=dict(type='BN1d', requires_grad=True),
-        legacy=False),
-    pts_middle_encoder=dict(
-        type='PointPillarsScatter', in_channels=64, output_shape=(512, 512)),
+        norm_cfg=dict(type='BN1d', requires_grad=True)),
     pts_backbone=dict(
         type='SparseResNet18',
         num_input_features=64,

@@ -315,14 +315,10 @@ class SparseResNet18(nn.Module):
         return spconv.pytorch.SparseSequential(*layers)
     
 
-    def forward(self, pillar_features, coors):
-        
-        print(f"pillar_features: {pillar_features.shape}")
-        input_shape = self.sparse_shape
+    def forward(self, pillar_features, coors, input_shape):
         batch_size = len(torch.unique(coors[:, 0]))
         x = spconv.pytorch.SparseConvTensor(
             pillar_features, coors, input_shape, batch_size)
-        print(x.features.shape)
         for i in range(len(self.blocks)):
             x = self.blocks[i](x)
         x = self.mapping(x)
