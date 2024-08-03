@@ -23,6 +23,7 @@ model = dict(
         num_input_features=5,
         num_filters=[64,64],
         voxel_size=(0.2, 0.2, 8),
+        pc_range=point_cloud_range,
         norm_cfg=dict(type='BN1d', requires_grad=True)),
     pts_backbone=dict(
         type='SparseResNet18',
