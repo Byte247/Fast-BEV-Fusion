@@ -310,44 +310,27 @@ class SparseResNet18(nn.Module):
 
         return spconv.pytorch.SparseSequential(*layers)
     
-    def torchTensor2spconvTensor(self, x):
-        # Sum accross channel dimension
-        # to find out how many individual points are there
-        xNoChans = x.sum(1).to_sparse()
-        featuresNc = xNoChans._values()
-        indicesNc = xNoChans._indices().transpose(0,1)
 
-        #only int32 supported:
-        indicesNc = indicesNc.type(torch.int32)
-
-        # Create features vector with shape [nPoints, nChannels]
-        #featuresOut = torch.zeros((len(featuresNc), x.shape[1]))
-
-         # Create features vector with shape [nPoints, nChannels]
-        nPoints = indicesNc.shape[0]
-        nChannels = x.shape[1]
-        featuresOut = torch.zeros(nPoints, nChannels, device=x.device)
-
-        # Get all channels from each sparse point, from the original dense tensor x
-        for nPoint in range(len(featuresNc)):
-            coord = indicesNc[nPoint,...]
-            featuresOut[nPoint, :]  = x[coord[0],:,coord[1], coord[2]]
-
-        spatial_shape = x.shape[-2:]
-        print(f"spatial_shape: {spatial_shape}")
-        batch_size = x.shape[0]
-        return spconv.pytorch.SparseConvTensor(featuresOut, indicesNc, spatial_shape, batch_size)
-
+    
     def forward(self, pillar_features):
+        # Assuming `pillar_features` is a dense tensor
+        coors = []
+        for b in range(pillar_features.shape[0]):
+            for z in range(pillar_features.shape[1]):
+                for y in range(pillar_features.shape[2]):
+                    for x in range(pillar_features.shape[3]):
+                        if pillar_features[b, z, y, x] != 0:
+                            coors.append([b, z, y, x])
 
-        #Convert dense to sparse tensor:
-        x = self.torchTensor2spconvTensor(pillar_features)
-        print(f"first x: {x}")
+        coors = torch.tensor(coors, dtype=torch.int32)
+        features = pillar_features[pillar_features != 0]
+        input_shape = pillar_features.shape[1:]  # spatial shape
+
+        batch_size = pillar_features.shape[0]
+        x = spconv.SparseConvTensor(features, coors, input_shape, batch_size)
+        
         for i in range(len(self.blocks)):
-            print(f"in i: {i}")
             x = self.blocks[i](x)
-            print(f"x in {i}: {x}")
-        print(f"before mapping")
+        
         x = self.mapping(x)
-        print(f"after mapping")
         return x.dense()
