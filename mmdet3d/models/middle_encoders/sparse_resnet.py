@@ -318,15 +318,24 @@ class SparseResNet18(nn.Module):
         
         
     def forward(self, pillar_features):
+        
 
+        # Convert the tensor to a sparse tensor
+        torchTensorSp = pillar_features.to_sparse()
 
+        # Extract indices and values
+        indices_th = torchTensorSp.indices().permute(1, 0).contiguous().int()
+        values_th = torchTensorSp.values()
 
-        torch_tensor_dense_to_sp = pillar_features.to_sparse() 
+        # Reshape values to include the channel axis
+        # We will view the values as [num_nonzero_elements, channels]
+        values_th = values_th.view(-1, pillar_features.shape[1])
 
-        indices_dense = torch_tensor_dense_to_sp.indices().permute(1, 0).contiguous().int()
-        features_dense = torch_tensor_dense_to_sp.values().view(-1, pillar_features.shape[1])
+        # Prepare spatial shape without batch axis
+        spatial_shape = pillar_features.shape[2:]
 
-        x = SparseConvTensor(features_dense, indices_dense, pillar_features.shape[1:], batch_size = pillar_features.shape[0])
+        # Create the SparseConvTensor
+        x = SparseConvTensor(values_th, indices_th, spatial_shape, pillar_features.shape[0])
 
         print(x.features.shape)
 
