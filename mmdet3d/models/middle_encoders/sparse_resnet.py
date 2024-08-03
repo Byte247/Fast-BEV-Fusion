@@ -64,6 +64,7 @@ class SparseConvBlock(spconv.pytorch.SparseModule):
         self.act = nn.LeakyReLU()
 
     def forward(self, x):
+        print(f"in sparse ConvBlock {x.features.shape}")
         out = self.conv(x)
         out = out.replace_feature(self.norm(out.features))
         out = out.replace_feature(self.act(out.features))
