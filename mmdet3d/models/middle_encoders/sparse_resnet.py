@@ -319,6 +319,7 @@ class SparseResNet18(nn.Module):
         
     def forward(self, pillar_features):
         
+        channels = pillar_features.shape[1]
         print(f"pillar_features: {pillar_features.shape}")
         # Convert the tensor to a sparse tensor
         torchTensorSp = pillar_features.to_sparse()
@@ -328,9 +329,17 @@ class SparseResNet18(nn.Module):
         values_th = torchTensorSp.values()
 
         print(f"values_th.shape: {values_th.shape}")
+
+
+        # Ensure values_th can be reshaped to include channels
+        num_nonzero_elements = values_th.size(0)
+        expected_shape = (num_nonzero_elements // channels, channels)
+
         # Reshape values to include the channel axis
-        # We will view the values as [num_nonzero_elements, channels]
-        values_th = values_th.view(-1, pillar_features.shape[1])
+        if num_nonzero_elements % channels == 0:
+            values_th = values_th.view(*expected_shape)
+        else:
+            raise ValueError("The number of elements in values_th is not divisible by the number of channels.")
 
         # Prepare spatial shape without batch axis
         spatial_shape = pillar_features.shape[2:]
