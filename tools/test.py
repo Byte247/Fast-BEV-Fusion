@@ -232,8 +232,6 @@ def main():
             broadcast_buffers=False)
         outputs = multi_gpu_test(model, data_loader, args.tmpdir,
                                  args.gpu_collect, debug=args.debug, debug_num=args.debug_num)
-        
-    print(f"Outputs: {outputs}")
 
     rank, _ = get_dist_info()
     if rank == 0:
