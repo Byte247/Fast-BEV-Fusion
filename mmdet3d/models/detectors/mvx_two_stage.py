@@ -124,6 +124,10 @@ class MVXTwoStageDetector(Base3DDetector):
     def with_img_backbone(self):
         """bool: Whether the detector has a 2D image backbone."""
         return hasattr(self, 'img_backbone') and self.img_backbone is not None
+    @property
+    def with_pts_backbone(self):
+        """bool: Whether the detector has a points backbone."""
+        return hasattr(self, 'pts_backbone') and self.pts_backbone is not None
 
     @property
     def with_pts_backbone(self):
