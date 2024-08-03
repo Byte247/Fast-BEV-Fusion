@@ -256,7 +256,7 @@ class SparseResNet18(nn.Module):
             num_input_features,
             kernel_size=[3, 3, 3, 3],
             out_channels=256,
-            sparse_shape=[1, 512, 512],
+            sparse_shape=[512, 512],
             norm_cfg=None):
 
         super(SparseResNet18, self).__init__()

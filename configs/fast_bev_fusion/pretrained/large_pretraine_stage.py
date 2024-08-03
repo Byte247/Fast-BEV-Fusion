@@ -35,7 +35,7 @@ model = dict(
         ds_layer_strides=[1,2,2,2],
         ds_num_filters=[64,128,256,256],
         out_channels=256,
-        sparse_shape=[1, 512, 512],
+        sparse_shape=[512, 512],
         norm_cfg=dict(type='BN', requires_grad=True)),
     pts_neck=dict(
         type='ASPPNeck',
