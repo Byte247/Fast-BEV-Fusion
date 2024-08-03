@@ -319,33 +319,48 @@ class SparseResNet18(nn.Module):
         
     def forward(self, pillar_features):
         
-        channels = pillar_features.shape[1]
-        print(f"pillar_features: {pillar_features.shape}")
+        batch_size,channels,height, width = pillar_features.shape
+
         # Convert the tensor to a sparse tensor
         torchTensorSp = pillar_features.to_sparse()
 
         # Extract indices and values
-        indices_th = torchTensorSp.indices().permute(1, 0).contiguous().int()
+        indices_th = torchTensorSp.indices()
         values_th = torchTensorSp.values()
 
+        # Check dimensions
+        print(f"indices_th.shape: {indices_th.shape}")  # Should be [4, num_nonzero_elements]
         print(f"values_th.shape: {values_th.shape}")
 
+        # Reshape indices to include the batch dimension
+        # [batch_size, channels, height, width] -> [batch_size, height, width, channels] (for easier handling)
+        # After conversion, indices_th should have shape [4, num_nonzero_elements], i.e., [batch_size, 3, num_nonzero_elements]
+        # Extracting batch indices
+        batch_indices = indices_th[0]  # Shape: [num_nonzero_elements]
 
-        # Ensure values_th can be reshaped to include channels
-        num_nonzero_elements = values_th.size(0)
-        expected_shape = (num_nonzero_elements // channels, channels)
+        # Convert indices to a format compatible with SparseConvTensor
+        # The original indices might not include channels directly, so we will adjust the format
 
-        # Reshape values to include the channel axis
-        if num_nonzero_elements % channels == 0:
-            values_th = values_th.view(*expected_shape)
+        # Create a new index tensor that combines batch, channels, and spatial dimensions
+        # Note: `indices_th` usually has shape [4, num_nonzero_elements], where 4 is [batch, channel, height, width]
+
+        # Convert indices to the expected format
+        # Example: convert to [batch, height, width] assuming the tensor is in the shape [batch, channels, height, width]
+        new_indices = torch.stack([batch_indices, indices_th[1], indices_th[2]], dim=1).contiguous().int()
+
+        # Reshape values to include channels
+        # We will ensure that values_th is reshaped properly
+        # For channels, values_th should have shape [num_nonzero_elements, channels]
+        if values_th.size(0) % channels == 0:
+            values_th = values_th.view(-1, channels)
         else:
             raise ValueError("The number of elements in values_th is not divisible by the number of channels.")
 
         # Prepare spatial shape without batch axis
-        spatial_shape = pillar_features.shape[2:]
+        spatial_shape = (height, width)
 
         # Create the SparseConvTensor
-        x = SparseConvTensor(values_th, indices_th, spatial_shape, pillar_features.shape[0])
+        x = SparseConvTensor(values_th, new_indices, spatial_shape, batch_size)
 
         print(x.features.shape)
 
