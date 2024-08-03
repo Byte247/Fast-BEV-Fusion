@@ -39,7 +39,7 @@ model = dict(
     pts_neck=dict(
         type='ASPPNeck',
         in_channels=256, 
-        out_channel=384,
+        out_channels=384,
         norm_cfg=dict(type='BN', requires_grad=True)),
     bbox_head= dict(
         type='CenterHead',
