@@ -14,7 +14,7 @@ class_names = [
 
 voxel_size = [0.2, 0.2, 8]
 model = dict(
-    type='CenterPoint',
+    type='CenterPointPretrain',
     #Point Modules:
     pts_voxel_layer=dict(
         max_num_points=20, voxel_size=[0.2, 0.2, 8], max_voxels=(30000, 40000), point_cloud_range=point_cloud_range),
@@ -29,21 +29,18 @@ model = dict(
     pts_middle_encoder=dict(
         type='PointPillarsScatter', in_channels=64, output_shape=(512, 512)),
     pts_backbone=dict(
-        type='SECOND',
-        in_channels=64,
-        out_channels=[64, 128, 256],
-        layer_nums=[3, 5, 5],
-        layer_strides=[2, 2, 2],
-        norm_cfg=dict(type='BN', requires_grad=True),
-        conv_cfg=dict(type='Conv2d', bias=False)),
+        type='SparseResNet18',
+        num_input_features=64,
+        layer_nums=[2,2,2,2],
+        ds_layer_strides=[1,2,2,2],
+        ds_num_filters=[64,128,256,256],
+        out_channels=256,
+        norm_cfg=dict(type='BN', requires_grad=True)),
     pts_neck=dict(
-        type='SECONDFPN',
-        in_channels=[64, 128, 256],
-        out_channels=[128, 128, 128],
-        upsample_strides=[0.5, 1, 2],
-        norm_cfg=dict(type='BN', requires_grad=True),
-        upsample_cfg=dict(type='deconv', bias=False),
-        use_conv_for_no_stride=True),
+        type='ASPPNeck',
+        in_channels=256, 
+        out_channel=384,
+        norm_cfg=dict(type='BN', requires_grad=True)),
     pts_bbox_head= dict(
         type='CenterHead',
         in_channels=384,
@@ -230,7 +227,7 @@ eval_pipeline = [
 ]
 
 data = dict(
-    samples_per_gpu=12,
+    samples_per_gpu=4,
     workers_per_gpu=4,
     train=dict(
          type='CBGSDataset',

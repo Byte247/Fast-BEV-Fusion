@@ -26,6 +26,7 @@ from .fast_bev_fusion_centerhead_voxel import FastBEVFusionCenterheadVoxel
 from .fast_bev_fusion_transfusion_head_pillar import FastBEVFusionTransfusionheadPillar
 from .fast_bev_fusion_transfusion_head_voxel import FastBEVFusionTransfusionheadVoxel
 from .fast_bev_fusion_no_neck import FastBEVFusionNoNeck
+from .centerpoint_pretrain import CenterPointPretrain
 
 
 __all__ = [
@@ -36,5 +37,5 @@ __all__ = [
     'MultiScaleM2BevNetSeq', 'FastBEV',"FastBEVFusion", "FastBEVFusionCenterhead",
     'FastBEVFusionCenterheadPretrained', 'FastBEVFusionCenterheadLarge',
     "FastBEVFusionCenterheadVoxel", "FastBEVFusionTransfusionheadPillar",
-    "FastBEVFusionNoNeck", "FastBEVFusionTransfusionheadVoxel"
+    "FastBEVFusionNoNeck", "FastBEVFusionTransfusionheadVoxel","CenterPointPretrain"
 ]
