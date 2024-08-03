@@ -287,6 +287,7 @@ class PillarNextPillarFeatureNet(nn.Module):
         self.voxelization = PillarNet(num_input_features, voxel_size, pc_range)
 
     def forward(self, points):
+        print(len(points))
         points = points[0]
         features, coords, unq_inv, grid_size = self.voxelization(points)
         # Forward pass through PFNLayers
