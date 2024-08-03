@@ -256,7 +256,7 @@ class SparseResNet18(nn.Module):
             num_input_features,
             kernel_size=[3, 3, 3, 3],
             out_channels=256,
-            sparse_shape=[512, 512],
+            sparse_shape=[1, 512, 512],
             norm_cfg=None):
 
         super(SparseResNet18, self).__init__()
@@ -320,6 +320,8 @@ class SparseResNet18(nn.Module):
     def forward(self, voxel_features, coors, batch_size):
 
         coors = coors.int()
+
+        print(f"voxel_features: {voxel_features.shape}")
         x = SparseConvTensor(voxel_features, coors, self.sparse_shape, batch_size)
 
 
