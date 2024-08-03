@@ -5,6 +5,7 @@ from mmdet3d.core import bbox3d2result, merge_aug_bboxes_3d
 from mmdet.models import DETECTORS
 from .mvx_two_stage import MVXTwoStageDetector
 from IPython import embed
+import torch.nn.functional as F
 
 @DETECTORS.register_module()
 class CenterPointPretrain(MVXTwoStageDetector):
@@ -32,11 +33,39 @@ class CenterPointPretrain(MVXTwoStageDetector):
                              img_backbone, pts_backbone, img_neck, pts_neck,
                              bbox_head, img_roi_head, img_rpn_head,
                              train_cfg, test_cfg, pretrained, init_cfg)
+        
+    
+    def voxelize(self, points):
+        """Apply dynamic voxelization to points.
+
+        Args:
+            points (list[torch.Tensor]): Points of each sample.
+
+        Returns:
+            tuple[torch.Tensor]: Concatenated points, number of points
+                per voxel, and coordinates.
+        """
+        voxels, coors, grid_size = [], [], []
+        for res in points:
+            res_voxels, res_coors, grid_size = self.pts_voxel_layer(res)
+            voxels.append(res_voxels)
+            coors.append(res_coors)
+            grid_size.append(grid_size)
+        voxels = torch.cat(voxels, dim=0)
+        grid_size = torch.cat(grid_size, dim=0)
+        coors_batch = []
+        for i, coor in enumerate(coors):
+            coor_pad = F.pad(coor, (1, 0), mode='constant', value=i)
+            coors_batch.append(coor_pad)
+        coors_batch = torch.cat(coors_batch, dim=0)
+        return voxels, coors_batch, grid_size
 
     def extract_pts_feat(self, pts, img_feats, img_metas):
         """Extract features of points."""
 
-        x = self.pts_voxel_encoder(pts)
+       
+        x = self.pts_voxel_encoder(x)
+
         if self.pts_backbone is not None:
             x = self.pts_backbone(*x)
         if self.pts_neck is not None:
