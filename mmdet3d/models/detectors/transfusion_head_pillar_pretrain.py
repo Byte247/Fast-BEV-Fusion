@@ -69,8 +69,7 @@ class TransFusionHeadPillarPretrain(MVXTwoStageDetector):
         batch_size = coors[-1, 0] + 1
 
         x = self.pts_middle_encoder(voxel_features, coors, batch_size)
-
-        print(f"x: {x.shape}")
+        x = self.pts_backbone(x)
         
         x = self.pts_neck(x)
 
