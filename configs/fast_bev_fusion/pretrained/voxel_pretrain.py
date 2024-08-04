@@ -263,11 +263,11 @@ input_modality = dict(
     use_map=False,
     use_external=False)
 
-optimizer = dict(type='AdamW', lr=0.0001, weight_decay=0.01)  # for 8gpu * 2sample_per_gpu (in my case 4 during pretraining)
-optimizer_config = dict(grad_clip=dict(max_norm=0.1, norm_type=2))
+optimizer = dict(type='AdamW', lr=0.00001, weight_decay=0.01)  # for 8gpu * 2sample_per_gpu (in my case 4 during pretraining)
+optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
 lr_config = dict(
     policy='cyclic',
-    target_ratio=(10, 0.0001),
+    target_ratio=(10, 0.00001),
     cyclic_times=1,
     step_ratio_up=0.4)
 momentum_config = dict(
