@@ -64,7 +64,7 @@ model = dict(
     ),
 
     #Fusion layer
-    fusion_module = dict(type='MultiHeadCrossAttentionVoxel',embed_dim = 512, num_heads=1, dropout = 0.1, out_channels = 512, norm_cfg=dict(type='SyncBN', requires_grad=True)),
+    fusion_module = dict(type='MultiHeadCrossAttentionVoxelSliceSamp',embed_dim = 512, num_heads=1, dropout = 0.1, out_channels=512, norm_cfg=dict(type='SyncBN', requires_grad=True)),
 
     bbox_head=dict(
         type='TransFusionHead',

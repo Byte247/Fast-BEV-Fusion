@@ -23,7 +23,6 @@ import ipdb  # noqa
 class FastBEVFusionTransfusionheadVoxel(BaseDetector):
     def __init__(
         self,
-        second_stage,
         backbone,
         neck,
         neck_3d,
@@ -50,7 +49,6 @@ class FastBEVFusionTransfusionheadVoxel(BaseDetector):
     ):
         super().__init__(init_cfg=init_cfg)
 
-        self.second_stage = second_stage
         #Point
         self.pts_voxel_layer = Voxelization(**pts_voxel_layer)
         self.pts_voxel_encoder = builder.build_voxel_encoder(pts_voxel_encoder)
@@ -58,12 +56,12 @@ class FastBEVFusionTransfusionheadVoxel(BaseDetector):
                 pts_middle_encoder)
         self.pts_neck = builder.build_neck(pts_neck)
 
-        if self.second_stage:
-            #Fusion
-            self.fusion_module = builder.build_fusion_layer(fusion_module)
-            self.backbone = builder.build_backbone(backbone)
-            self.neck = builder.build_neck(neck)
-            self.neck_3d = builder.build_neck(neck_3d)
+        
+        #Fusion
+        self.fusion_module = builder.build_fusion_layer(fusion_module)
+        self.backbone = builder.build_backbone(backbone)
+        self.neck = builder.build_neck(neck)
+        self.neck_3d = builder.build_neck(neck_3d)
 
         if bbox_head is not None:
             bbox_head.update(train_cfg=train_cfg)
@@ -77,8 +75,8 @@ class FastBEVFusionTransfusionheadVoxel(BaseDetector):
             self.seg_head = build_seg_head(seg_head)
         else:
             self.seg_head = None
-        if self.second_stage:
-            if bbox_head_2d is not None:
+        
+        if bbox_head_2d is not None:
                 bbox_head_2d.update(train_cfg=train_cfg_2d)
                 bbox_head_2d.update(test_cfg=test_cfg_2d)
                 self.bbox_head_2d = builder.build_head(bbox_head_2d)
@@ -278,22 +276,20 @@ class FastBEVFusionTransfusionheadVoxel(BaseDetector):
         
         lidar_features = self.extract_pts_feat(points)
 
-        if self.second_stage:
-            feature_bev, valids, features_2d = self.extract_feat(img, img_metas, "train")
+        
+        feature_bev,_, features_2d = self.extract_feat(img, img_metas, "train")
 
 
-            """
-            feature_bev: [(1, 256, 100, 100)]
-            valids: (1, 1, 200, 200, 12)
-            features_2d: [[6, 64, 232, 400], [6, 64, 116, 200], [6, 64, 58, 100], [6, 64, 29, 50]]
-            """
+        """
+        feature_bev: [(1, 256, 100, 100)]
+        valids: (1, 1, 200, 200, 12)
+        features_2d: [[6, 64, 232, 400], [6, 64, 116, 200], [6, 64, 58, 100], [6, 64, 29, 50]]
+        """
 
+        
+        #fuse lidar BEV and camera BEV features
+        feature_bev = self.fusion_module(lidar_features, feature_bev)
             
-            #fuse lidar BEV and camera BEV features
-            feature_bev = self.fusion_module(lidar_features, feature_bev)
-            
-        else:
-            feature_bev = [lidar_features]
 
 
         assert self.bbox_head is not None or self.seg_head is not None
@@ -448,13 +444,11 @@ class FastBEVFusionTransfusionheadVoxel(BaseDetector):
 
         lidar_features = self.extract_pts_feat(points)
 
-        if self.second_stage:
-            feature_bev, _, features_2d = self.extract_feat(img, img_metas, "test")
-            #fuse lidar BEV and camera BEV features
-            feature_bev = self.fusion_module(lidar_features[0], feature_bev[0])
-            feature_bev =[feature_bev]
-        else:
-            feature_bev = lidar_features
+        
+        feature_bev, _, _ = self.extract_feat(img, img_metas, "test")
+        #fuse lidar BEV and camera BEV features
+        feature_bev = self.fusion_module(lidar_features, feature_bev)
+
 
 
         if self.bbox_head is not None:
