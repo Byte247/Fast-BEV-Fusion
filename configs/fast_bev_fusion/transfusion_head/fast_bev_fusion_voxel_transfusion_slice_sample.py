@@ -48,7 +48,7 @@ model = dict(
         type='SpMiddleResNetFHD',
         in_channels=5,
         sparse_shape=[41, 1440, 1440],
-        norm_cfg=dict(type='BN', requires_grad=True),
+        norm_cfg=dict(type='BN1d', requires_grad=True),
         freeze_layers = False),
 
     pts_neck=dict(
