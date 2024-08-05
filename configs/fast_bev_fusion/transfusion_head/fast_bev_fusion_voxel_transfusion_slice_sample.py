@@ -22,7 +22,7 @@ model = dict(
         num_stages=4,
         out_indices=(0, 1, 2, 3),
         frozen_stages=1,
-        norm_cfg=dict(type='SyncBN', requires_grad=True),
+        norm_cfg=dict(type='BN', requires_grad=True),
         norm_eval=True,
         init_cfg=dict(type='Pretrained', checkpoint='torchvision://resnet50'),
         style='pytorch',
@@ -31,7 +31,7 @@ model = dict(
     ),
     neck=dict(
         type='FPN',
-        norm_cfg=dict(type='SyncBN', requires_grad=True),
+        norm_cfg=dict(type='BN', requires_grad=True),
         in_channels=[256, 512, 1024, 2048],
         out_channels=64,
         num_outs=4),
@@ -48,7 +48,7 @@ model = dict(
         type='SpMiddleResNetFHD',
         in_channels=5,
         sparse_shape=[41, 1440, 1440],
-        norm_cfg=dict(type='SyncBN', requires_grad=True),
+        norm_cfg=dict(type='BN', requires_grad=True),
         freeze_layers=True),
 
     pts_neck=dict(
@@ -59,12 +59,12 @@ model = dict(
         us_layer_strides=[1, 2],
         us_num_filters=[128, 256], # default 128x128
         num_input_features=[704,256], #num features in the feature maps block 4 and 5
-        norm_cfg=dict(type='SyncBN', requires_grad=True),
+        norm_cfg=dict(type='BN', requires_grad=True),
         freeze_layers = True,
     ),
 
     #Fusion layer
-    fusion_module = dict(type='MultiHeadCrossAttentionVoxelSliceSamp',embed_dim = 512, num_heads=1, dropout = 0.1, out_channels=512, norm_cfg=dict(type='SyncBN', requires_grad=True)),
+    fusion_module = dict(type='MultiHeadCrossAttentionVoxelSliceSamp',embed_dim = 512, num_heads=1, dropout = 0.1, out_channels=512, norm_cfg=dict(type='BN', requires_grad=True)),
 
     bbox_head=dict(
         type='TransFusionHead',
@@ -79,8 +79,8 @@ model = dict(
         initialize_by_heatmap=True,
         nms_kernel_size=3,
         ffn_channel=256,
-        norm_cfg=dict(type='SyncBN', requires_grad=True),
-        two_d_norm_cfg=dict(type='SyncBN', requires_grad=True),
+        norm_cfg=dict(type='BN1d', requires_grad=True),
+        two_d_norm_cfg=dict(type='BN', requires_grad=True),
         dropout=0.1,
         bn_momentum=0.1,
         activation='relu',
