@@ -49,7 +49,7 @@ model = dict(
         in_channels=5,
         sparse_shape=[41, 1440, 1440],
         norm_cfg=dict(type='BN', requires_grad=True),
-        freeze_layers=True),
+        freeze_layers = False),
 
     pts_neck=dict(
         type="RPNV3",
@@ -60,7 +60,7 @@ model = dict(
         us_num_filters=[128, 256], # default 128x128
         num_input_features=[704,256], #num features in the feature maps block 4 and 5
         norm_cfg=dict(type='BN', requires_grad=True),
-        freeze_layers = True,
+        freeze_layers = False,
     ),
 
     #Fusion layer
