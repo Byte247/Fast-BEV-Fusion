@@ -14,7 +14,7 @@ class ConvBNReLU(nn.Module):
             padding = (kernel_size - 1) // 2
         self.conv = nn.Conv2d(in_planes, out_planes, kernel_size, stride, padding, bias=False)
         self.bn = build_norm_layer(norm_cfg, out_planes)[1]
-        self.relu = nn.GELU(inplace=True)
+        self.relu = nn.GELU()
 
     def forward(self, x):
         x = self.conv(x)
@@ -215,7 +215,7 @@ class ConvBNReLU(nn.Module):
             padding = (kernel_size - 1) // 2
         self.conv = nn.Conv2d(in_planes, out_planes, kernel_size, stride, padding, bias=False)
         self.bn = build_norm_layer(norm_cfg, out_planes)[1]
-        self.relu = nn.GELU(inplace=True)
+        self.relu = nn.GELU()
 
     def forward(self, x):
         x = self.conv(x)
@@ -230,7 +230,7 @@ class ConvTransposeBNReLU(nn.Module):
             padding = (kernel_size - 1) // 2
         self.conv = nn.ConvTranspose2d(in_planes, out_planes, kernel_size, stride, padding, bias=False)
         self.bn = build_norm_layer(norm_cfg, out_planes)[1]
-        self.relu = nn.GELU(inplace=True)
+        self.relu = nn.GELU()
 
     def forward(self, x):
         x = self.conv(x)
