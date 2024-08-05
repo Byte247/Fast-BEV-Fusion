@@ -211,7 +211,8 @@ class FastBEVFusionTransfusionheadVoxel(BaseDetector):
 
         voxel_features = self.pts_voxel_encoder(voxels, num_points, coors)
         batch_size = coors[-1, 0] + 1
-
+        print(f"voxel_features: {len(voxel_features)}")
+        print(f"voxel_features: {voxel_features[0].shape}")
         x = self.pts_middle_encoder(voxel_features, coors, batch_size)
         
         x = self.pts_neck(x)
