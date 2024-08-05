@@ -239,7 +239,7 @@ train_pipeline = [
         n_images=6,
         transforms=[
             dict(type='LoadImageFromFile'),
-            dict(type='Resize', img_scale=(1600, 900), keep_ratio=True),
+            dict(type='Resize', img_scale=(800, 450), keep_ratio=True),
             dict(type='Pad', size_divisor=32)
             ]),
     dict(type='RandomAugImageMultiViewImage', data_config=data_config),
