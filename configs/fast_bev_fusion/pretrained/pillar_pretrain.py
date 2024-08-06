@@ -45,7 +45,7 @@ model = dict(
         norm_cfg=dict(type='BN', requires_grad=True),
         upsample_cfg=dict(type='deconv', bias=False),
         use_conv_for_no_stride=True),
-    bbox_head=dict(
+    pts_bbox_head=dict(
         type='TransFusionHead',
         num_proposals=200,
         auxiliary=True,
