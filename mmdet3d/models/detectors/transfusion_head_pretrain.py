@@ -80,7 +80,6 @@ class TransFusionHeadPretrain(MVXTwoStageDetector):
 
         x = self.pts_middle_encoder(voxel_features, coors, batch_size)
         if self.with_pts_backbone:
-            print(f"in with backbone")
             x = self.pts_backbone(x)
         
         x = self.pts_neck(x)
