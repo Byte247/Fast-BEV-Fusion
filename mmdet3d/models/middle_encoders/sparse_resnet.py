@@ -218,8 +218,6 @@ class SpMiddleResNetFHD(nn.Module):
         coors = coors.int()
         ret = SparseConvTensor(voxel_features, coors, self.sparse_shape, batch_size)
 
-        print(f"ret: {ret.features.shape}")
-
         x = self.conv_input(ret)
 
         x_conv1 = self.conv1(x)
