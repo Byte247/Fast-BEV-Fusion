@@ -20,7 +20,7 @@ model = dict(
         num_stages=4,
         out_indices=(0, 1, 2, 3),
         frozen_stages=1,
-        norm_cfg=dict(type='SyncBN', requires_grad=True),
+        norm_cfg=dict(type='BN', requires_grad=True),
         norm_eval=True,
         init_cfg=dict(type='Pretrained', checkpoint='torchvision://resnet50'),
         style='pytorch',
@@ -29,19 +29,14 @@ model = dict(
     ),
     neck=dict(
         type='FPN',
-        norm_cfg=dict(type='SyncBN', requires_grad=True),
+        norm_cfg=dict(type='BN', requires_grad=True),
         in_channels=[256, 512, 1024, 2048],
         out_channels=64,
         num_outs=4),
     neck_fuse=dict(in_channels=256, out_channels=64),
     neck_3d=dict(
-        type='M2BevNeckLeakyRelu',
-        in_channels=384,
-        out_channels=256,
-        num_layers=6,
-        stride=2,
-        is_transpose=False,
-        norm_cfg=dict(type='SyncBN', requires_grad=True)),
+        type='M2BevNeckTransOnly',
+        is_transpose=False),
 
     #Point Modules:
     pts_voxel_layer=dict(
@@ -52,8 +47,9 @@ model = dict(
         feat_channels=[64,64],
         with_distance=False,
         voxel_size=(0.2, 0.2, 8),
-        norm_cfg=dict(type='SyncBN', requires_grad=True),
-        legacy=False),
+        norm_cfg=dict(type='BN1d', eps=1e-3, momentum=0.01),
+        legacy=False,
+        freeze_layers=True),
     pts_middle_encoder=dict(
         type='PointPillarsScatter', in_channels=64, output_shape=(512, 512)),
     pts_backbone=dict(
@@ -62,20 +58,22 @@ model = dict(
         out_channels=[64, 128, 256],
         layer_nums=[3, 5, 5],
         layer_strides=[2, 2, 2],
-        norm_cfg=dict(type='SyncBN', requires_grad=True),
-        conv_cfg=dict(type='Conv2d', bias=False)),
+        norm_cfg=dict(type='BN', requires_grad=True),
+        conv_cfg=dict(type='Conv2d', bias=False),
+        freeze_layers=True),
     pts_neck=dict(
         type='SECONDFPN',
         in_channels=[64, 128, 256],
         out_channels=[128, 128, 128],
         upsample_strides=[0.5, 1, 2],
-        norm_cfg=dict(type='SyncBN', requires_grad=True),
+        norm_cfg=dict(type='BN', requires_grad=True),
         upsample_cfg=dict(type='deconv', bias=False),
-        use_conv_for_no_stride=True),
+        use_conv_for_no_stride=True,
+        freeze_layers=True),
 
 
     #Fusion layer
-    fusion_module = dict(type='MultiHeadCrossAttentionV2',embed_dim = 512, num_heads=1, dropout = 0.1, fuse_on_lidar=True, norm_cfg=dict(type='SyncBN', requires_grad=True)),
+    fusion_module = dict(type='MultiHeadCrossAttentionNoNeck',embed_dim = 512, num_heads=1, dropout = 0.1, fuse_on_lidar=True, norm_cfg=dict(type='BN', requires_grad=True)),
 
     bbox_head=dict(
         type='TransFusionHead',
@@ -93,7 +91,7 @@ model = dict(
         dropout=0.1,
         bn_momentum=0.1,
         activation='relu',
-        norm_cfg = dict(type='SyncBN', requires_grad=True),
+        norm_cfg = dict(type='BN', requires_grad=True),
         common_heads=dict(center=(2, 2), height=(1, 2), dim=(3, 2), rot=(2, 2), vel=(2, 2)),
         bbox_coder=dict(
             type='TransFusionBBoxCoder',
