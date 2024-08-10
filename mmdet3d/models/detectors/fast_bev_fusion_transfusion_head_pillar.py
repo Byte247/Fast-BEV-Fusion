@@ -319,7 +319,7 @@ class FastBEVFusionTransfusionheadPillar(BaseDetector):
 
         losses = dict()
         if self.bbox_head is not None:
-            outs = self.bbox_head(feature_bev, features_2d, img_metas)
+            outs = self.bbox_head(feature_bev)
             loss_inputs = [gt_bboxes_3d, gt_labels_3d, outs]
             loss_det = self.bbox_head.loss(*loss_inputs)
             losses.update(loss_det)
