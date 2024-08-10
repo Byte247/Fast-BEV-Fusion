@@ -212,7 +212,9 @@ class MultiHeadCrossAttentionNoNeck(nn.Module):
         return camera_patches
     
     def forward(self, lidar_bev_features, camera_bev_features):
-
+        
+        lidar_bev_features = lidar_bev_features[0]
+        camera_bev_features = camera_bev_features[0]
         
         lidar_bev_features = self.reduce_lidar_channel(lidar_bev_features)
 
