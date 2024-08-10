@@ -91,7 +91,8 @@ model = dict(
         dropout=0.1,
         bn_momentum=0.1,
         activation='relu',
-        norm_cfg = dict(type='BN', requires_grad=True),
+        norm_cfg = dict(type='BN1d', requires_grad=True),
+        two_d_norm_cfg=dict(type='BN', requires_grad=True),
         common_heads=dict(center=(2, 2), height=(1, 2), dim=(3, 2), rot=(2, 2), vel=(2, 2)),
         bbox_coder=dict(
             type='TransFusionBBoxCoder',
