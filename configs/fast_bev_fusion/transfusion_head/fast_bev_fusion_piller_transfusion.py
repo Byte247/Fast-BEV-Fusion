@@ -13,7 +13,7 @@ class_names = [
 
 
 model = dict(
-    type='FastBEVFusionTransfusionhead',
+    type='FastBEVFusionTransfusionheadPillar',
     backbone=dict(
         type='ResNet',
         depth=50,
