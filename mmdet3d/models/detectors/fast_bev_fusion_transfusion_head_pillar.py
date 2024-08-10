@@ -9,7 +9,7 @@ from mmseg.models import build_head as build_seg_head
 from mmdet.models.detectors import BaseDetector
 from mmdet3d.core import bbox3d2result
 from mmseg.ops import resize
-from mmcv.runner import get_dist_info, auto_fp16
+from mmcv.runner import get_dist_info
 from mmdet3d.ops import Voxelization
 from .. import builder
 from mmcv.runner import force_fp32
@@ -23,7 +23,6 @@ import ipdb  # noqa
 class FastBEVFusionTransfusionheadPillar(BaseDetector):
     def __init__(
         self,
-        second_stage,
         backbone,
         neck,
         neck_3d,
@@ -51,7 +50,6 @@ class FastBEVFusionTransfusionheadPillar(BaseDetector):
     ):
         super().__init__(init_cfg=init_cfg)
 
-        self.second_stage = second_stage
         #Point
         self.pts_voxel_layer = Voxelization(**pts_voxel_layer)
         self.pts_voxel_encoder = builder.build_voxel_encoder(pts_voxel_encoder)
@@ -273,7 +271,6 @@ class FastBEVFusionTransfusionheadPillar(BaseDetector):
 
 
 
-    @auto_fp16(apply_to=('img', 'points'))
     def forward(self, img, img_metas, return_loss=True, **kwargs):
         """Calls either :func:`forward_train` or :func:`forward_test` depending
         on whether ``return_loss`` is ``True``.
