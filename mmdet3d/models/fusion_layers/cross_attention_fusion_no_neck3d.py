@@ -158,9 +158,9 @@ class MultiHeadCrossAttentionNoNeck(nn.Module):
         self.fuse_on_lidar = fuse_on_lidar
 
 
-        self.reduce_camera_spatialy = ConvBNReLU(1536, 1024, kernel_size=3, stride=2, padding=1, norm_cfg = self.norm_cfg)
+        self.reduce_camera_spatialy = ConvBNReLU(384, 512, kernel_size=3, stride=2, padding=1, norm_cfg = self.norm_cfg)
 
-        self.reduce_camera_spatialy_between = ConvBNReLU(1024, self.embed_dim, kernel_size=3, stride=1, padding=1, norm_cfg = self.norm_cfg)
+        self.reduce_camera_spatialy_between = ConvBNReLU(512, self.embed_dim, kernel_size=3, stride=1, padding=1, norm_cfg = self.norm_cfg)
         
         self.reduce_camera_spatialy_2 = ConvBNReLU(self.embed_dim, self.embed_dim, kernel_size=3, stride=2, padding=1, norm_cfg = self.norm_cfg)
     
