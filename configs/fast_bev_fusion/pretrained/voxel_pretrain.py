@@ -20,26 +20,37 @@ model = dict(
         max_num_points=10, voxel_size=voxel_size, max_voxels=(120000, 160000), point_cloud_range=point_cloud_range),
     pts_voxel_encoder=dict(type='HardSimpleVFE', num_features=5),
     pts_middle_encoder=dict(
-        type='SpMiddleResNetFHD',
+        type='SparseEncoder',
         in_channels=5,
         sparse_shape=[41, 1440, 1440],
-        norm_cfg=dict(type='SyncBN', requires_grad=True)),
-
-    pts_neck=dict(
-        type="RPNV3",
+        output_channels=128,
+        order=('conv', 'norm', 'act'),
+        encoder_channels=((16, 16, 32), (32, 32, 64), (64, 64, 128), (128, 128)),
+        encoder_paddings=((0, 0, 1), (0, 0, 1), (0, 0, [0, 1, 1]), (0, 0)),
+        block_type='basicblock',
+        norm_cfg=dict(type='SyncBN', requires_grad=True),),
+    pts_backbone=dict(
+        type='SECOND',
+        in_channels=256,
+        out_channels=[128, 256],
         layer_nums=[5, 5],
-        ds_layer_strides=[1, 2],
-        ds_num_filters=[256, 256],
-        us_layer_strides=[1, 2],
-        us_num_filters=[128, 256], # default 128x128
-        num_input_features=[704,256], #num features in the feature maps block 4 and 5
-        norm_cfg=dict(type='SyncBN', requires_grad=True)
-    ),
+        layer_strides=[1, 2],
+        norm_cfg=dict(type='SyncBN', requires_grad=True),
+        conv_cfg=dict(type='Conv2d', bias=False)),
+    pts_neck=dict(
+        type='SECONDFPN',
+        in_channels=[128, 256],
+        out_channels=[256, 256],
+        upsample_strides=[1, 2],
+        norm_cfg=dict(type='SyncBN', requires_grad=True),
+        upsample_cfg=dict(type='deconv', bias=False),
+        use_conv_for_no_stride=True),
+    
     bbox_head=dict(
         type='TransFusionHead',
         num_proposals=200,
         auxiliary=True,
-        in_channels=384,
+        in_channels=256,
         hidden_channel=128,
         num_classes=len(class_names),
         num_decoder_layers=1,
@@ -156,7 +167,7 @@ train_pipeline = [
         file_client_args=file_client_args),
     dict(
         type='LoadPointsFromMultiSweeps',
-        sweeps_num=9,
+        sweeps_num=10,
         use_dim=[0, 1, 2, 3, 4],
         file_client_args=file_client_args,
         pad_empty_sweeps=True,
@@ -190,7 +201,7 @@ test_pipeline = [
         file_client_args=file_client_args),
     dict(
         type='LoadPointsFromMultiSweeps',
-        sweeps_num=9,
+        sweeps_num=10,
         use_dim=[0, 1, 2, 3, 4],
         file_client_args=file_client_args,
         pad_empty_sweeps=True,
@@ -224,7 +235,7 @@ eval_pipeline = [
         file_client_args=file_client_args),
     dict(
         type='LoadPointsFromMultiSweeps',
-        sweeps_num=9,
+        sweeps_num=10,
         use_dim=[0, 1, 2, 3, 4],
         file_client_args=file_client_args,
         pad_empty_sweeps=True,
@@ -263,21 +274,18 @@ input_modality = dict(
     use_map=False,
     use_external=False)
 
-optimizer = dict(type='AdamW', lr=1e-4,
-                 weight_decay=0.01)
-# max_norm=10 is better for SECOND
-optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
-
-# learning policy
+optimizer = dict(type='AdamW', lr=0.0001, weight_decay=0.01)  # for 8gpu * 2sample_per_gpu
+optimizer_config = dict(grad_clip=dict(max_norm=0.1, norm_type=2))
 lr_config = dict(
-    policy='poly',
-    warmup='linear',
-    warmup_iters=1000,
-    warmup_ratio=1e-6,
-    power=1.0,
-    min_lr=0,
-    by_epoch=False
-    )
+    policy='cyclic',
+    target_ratio=(10, 0.0001),
+    cyclic_times=1,
+    step_ratio_up=0.4)
+momentum_config = dict(
+    policy='cyclic',
+    target_ratio=(0.8947368421052632, 1),
+    cyclic_times=1,
+    step_ratio_up=0.4)
 
 # runtime settings
 runner = dict(type='EpochBasedRunner', max_epochs=20)
