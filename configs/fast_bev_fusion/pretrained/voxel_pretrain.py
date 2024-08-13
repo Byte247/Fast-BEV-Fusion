@@ -197,26 +197,25 @@ test_pipeline = [
         type='LoadPointsFromFile',
         coord_type='LIDAR',
         load_dim=5,
-        use_dim=5,
-        file_client_args=file_client_args),
+        use_dim=[0, 1, 2, 3, 4],
+    ),
     dict(
         type='LoadPointsFromMultiSweeps',
         sweeps_num=10,
         use_dim=[0, 1, 2, 3, 4],
-        file_client_args=file_client_args,
-        pad_empty_sweeps=True,
-        remove_close=True),
+    ),
     dict(
         type='MultiScaleFlipAug3D',
-        img_scale=(512, 512),
+        img_scale=(1333, 800),
         pts_scale_ratio=1,
         flip=False,
         transforms=[
             dict(
                 type='GlobalRotScaleTrans',
                 rot_range=[0, 0],
-                scale_ratio_range=[1., 1.],
+                scale_ratio_range=[1.0, 1.0],
                 translation_std=[0, 0, 0]),
+            dict(type='RandomFlip3D'),
             dict(
                 type='DefaultFormatBundle3D',
                 class_names=class_names,
