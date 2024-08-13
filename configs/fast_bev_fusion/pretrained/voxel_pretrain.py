@@ -4,7 +4,7 @@ _base_ = [
 
 point_cloud_range = [-54.0, -54.0, -5.0, 54.0, 54.0, 3.0]
 voxel_size = [0.075, 0.075, 0.2]
-out_size_factor = 4
+out_size_factor = 8
 
 # For nuScenes we usually do 10-class detection
 class_names = [
