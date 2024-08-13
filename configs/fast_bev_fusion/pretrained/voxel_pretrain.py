@@ -247,7 +247,7 @@ eval_pipeline = [
 ]
 
 data = dict(
-    samples_per_gpu=2,
+    samples_per_gpu=4,
     workers_per_gpu=1,
     train=dict(
          type='CBGSDataset',
@@ -297,7 +297,7 @@ checkpoint_config = dict(interval=1)
 # For more loggers see
 # https://mmcv.readthedocs.io/en/latest/api.html#mmcv.runner.LoggerHook
 log_config = dict(
-    interval=200,
+    interval=100,
     hooks=[
         dict(type='TextLoggerHook'),
         dict(type='TensorboardLoggerHook')
