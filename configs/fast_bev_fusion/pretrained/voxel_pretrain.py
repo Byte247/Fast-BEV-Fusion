@@ -273,7 +273,7 @@ input_modality = dict(
     use_map=False,
     use_external=False)
 
-optimizer = dict(type='AdamW', lr=0.0001, weight_decay=0.01)  # for 8gpu * 2sample_per_gpu
+optimizer = dict(type='AdamW', lr=0.00001, weight_decay=0.01)  # for 8gpu * 2sample_per_gpu
 optimizer_config = dict(grad_clip=dict(max_norm=0.1, norm_type=2))
 lr_config = dict(
     policy='cyclic',
@@ -287,7 +287,7 @@ momentum_config = dict(
     step_ratio_up=0.4)
 
 # runtime settings
-runner = dict(type='EpochBasedRunner', max_epochs=20)
+runner = dict(type='EpochBasedRunner', max_epochs=10)
 
 
 
