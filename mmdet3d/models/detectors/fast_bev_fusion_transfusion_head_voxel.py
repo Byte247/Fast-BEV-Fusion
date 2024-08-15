@@ -34,6 +34,7 @@ class FastBEVFusionTransfusionheadVoxel(BaseDetector):
         seg_head=None,
         pts_voxel_encoder=None,
         pts_middle_encoder=None,
+        pts_backbone=None,
         pts_neck=None,
         fusion_module=None,
         bbox_head_2d=None,
@@ -55,6 +56,7 @@ class FastBEVFusionTransfusionheadVoxel(BaseDetector):
         self.pts_middle_encoder= builder.build_middle_encoder(
                 pts_middle_encoder)
         self.pts_neck = builder.build_neck(pts_neck)
+        self.pts_backbone = builder.build_backbone(pts_backbone)
 
         
         #Fusion
@@ -213,6 +215,8 @@ class FastBEVFusionTransfusionheadVoxel(BaseDetector):
         batch_size = coors[-1, 0] + 1
         
         x = self.pts_middle_encoder(voxel_features, coors, batch_size)
+
+        x = self.pts_backbone(x)
         
         x = self.pts_neck(x)
 
