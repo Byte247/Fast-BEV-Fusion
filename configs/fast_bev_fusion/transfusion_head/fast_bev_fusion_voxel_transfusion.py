@@ -325,6 +325,7 @@ optimizer = dict(type='AdamW', lr=1e-4,
 
 
 optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
+
 lr_config = dict(
     policy='cyclic',
     target_ratio=(10, 0.0001),

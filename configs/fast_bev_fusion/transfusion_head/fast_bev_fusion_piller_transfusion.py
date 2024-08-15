@@ -337,13 +337,13 @@ lr_config = dict(
      policy='cyclic',
      target_ratio=(10, 1e-4),
      cyclic_times=1,
-     step_ratio_up=0.4,
+     step_ratio_up=0.3,
  )
 momentum_config = dict(
      policy='cyclic',
      target_ratio=(0.85 / 0.95, 1),
      cyclic_times=1,
-     step_ratio_up=0.4,
+     step_ratio_up=0.3,
  )
 
 
