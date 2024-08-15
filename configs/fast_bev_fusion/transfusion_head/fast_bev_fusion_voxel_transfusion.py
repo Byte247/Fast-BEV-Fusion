@@ -43,6 +43,7 @@ model = dict(
     #Point Modules:
     pts_voxel_layer=dict(
         max_num_points=10, voxel_size=voxel_size, max_voxels=(120000, 160000), point_cloud_range=point_cloud_range),
+    pts_voxel_encoder=dict(type='HardSimpleVFE', num_features=5),
     pts_middle_encoder=dict(
         type='SparseEncoder',
         in_channels=5,
@@ -52,7 +53,8 @@ model = dict(
         encoder_channels=((16, 16, 32), (32, 32, 64), (64, 64, 128), (128, 128)),
         encoder_paddings=((0, 0, 1), (0, 0, 1), (0, 0, [0, 1, 1]), (0, 0)),
         block_type='basicblock',
-        norm_cfg=dict(type='SyncBN', requires_grad=True),),
+        norm_cfg=dict(type='SyncBN', requires_grad=True)),
+
     pts_backbone=dict(
         type='SECOND',
         in_channels=256,
@@ -61,6 +63,7 @@ model = dict(
         layer_strides=[1, 2],
         norm_cfg=dict(type='SyncBN', requires_grad=True),
         conv_cfg=dict(type='Conv2d', bias=False)),
+
     pts_neck=dict(
         type='SECONDFPN',
         in_channels=[128, 256],
