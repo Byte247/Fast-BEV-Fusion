@@ -324,7 +324,12 @@ data = dict(
         box_type_3d='LiDAR'))
 
 optimizer = dict(type='AdamW', lr=1e-4,
-                 weight_decay=0.01)
+                  weight_decay=0.01,
+                  paramwise_cfg=dict(
+                  custom_keys={'backbone': dict(lr_mult=0.1, decay_mult=1.0),
+                               'bbox_head': dict(lr_mult=0.1, decay_mult=1.0),
+                               'pos_embed_camera': dict(lr_mult=1.0, decay_mult=.0),
+                               'pos_embed_lidar': dict(lr_mult=1.0, decay_mult=.0)}))
 
 
 optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
