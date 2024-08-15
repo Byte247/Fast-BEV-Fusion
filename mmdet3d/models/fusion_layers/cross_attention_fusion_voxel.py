@@ -253,12 +253,11 @@ class MultiHeadCrossAttentionVoxel(nn.Module):
         reduced_lidar_bev_features = self.reduce_lidar_spatially(lidar_bev_features)
         reduced_lidar_bev_features = self.lidar_conv_0(reduced_lidar_bev_features) #180x180
 
-        reduce_lidar_twice = self.reduce_lidar_2(reduced_lidar_bev_features)
-        reduce_lidar_twice = self.lidar_conv_2(reduce_lidar_twice) #90x90
+        print(f"reduced_lidar_bev_features: {reduced_lidar_bev_features.shape}")
 
         # # get patch embeddings
         image_patch_embedding = self.create_camera_patches(camera_bev_features)
-        lidar_patch_embedding = self.create_lidar_patches(reduce_lidar_twice) #90x90 -> 8100
+        lidar_patch_embedding = self.create_lidar_patches(reduced_lidar_bev_features) #90x90 -> 8100
 
 
         cross_attention = self.lidar_camera_cross_attention(lidar_patch_embedding, image_patch_embedding)
@@ -267,7 +266,7 @@ class MultiHeadCrossAttentionVoxel(nn.Module):
         cross_attention = cross_attention.permute(0,2,1)
         cross_attention = cross_attention.view(cross_attention.shape[0], cross_attention.shape[1], 90, 90)  # Shape: [batch * 6, 256, 64, 64]
 
-        cross_attention = torch.add(cross_attention, reduce_lidar_twice)
+        cross_attention = torch.add(cross_attention, reduced_lidar_bev_features)
 
         upsampled_once = self.upsample_layer(cross_attention)
 
