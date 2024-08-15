@@ -43,25 +43,32 @@ model = dict(
     #Point Modules:
     pts_voxel_layer=dict(
         max_num_points=10, voxel_size=voxel_size, max_voxels=(120000, 160000), point_cloud_range=point_cloud_range),
-    pts_voxel_encoder=dict(type='HardSimpleVFE', num_features=5),
     pts_middle_encoder=dict(
-        type='SpMiddleResNetFHD',
+        type='SparseEncoder',
         in_channels=5,
         sparse_shape=[41, 1440, 1440],
-        norm_cfg=dict(type='SyncBN', requires_grad=True),
-        freeze_layers=True),
-
-    pts_neck=dict(
-        type="RPNV3",
+        output_channels=128,
+        order=('conv', 'norm', 'act'),
+        encoder_channels=((16, 16, 32), (32, 32, 64), (64, 64, 128), (128, 128)),
+        encoder_paddings=((0, 0, 1), (0, 0, 1), (0, 0, [0, 1, 1]), (0, 0)),
+        block_type='basicblock',
+        norm_cfg=dict(type='SyncBN', requires_grad=True),),
+    pts_backbone=dict(
+        type='SECOND',
+        in_channels=256,
+        out_channels=[128, 256],
         layer_nums=[5, 5],
-        ds_layer_strides=[1, 2],
-        ds_num_filters=[256, 256],
-        us_layer_strides=[1, 2],
-        us_num_filters=[128, 256], # default 128x128
-        num_input_features=[704,256], #num features in the feature maps block 4 and 5
+        layer_strides=[1, 2],
         norm_cfg=dict(type='SyncBN', requires_grad=True),
-        freeze_layers = True,
-    ),
+        conv_cfg=dict(type='Conv2d', bias=False)),
+    pts_neck=dict(
+        type='SECONDFPN',
+        in_channels=[128, 256],
+        out_channels=[256, 256],
+        upsample_strides=[1, 2],
+        norm_cfg=dict(type='SyncBN', requires_grad=True),
+        upsample_cfg=dict(type='deconv', bias=False),
+        use_conv_for_no_stride=True),
 
     #Fusion layer
     fusion_module = dict(type='MultiHeadCrossAttentionVoxel',embed_dim = 512, num_heads=1, dropout = 0.1, out_channels = 512, norm_cfg=dict(type='SyncBN', requires_grad=True)),
