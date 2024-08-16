@@ -281,12 +281,12 @@ class FastBEVFusionTransfusionheadVoxel(BaseDetector):
         lidar_features = self.extract_pts_feat(points)
 
         
-        #feature_bev,_, features_2d = self.extract_feat(img, img_metas, "train")
+        feature_bev,_, features_2d = self.extract_feat(img, img_metas, "train")
 
         
         #fuse lidar BEV and camera BEV features
-        #feature_bev = self.fusion_module(lidar_features, feature_bev)
-        feature_bev = lidar_features
+        feature_bev = self.fusion_module(lidar_features, feature_bev)
+
         assert self.bbox_head is not None or self.seg_head is not None
 
         losses = dict()
