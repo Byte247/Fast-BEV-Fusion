@@ -846,7 +846,7 @@ class TransFusionHead(nn.Module):
             
             heatmap = heatmap * (heatmap == local_max)
             heatmap = heatmap.view(batch_size, heatmap.shape[1], -1)
-
+            print(f"heatmap: {heatmap.shape}")
             # top #num_proposals among all classes
             top_proposals = heatmap.view(batch_size, -1).argsort(dim=-1, descending=True)[..., :self.num_proposals]
             top_proposals_class = top_proposals // heatmap.shape[-1]
