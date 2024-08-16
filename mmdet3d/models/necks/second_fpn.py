@@ -75,8 +75,14 @@ class SECONDFPN(BaseModule):
 
         if freeze_layers:
             print("Freeze Second FPN layers")
-            for param in self.parameters():
-                param.requires_grad = False
+            for name, module in self.named_modules():
+                # Check if the layer is a normalization layer
+                if isinstance(module, (nn.BatchNorm1d, nn.BatchNorm2d, nn.SyncBatchNorm)):
+                    continue  # Skip freezing normalization layers
+
+                # Freeze the parameters of non-normalization layers
+                for param in module.parameters():
+                    param.requires_grad = False
 
     @auto_fp16()
     def forward(self, x):

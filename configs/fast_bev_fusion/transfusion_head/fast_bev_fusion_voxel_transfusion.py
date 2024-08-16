@@ -53,7 +53,8 @@ model = dict(
         encoder_channels=((16, 16, 32), (32, 32, 64), (64, 64, 128), (128, 128)),
         encoder_paddings=((0, 0, 1), (0, 0, 1), (0, 0, [0, 1, 1]), (0, 0)),
         block_type='basicblock',
-        norm_cfg=dict(type='SyncBN', requires_grad=True)),
+        norm_cfg=dict(type='SyncBN', requires_grad=True),
+        freeze_layers=True),
 
     pts_backbone=dict(
         type='SECOND',
@@ -62,7 +63,8 @@ model = dict(
         layer_nums=[5, 5],
         layer_strides=[1, 2],
         norm_cfg=dict(type='SyncBN', requires_grad=True),
-        conv_cfg=dict(type='Conv2d', bias=False)),
+        conv_cfg=dict(type='Conv2d', bias=False),
+        freeze_layers=True),
 
     pts_neck=dict(
         type='SECONDFPN',
@@ -71,7 +73,8 @@ model = dict(
         upsample_strides=[1, 2],
         norm_cfg=dict(type='SyncBN', requires_grad=True),
         upsample_cfg=dict(type='deconv', bias=False),
-        use_conv_for_no_stride=True),
+        use_conv_for_no_stride=True,
+        freeze_layers=True),
 
     #Fusion layer
     fusion_module = dict(type='MultiHeadCrossAttentionVoxel',embed_dim = 512, num_heads=1, dropout = 0.1, out_channels = 512, norm_cfg=dict(type='SyncBN', requires_grad=True)),
@@ -290,7 +293,7 @@ test_pipeline = [
     dict(type='Collect3D', keys=['img','points'])]
 
 data = dict(
-    samples_per_gpu=4,
+    samples_per_gpu=8,
     workers_per_gpu=1,
     train=dict(
         type='CBGSDataset',

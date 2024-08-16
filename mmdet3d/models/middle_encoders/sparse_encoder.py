@@ -41,7 +41,8 @@ class SparseEncoder(nn.Module):
                                                                         64)),
                  encoder_paddings=((1, ), (1, 1, 1), (1, 1, 1), ((0, 1, 1), 1,
                                                                  1)),
-                 block_type='conv_module'):
+                 block_type='conv_module',
+                 freeze_layers=False):
         super().__init__()
         assert block_type in ['conv_module', 'basicblock']
         self.sparse_shape = sparse_shape
@@ -93,6 +94,16 @@ class SparseEncoder(nn.Module):
             padding=0,
             indice_key='spconv_down2',
             conv_type='SparseConv3d')
+        
+        if freeze_layers:
+            for name, module in self.named_modules():
+                # Check if the layer is a normalization layer
+                if isinstance(module, (nn.BatchNorm1d, nn.BatchNorm2d, nn.SyncBatchNorm)):
+                    continue  # Skip freezing normalization layers
+
+                # Freeze the parameters of non-normalization layers
+                for param in module.parameters():
+                    param.requires_grad = False
 
     #@auto_fp16(apply_to=('voxel_features', ))
     def forward(self, voxel_features, coors, batch_size):
