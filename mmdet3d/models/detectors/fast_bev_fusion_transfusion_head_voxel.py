@@ -294,7 +294,7 @@ class FastBEVFusionTransfusionheadVoxel(BaseDetector):
         #fuse lidar BEV and camera BEV features
         feature_bev = self.fusion_module(lidar_features, feature_bev)
             
-
+        print(f"feature_bev: {feature_bev[0].shape}")
 
         assert self.bbox_head is not None or self.seg_head is not None
 
