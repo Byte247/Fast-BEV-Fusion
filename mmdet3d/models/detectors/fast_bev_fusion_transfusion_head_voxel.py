@@ -284,12 +284,6 @@ class FastBEVFusionTransfusionheadVoxel(BaseDetector):
         feature_bev,_, features_2d = self.extract_feat(img, img_metas, "train")
 
 
-        """
-        feature_bev: [(1, 256, 100, 100)]
-        valids: (1, 1, 200, 200, 12)
-        features_2d: [[6, 64, 232, 400], [6, 64, 116, 200], [6, 64, 58, 100], [6, 64, 29, 50]]
-        """
-
         
         #fuse lidar BEV and camera BEV features
         feature_bev = self.fusion_module(lidar_features, feature_bev)
