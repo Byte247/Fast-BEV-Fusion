@@ -845,8 +845,9 @@ class TransFusionHead(nn.Module):
             local_max[:, 9, ] = F.max_pool2d(heatmap[:, 9], kernel_size=1, stride=1, padding=0)
             
             heatmap = heatmap * (heatmap == local_max)
+            print(f"heatmap vor erstem view: {heatmap.shape}")
             heatmap = heatmap.view(batch_size, heatmap.shape[1], -1)
-            print(f"heatmap: {heatmap.shape}")
+            print(f"heatmap vor crash: {heatmap.shape}")
             # top #num_proposals among all classes
             top_proposals = heatmap.view(batch_size, -1).argsort(dim=-1, descending=True)[..., :self.num_proposals]
             top_proposals_class = top_proposals // heatmap.shape[-1]
