@@ -80,7 +80,7 @@ model = dict(
         type='TransFusionHead',
         num_proposals=200,
         auxiliary=True,
-        in_channels=512,
+        in_channels=256 * 2,
         hidden_channel=128,
         num_classes=len(class_names),
         num_decoder_layers=1,
@@ -290,7 +290,7 @@ test_pipeline = [
     dict(type='Collect3D', keys=['img','points'])]
 
 data = dict(
-    samples_per_gpu=1,
+    samples_per_gpu=2,
     workers_per_gpu=1,
     train=dict(
         type='CBGSDataset',
@@ -349,7 +349,7 @@ momentum_config = dict(
     step_ratio_up=0.3)
 
 # runtime settings
-runner = dict(type='EpochBasedRunner', max_epochs=20)
+runner = dict(type='EpochBasedRunner', max_epochs=10)
 
 #total_epochs = 20
 checkpoint_config = dict(interval=1)

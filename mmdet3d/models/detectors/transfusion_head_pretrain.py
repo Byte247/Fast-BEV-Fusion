@@ -133,7 +133,6 @@ class TransFusionHeadPretrain(MVXTwoStageDetector):
         Returns:
             dict: Losses of each branch.
         """
-        print(f"pts_feats: {pts_feats[0].shape}")
         outs = self.bbox_head(pts_feats)
         loss_inputs = [gt_bboxes_3d, gt_labels_3d, outs]
         losses = self.bbox_head.loss(*loss_inputs)
