@@ -202,11 +202,10 @@ class MultiHeadCrossAttentionVoxel(nn.Module):
         self.pos_embed_camera = nn.Parameter(torch.randn(1, self.embed_dim, 4096) * .02) #done as in ViT: https://github.com/lucidrains/vit-pytorch/blob/main/vit_pytorch/vit.py, (14 (image hight) * 25 image width * 6 images) / 16 (image patches)
         self.pos_embed_lidar = nn.Parameter(torch.randn(1, self.embed_dim, 8100) * .02) #done as in ViT: https://github.com/lucidrains/vit-pytorch/blob/main/vit_pytorch/vit.py, no reduction for now
 
-        self.upsample_layer = ConvTransposeBNReLU(embed_dim, self.embed_dim, kernel_size=2, stride=2, norm_cfg = self.norm_cfg)
+        self.upsample_layer = ConvTransposeBNReLU(embed_dim, self.out_channels, kernel_size=2, stride=2, norm_cfg = self.norm_cfg)
 
 
-        self.upsample_layer_2 = ConvTransposeBNReLU(self.embed_dim, self.out_channels, kernel_size=2, stride=2, norm_cfg = self.norm_cfg) # match centerpoint
-
+        
 
 
 
@@ -253,8 +252,6 @@ class MultiHeadCrossAttentionVoxel(nn.Module):
         reduced_lidar_bev_features = self.reduce_lidar_spatially(lidar_bev_features)
         reduced_lidar_bev_features = self.lidar_conv_0(reduced_lidar_bev_features) #180x180
 
-        print(f"reduced_lidar_bev_features: {reduced_lidar_bev_features.shape}")
-
         # # get patch embeddings
         image_patch_embedding = self.create_camera_patches(camera_bev_features)
         lidar_patch_embedding = self.create_lidar_patches(reduced_lidar_bev_features) #90x90 -> 8100
@@ -271,9 +268,6 @@ class MultiHeadCrossAttentionVoxel(nn.Module):
         upsampled_once = self.upsample_layer(cross_attention)
 
         #residual around fusion
-        upsampled_once = torch.add(upsampled_once, reduced_lidar_bev_features)
-
-        output = self.upsample_layer_2(upsampled_once)
-        output = torch.add(output, lidar_bev_features)
+        output = torch.add(upsampled_once, lidar_bev_features)
 
         return [output]
