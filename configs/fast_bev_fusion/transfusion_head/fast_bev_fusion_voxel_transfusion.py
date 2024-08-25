@@ -255,7 +255,7 @@ train_pipeline = [
             dict(type='Resize', img_scale=(1600, 900), keep_ratio=True),
             dict(type='Pad', size_divisor=32)
             ]),
-    #dict(type='RandomAugImageMultiViewImage', data_config=data_config),
+    dict(type='RandomAugImageMultiViewImage', data_config=data_config),
     dict(type='NormalizeMultiviewImage', **img_norm_cfg),
     dict(type='PointsRangeFilter', point_cloud_range=point_cloud_range),
     dict(type='ObjectRangeFilter', point_cloud_range=point_cloud_range),
@@ -328,10 +328,12 @@ data = dict(
         box_type_3d='LiDAR'))
 
 
-optimizer = dict(type='AdamW', lr=1e-5,
+optimizer = dict(type='AdamW', lr=1e-4,
                   weight_decay=0.01,
                   paramwise_cfg=dict(
-                  custom_keys={'pos_embed_camera': dict(lr_mult=1.0, decay_mult=.0),
+                  custom_keys={'backbone': dict(lr_mult=0.1, decay_mult=1.0),
+                               'bbox_head': dict(lr_mult=0.1, decay_mult=1.0),
+                               'pos_embed_camera': dict(lr_mult=1.0, decay_mult=.0),
                                'pos_embed_lidar': dict(lr_mult=1.0, decay_mult=.0)}))
 
 
