@@ -26,8 +26,8 @@ class NuScenesMultiView_Map_MultiModalDataset(NuScenesMultiViewMultiModalDataset
         super().__init__(**kwargs)
         
         self.nusc = NuScenes(version='v1.0-trainval', dataroot=self.data_root, verbose=True)
-        self.scene2map = get_scene2map(self.nusc)
-        self.maps = get_nusc_maps()
+        #self.scene2map = get_scene2map(self.nusc)
+        #self.maps = get_nusc_maps()
         # box 2d
         self.with_box2d = with_box2d
 
