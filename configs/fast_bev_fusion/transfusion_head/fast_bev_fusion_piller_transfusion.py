@@ -232,21 +232,19 @@ train_pipeline = [
         sweeps_num=10,
         use_dim=[0, 1, 2, 3, 4],
         pad_empty_sweeps=True),
-    
-    #dict(
-    #   type='GlobalRotScaleTrans',
-    #   rot_range=[-0.3925, 0.3925],
-    #   scale_ratio_range=[0.95, 1.05],
-    #   translation_std=[0.5, 0.5, 0.5],
-    #   update_img2lidar=True),
-    #dict(
-    #    type='RandomFlip3D',
-    #    flip_2d=False,
-    #    sync_2d=False,
-    #    flip_ratio_bev_horizontal=0.5,
-    #    flip_ratio_bev_vertical=0.5,
-    #    update_img2lidar=True),
-    
+    dict(
+       type='GlobalRotScaleTrans',
+       rot_range=[-0.3925 * 2, 0.3925 * 2],
+       scale_ratio_range=[0.9, 1.1],
+       translation_std=[0.5, 0.5, 0.5],
+       update_img2lidar=True),
+    dict(
+        type='RandomFlip3D',
+        flip_2d=False,
+        sync_2d=False,
+        flip_ratio_bev_horizontal=0.5,
+        flip_ratio_bev_vertical=0.5,
+        update_img2lidar=True),
     dict(
         type='MultiViewPipeline',
         n_images=6,
@@ -254,7 +252,7 @@ train_pipeline = [
             dict(type='LoadImageFromFile'),
             dict(type='Resize', img_scale=(1600, 900), keep_ratio=True),
             dict(type='Pad', size_divisor=32)]),
-    #dict(type='RandomAugImageMultiViewImage', data_config=data_config),
+    dict(type='RandomAugImageMultiViewImage', data_config=data_config),
     dict(type='PointsRangeFilter', point_cloud_range=point_cloud_range),
     dict(type='ObjectRangeFilter', point_cloud_range=point_cloud_range),
     dict(type='ObjectNameFilter', classes=class_names),
