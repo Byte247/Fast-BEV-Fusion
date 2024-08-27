@@ -1,8 +1,4 @@
 # -*- coding: utf-8 -*-
-# If point cloud range is changed, the models should also change their point cloud range accordingly
-#point_cloud_range = [-51.2, -51.2, -5.0, 51.2, 51.2, 3.0]
-#voxel_size = [0.2, 0.2, 0.2]
-
 
 point_cloud_range = [-54.0, -54.0, -5.0, 54.0, 54.0, 3.0]
 voxel_size = [0.075, 0.075, 0.2]
@@ -23,7 +19,7 @@ model = dict(
         base_width=4,
         num_stages=4,
         out_indices=(0, 1, 2, 3),
-        frozen_stages=4,
+        frozen_stages=1,
         norm_cfg=dict(type='SyncBN', requires_grad=True),
         norm_eval=True,
         style='pytorch',

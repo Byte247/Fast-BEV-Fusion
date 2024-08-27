@@ -256,7 +256,7 @@ class MultiHeadCrossAttentionVoxelSliceSamp(nn.Module):
         self.reduce_camera_spatialy_2 = SliceSampDownsample(self.embed_dim, self.embed_dim, kernel_size=3, norm_cfg=self.norm_cfg)
 
 
-        self.reduce_lidar_spatially = SliceSampDownsample(384, self.embed_dim,norm_cfg = self.norm_cfg)
+        self.reduce_lidar_spatially = SliceSampDownsample(512, self.embed_dim,norm_cfg = self.norm_cfg)
         self.lidar_conv_0 = ConvBNReLU(self.embed_dim, self.embed_dim, kernel_size=3, stride=1, padding=1,norm_cfg = self.norm_cfg)
 
         self.reduce_lidar_2 = SliceSampDownsample(self.embed_dim, self.embed_dim, norm_cfg = self.norm_cfg)
