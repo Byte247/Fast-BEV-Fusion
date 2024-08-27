@@ -294,7 +294,7 @@ test_pipeline = [
     dict(type='Collect3D', keys=['img','points'])]
 
 data = dict(
-    samples_per_gpu=2,
+    samples_per_gpu=1,
     workers_per_gpu=1,
     train=dict(
         type='CBGSDataset',
@@ -344,13 +344,13 @@ lr_config = dict(
     policy='cyclic',
     target_ratio=(10, 0.0001),
     cyclic_times=1,
-    step_ratio_up=0.2)
+    step_ratio_up=0.3)
 
 momentum_config = dict(
     policy='cyclic',
     target_ratio=(0.8947368421052632, 1),
     cyclic_times=1,
-    step_ratio_up=0.2)
+    step_ratio_up=0.3)
 
 # runtime settings
 runner = dict(type='EpochBasedRunner', max_epochs=20)
