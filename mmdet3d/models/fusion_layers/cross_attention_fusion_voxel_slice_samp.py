@@ -60,7 +60,7 @@ class SliceUpsamp(nn.Module):
         self.depthwise_conv = nn.Conv2d(in_channels // 4, in_channels // 4, kernel_size=kernel_size, groups=in_channels // 4, padding=kernel_size // 2, bias=False)
         self.depthwise_bn = build_norm_layer(norm_cfg, in_channels // 4)[1]
         self.pointwise_conv = nn.Conv2d(in_channels // 4, out_channels, kernel_size=1, bias=False)
-        self.pointwise_bn = build_norm_layer(norm_cfg, out_channels // 4)[1]
+        self.pointwise_bn = build_norm_layer(norm_cfg, out_channels)[1]
         self.gelu = nn.GELU()
 
     def forward(self, X):
