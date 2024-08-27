@@ -101,22 +101,40 @@ class FastBEVFusionTransfusionheadVoxel(BaseDetector):
         # style
         self.style = style
         assert self.style in ["v1", "v2", "v3"], self.style
-
+    """
     @staticmethod
     def _compute_projection(img_meta, stride, noise=0):
         projection = []
         intrinsic = torch.tensor(img_meta["lidar2img"]["intrinsic"][:3, :3])
         intrinsic[:2] /= stride
 
-        #print(f"intrinsic after stride: {intrinsic}")
         extrinsics = map(torch.tensor, img_meta["lidar2img"]["extrinsic"])
-        #print(f"extrinsics: {extrinsics}")
         for extrinsic in extrinsics:
             if noise > 0:
                 projection.append(intrinsic @ extrinsic[:3] + noise)
             else:
                 projection.append(intrinsic @ extrinsic[:3])
         return torch.stack(projection)
+    """
+
+    def _compute_projection(img_meta, stride, noise=0):
+        # Create the intrinsic matrix directly on the GPU
+        intrinsic = torch.tensor(img_meta["lidar2img"]["intrinsic"][:3, :3], device=img_meta.device)
+        intrinsic[:2] /= stride
+
+        # Convert extrinsics to tensors on the GPU directly and accumulate projections
+        extrinsics = map(lambda x: torch.tensor(x, device=img_meta.device), img_meta["lidar2img"]["extrinsic"])
+        projections = []
+
+        # Efficiently compute the projection
+        for extrinsic in extrinsics:
+            projection = intrinsic @ extrinsic[:3]
+            if noise > 0:
+                projection += noise
+            projections.append(projection)
+
+        # Stack the projections into a single tensor directly on the GPU
+        return torch.stack(projections)
 
     def extract_feat(self, img, img_metas, mode):
         batch_size = img.shape[0]
