@@ -19,7 +19,7 @@ model = dict(
         depths=[2, 2, 6, 2],
         num_heads= [3, 6, 12, 24],
         frozen_stages=1,
-        norm_cfg=dict(type='BN', requires_grad=True),
+        #norm_cfg=dict(type='BN', requires_grad=True),
         window_size= 7,
         mlp_ratio= 4,
         qkv_bias= True,
