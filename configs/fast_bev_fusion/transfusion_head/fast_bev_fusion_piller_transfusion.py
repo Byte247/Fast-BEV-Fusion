@@ -31,7 +31,7 @@ model = dict(
         type='FPN',
         norm_cfg=dict(type='BN', requires_grad=True),
         in_channels=[256, 512, 1024, 2048],
-        out_channels=64,
+        out_channels=256,
         num_outs=4),
     neck_fuse=dict(in_channels=256, out_channels=64),
     neck_3d=dict(
