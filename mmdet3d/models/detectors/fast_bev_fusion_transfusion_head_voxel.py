@@ -190,7 +190,7 @@ class FastBEVFusionTransfusionheadVoxel(BaseDetector):
         volumes, valids = [], []
         for feature, img_meta in zip(x, img_metas):
 
-            # feature: [6, 64, 232, 400]
+            # feature: [6, features, height, width]
             if isinstance(img_meta["img_shape"], list):
                 img_meta["img_shape"] = img_meta["img_shape"][0]
             projection = self._compute_projection(

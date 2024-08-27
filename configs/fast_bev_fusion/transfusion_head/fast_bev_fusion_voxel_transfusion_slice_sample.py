@@ -6,7 +6,7 @@
 
 point_cloud_range = [-54.0, -54.0, -5.0, 54.0, 54.0, 3.0]
 voxel_size = [0.075, 0.075, 0.2]
-out_size_factor = 4
+out_size_factor = 8
 
 # For nuScenes we usually do 10-class detection
 class_names = [
@@ -17,14 +17,15 @@ class_names = [
 model = dict(
     type='FastBEVFusionTransfusionheadVoxel',
     backbone=dict(
-        type='ResNet',
-        depth=50,
+        type='ResNeXt',
+        depth=101,
+        groups=64,
+        base_width=4,
         num_stages=4,
         out_indices=(0, 1, 2, 3),
-        frozen_stages=1,
+        frozen_stages=4,
         norm_cfg=dict(type='SyncBN', requires_grad=True),
         norm_eval=True,
-        init_cfg=dict(type='Pretrained', checkpoint='torchvision://resnet50'),
         style='pytorch',
         dcn=dict(type='DCN', deform_groups=1, fallback_on_stride=False),
         stage_with_dcn=(False, True, True, True)
@@ -33,9 +34,9 @@ model = dict(
         type='FPN',
         norm_cfg=dict(type='SyncBN', requires_grad=True),
         in_channels=[256, 512, 1024, 2048],
-        out_channels=64,
+        out_channels=256,
         num_outs=4),
-    neck_fuse=dict(in_channels=256, out_channels=64),
+    neck_fuse=dict(in_channels=256*4, out_channels=128),
     neck_3d=dict(
         type='M2BevNeckTransOnly',
         is_transpose=False),
@@ -45,32 +46,45 @@ model = dict(
         max_num_points=10, voxel_size=voxel_size, max_voxels=(120000, 160000), point_cloud_range=point_cloud_range),
     pts_voxel_encoder=dict(type='HardSimpleVFE', num_features=5),
     pts_middle_encoder=dict(
-        type='SpMiddleResNetFHD',
+        type='SparseEncoder',
         in_channels=5,
         sparse_shape=[41, 1440, 1440],
+        output_channels=128,
+        order=('conv', 'norm', 'act'),
+        encoder_channels=((16, 16, 32), (32, 32, 64), (64, 64, 128), (128, 128)),
+        encoder_paddings=((0, 0, 1), (0, 0, 1), (0, 0, [0, 1, 1]), (0, 0)),
+        block_type='basicblock',
         norm_cfg=dict(type='SyncBN', requires_grad=True),
-        freeze_layers = True),
+        freeze_layers=True),
+
+    pts_backbone=dict(
+        type='SECOND',
+        in_channels=256,
+        out_channels=[128, 256],
+        layer_nums=[5, 5],
+        layer_strides=[1, 2],
+        norm_cfg=dict(type='SyncBN', requires_grad=True),
+        conv_cfg=dict(type='Conv2d', bias=False),
+        freeze_layers=True),
 
     pts_neck=dict(
-        type="RPNV3",
-        layer_nums=[5, 5],
-        ds_layer_strides=[1, 2],
-        ds_num_filters=[256, 256],
-        us_layer_strides=[1, 2],
-        us_num_filters=[128, 256], # default 128x128
-        num_input_features=[704,256], #num features in the feature maps block 4 and 5
+        type='SECONDFPN',
+        in_channels=[128, 256],
+        out_channels=[256, 256],
+        upsample_strides=[1, 2],
         norm_cfg=dict(type='SyncBN', requires_grad=True),
-        freeze_layers = True,
-    ),
+        upsample_cfg=dict(type='deconv', bias=False),
+        use_conv_for_no_stride=True,
+        freeze_layers=True),
 
     #Fusion layer
-    fusion_module = dict(type='MultiHeadCrossAttentionVoxelSliceSamp',embed_dim = 512, num_heads=1, dropout = 0.1, out_channels=512, norm_cfg=dict(type='SyncBN', requires_grad=True)),
+    fusion_module = dict(type='MultiHeadCrossAttentionVoxelSliceSamp',embed_dim = 512, num_heads=1, dropout = 0.1, out_channels = 512, norm_cfg=dict(type='SyncBN', requires_grad=True)),
 
     bbox_head=dict(
         type='TransFusionHead',
         num_proposals=200,
         auxiliary=True,
-        in_channels=512,
+        in_channels=256 * 2,
         hidden_channel=128,
         num_classes=len(class_names),
         num_decoder_layers=1,
@@ -217,7 +231,7 @@ train_pipeline = [
         use_dim=5,),
     dict(
         type='LoadPointsFromMultiSweeps',
-        sweeps_num=9,
+        sweeps_num=10,
         use_dim=[0, 1, 2, 3, 4],
         pad_empty_sweeps=True,
         remove_close=True),
@@ -261,7 +275,7 @@ test_pipeline = [
         use_dim=5,),
     dict(
         type='LoadPointsFromMultiSweeps',
-        sweeps_num=9,
+        sweeps_num=10,
         use_dim=[0, 1, 2, 3, 4],
         pad_empty_sweeps=True,
         remove_close=True),
@@ -281,7 +295,7 @@ test_pipeline = [
 
 data = dict(
     samples_per_gpu=1,
-    workers_per_gpu=4,
+    workers_per_gpu=1,
     train=dict(
         type='CBGSDataset',
         dataset=dict(
@@ -324,7 +338,8 @@ optimizer = dict(type='AdamW', lr=1e-4,
                                'pos_embed_lidar': dict(lr_mult=1.0, decay_mult=.0)}))
 
 
-optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
+optimizer_config = dict(grad_clip=dict(max_norm=0.1, norm_type=2))
+
 lr_config = dict(
     policy='cyclic',
     target_ratio=(10, 0.0001),
@@ -343,7 +358,7 @@ runner = dict(type='EpochBasedRunner', max_epochs=20)
 #total_epochs = 20
 checkpoint_config = dict(interval=1)
 log_config = dict(
-    interval=5,
+    interval=100,
     hooks=[
         dict(type='TextLoggerHook'),
         dict(type='TensorboardLoggerHook'),
@@ -354,6 +369,6 @@ find_unused_parameters = True  # todo: fix number of FPN outputs
 log_level = 'INFO'
 #load_from = None
 load_additional_from = None
-load_from = 'https://download.openmmlab.com/mmdetection3d/v0.1.0_models/nuimages_semseg/cascade_mask_rcnn_r50_fpn_coco-20e_20e_nuim/cascade_mask_rcnn_r50_fpn_coco-20e_20e_nuim_20201009_124951-40963960.pth'
+load_from = 'https://download.openmmlab.com/mmdetection3d/v0.1.0_models/nuimages_semseg/htc_x101_64x4d_fpn_dconv_c3-c5_coco-20e_16x1_20e_nuim/htc_x101_64x4d_fpn_dconv_c3-c5_coco-20e_16x1_20e_nuim_20201008_211222-0b16ac4b.pth'
 resume_from = None
 workflow = [('train', 1)]
