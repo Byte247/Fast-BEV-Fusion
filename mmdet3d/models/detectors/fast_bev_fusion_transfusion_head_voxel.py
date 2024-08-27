@@ -117,7 +117,7 @@ class FastBEVFusionTransfusionheadVoxel(BaseDetector):
         return torch.stack(projection)
     """
 
-    def _compute_projection(img_meta, stride, noise=0):
+    def _compute_projection(self, img_meta, stride, noise=0):
         # Create the intrinsic matrix directly on the GPU
         intrinsic = torch.tensor(img_meta["lidar2img"]["intrinsic"][:3, :3], device=img_meta.device)
         intrinsic[:2] /= stride
