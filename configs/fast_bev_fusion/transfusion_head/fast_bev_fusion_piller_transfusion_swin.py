@@ -29,7 +29,6 @@ model = dict(
         drop_path_rate= 0.2,
         patch_norm= True,
         out_indices= [1, 2, 3],
-        with_cp= False,
         convert_weights= True,
         init_cfg=dict(type='Pretrained', checkpoint=' checkpoint: https://github.com/SwinTransformer/storage/releases/download/v1.0.0/swin_tiny_patch4_window7_224.pth'),
     ),
