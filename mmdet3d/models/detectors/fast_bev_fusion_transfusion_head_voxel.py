@@ -195,9 +195,11 @@ class FastBEVFusionTransfusionheadVoxel(BaseDetector):
                 img_meta["img_shape"] = img_meta["img_shape"][0]
             projection = self._compute_projection(
                 img_meta, stride, noise=self.extrinsic_noise
-            ).to(
-                x.device
-            )  # [6, 3, 4]
+            )#.to(x.device)  # [6, 3, 4]
+                
+            
+
+            print(f"projection device: {projection.device}")
 
             points = get_points(  # [3, 200, 200, 12]
                 n_voxels=torch.tensor(self.camera_n_voxels, device=x.device),
