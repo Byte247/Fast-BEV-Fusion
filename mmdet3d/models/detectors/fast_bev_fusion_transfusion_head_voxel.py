@@ -182,10 +182,10 @@ class FastBEVFusionTransfusionheadVoxel(BaseDetector):
             )  # [6, 3, 4]
 
             points = get_points(  # [3, 200, 200, 12]
-                n_voxels=torch.tensor(self.camera_n_voxels),
-                voxel_size=torch.tensor(self.camera_voxel_size),
-                origin=torch.tensor(img_meta["lidar2img"]["origin"]),
-            ).to(x.device)
+                n_voxels=torch.tensor(self.camera_n_voxels, device=x.device),
+                voxel_size=torch.tensor(self.camera_voxel_size, device=x.device),
+                origin=torch.tensor(img_meta["lidar2img"]["origin"], device=x.device),
+            )#.to(x.device)
 
             height = img_meta["img_shape"][0] // stride
             width = img_meta["img_shape"][1] // stride
@@ -495,9 +495,9 @@ def get_points(n_voxels, voxel_size, origin):
     points = torch.stack(
         torch.meshgrid(
             [
-                torch.arange(n_voxels[0]),
-                torch.arange(n_voxels[1]),
-                torch.arange(n_voxels[2]),
+                torch.arange(n_voxels[0], device=n_voxels.device),
+                torch.arange(n_voxels[1], device=n_voxels.device),
+                torch.arange(n_voxels[2], device=n_voxels.device),
             ]
         )
     )
