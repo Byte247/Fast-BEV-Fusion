@@ -323,7 +323,7 @@ data = dict(
         test_mode=True,
         box_type_3d='LiDAR'))
 
-optimizer = dict(type='AdamW', lr=1e-5,
+optimizer = dict(type='AdamW', lr=1e-4,
                   weight_decay=0.01,
                   paramwise_cfg=dict(
                   custom_keys={'backbone': dict(lr_mult=0.1, decay_mult=1.0),
@@ -335,20 +335,19 @@ optimizer = dict(type='AdamW', lr=1e-5,
 optimizer_config = dict(grad_clip=dict(max_norm=0.1, norm_type=2))
 lr_config = dict(
      policy='cyclic',
-     target_ratio=(10, 1e-5),
+     target_ratio=(10, 1e-4),
      cyclic_times=1,
-     step_ratio_up=0.2,
+     step_ratio_up=0.4,
  )
 momentum_config = dict(
-     policy='cyclic',
-     target_ratio=(0.85 / 0.95, 1),
-     cyclic_times=1,
-     step_ratio_up=0.2,
- )
+    policy='cyclic',
+    target_ratio=(0.8947368421052632, 1),
+    cyclic_times=1,
+    step_ratio_up=0.4)
 
 
 # runtime settings
-runner = dict(type='EpochBasedRunner', max_epochs=10)
+runner = dict(type='EpochBasedRunner', max_epochs=20)
 
 #total_epochs = 20
 checkpoint_config = dict(interval=1)
