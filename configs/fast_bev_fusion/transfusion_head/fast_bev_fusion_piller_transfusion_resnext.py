@@ -15,29 +15,26 @@ class_names = [
 model = dict(
     type='FastBEVFusionTransfusionheadPillar',
     backbone=dict(
-        type='SwinTransformer',
-        depths=[2, 2, 6, 2],
-        num_heads= [3, 6, 12, 24],
+        type='ResNeXt',
+        depth=101,
+        groups=64,
+        base_width=4,
+        num_stages=4,
+        out_indices=(0, 1, 2, 3),
         frozen_stages=1,
-        #norm_cfg=dict(type='BN', requires_grad=True),
-        window_size= 7,
-        mlp_ratio= 4,
-        qkv_bias= True,
-        qk_scale = None,
-        drop_rate= 0.,
-        attn_drop_rate= 0.,
-        drop_path_rate= 0.2,
-        patch_norm= True,
-        out_indices= [1, 2, 3],
-        init_cfg=dict(type='Pretrained', checkpoint=' checkpoint: https://github.com/SwinTransformer/storage/releases/download/v1.0.0/swin_tiny_patch4_window7_224.pth'),
+        norm_cfg=dict(type='SyncBN', requires_grad=True),
+        norm_eval=True,
+        style='pytorch',
+        dcn=dict(type='DCN', deform_groups=1, fallback_on_stride=False),
+        stage_with_dcn=(False, True, True, True)
     ),
     neck=dict(
         type='FPN',
-        norm_cfg=dict(type='BN', requires_grad=True),
-        in_channels=[512, 1024, 2048],
-        out_channels=64,
-        num_outs=3),
-    neck_fuse=dict(in_channels=256, out_channels=64),
+        norm_cfg=dict(type='SyncBN', requires_grad=True),
+        in_channels=[256, 512, 1024, 2048],
+        out_channels=128,
+        num_outs=4),
+    neck_fuse=dict(in_channels=128*4, out_channels=64),
     neck_3d=dict(
         type='M2BevNeckTransOnly',
         is_transpose=False),
@@ -370,7 +367,7 @@ find_unused_parameters = True  # todo: fix number of FPN outputs
 log_level = 'INFO'
 # load_from = None
 load_additional_from = None
-load_from = 'https://download.openmmlab.com/mmdetection3d/v0.1.0_models/nuimages_semseg/cascade_mask_rcnn_r50_fpn_coco-20e_20e_nuim/cascade_mask_rcnn_r50_fpn_coco-20e_20e_nuim_20201009_124951-40963960.pth'
+load_from = 'https://download.openmmlab.com/mmdetection3d/v0.1.0_models/nuimages_semseg/htc_x101_64x4d_fpn_dconv_c3-c5_coco-20e_16x1_20e_nuim/htc_x101_64x4d_fpn_dconv_c3-c5_coco-20e_16x1_20e_nuim_20201008_211222-0b16ac4b.pth'
 resume_from = None
 workflow = [('train', 1)]
 
