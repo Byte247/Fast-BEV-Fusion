@@ -315,7 +315,6 @@ class MultiHeadCrossAttentionVoxelSliceSamp(nn.Module):
         camera_bev_features = self.reduce_camera_spatialy_conv1(camera_bev_features)
         camera_bev_features = self.reduce_camera_spatialy_2(camera_bev_features)
 
-        print(f"lidar_bev_features: {lidar_bev_features.shape}")
         reduced_lidar_bev_features = self.reduce_lidar_spatially(lidar_bev_features)
         reduced_lidar_bev_features = self.lidar_conv_0(reduced_lidar_bev_features) #180x180
 
