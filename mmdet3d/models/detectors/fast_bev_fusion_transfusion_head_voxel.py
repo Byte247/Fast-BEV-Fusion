@@ -187,26 +187,29 @@ class FastBEVFusionTransfusionheadVoxel(BaseDetector):
         stride = int(stride)
 
         # reconstruct 3d voxels
-        img_shape = img_metas[0]["img_shape"]
-        if isinstance(img_shape, list):
-            img_shape = img_shape[0]
-        
-        height = img_shape[0] // stride
-        width = img_shape[1] // stride
+        volumes, valids = [], []
+        for feature, img_meta in zip(x, img_metas):
 
-        # Prepare the projections and points in batch
-        origins = torch.stack([torch.tensor(meta["lidar2img"]["origin"], device=x.device) for meta in img_metas])
-        projections = torch.stack([self._compute_projection(meta, stride, x.device, noise=self.extrinsic_noise) for meta in img_metas])
+            # feature: [6, 64, 232, 400]
+            if isinstance(img_meta["img_shape"], list):
+                img_meta["img_shape"] = img_meta["img_shape"][0]
+            projection = self._compute_projection(
+                img_meta, stride, x.device, noise=self.extrinsic_noise
+            )  # [6, 3, 4]
 
-        # Generate points once for all batches
-        points = get_points(
-            n_voxels=torch.tensor(self.camera_n_voxels, device=x.device),
-            voxel_size=torch.tensor(self.camera_voxel_size, device=x.device),
-            origin=origins
-        )
+            points = get_points(  # [3, 200, 200, 12]
+                n_voxels=torch.tensor(self.camera_n_voxels, device=x.device),
+                voxel_size=torch.tensor(self.camera_voxel_size, device=x.device),
+                origin=torch.tensor(img_meta["lidar2img"]["origin"], device=x.device),
+            )
 
-        # Process all volumes in one go using batch operations
-        x = backproject_inplace(x[:, :, :height, :width], points, projections)
+            height = img_meta["img_shape"][0] // stride
+            width = img_meta["img_shape"][1] // stride
+
+            volume = backproject_inplace(feature[:, :, :height, :width], points, projection)
+            volumes.append(volume)
+
+        x = torch.stack(volumes)  # [1, 64, 200, 200, 12]
         
         def _inner_forward(x):
             out = self.neck_3d(x)  # [[1, 256, 100, 100]]
