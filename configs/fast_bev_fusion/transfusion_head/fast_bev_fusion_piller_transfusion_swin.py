@@ -16,7 +16,6 @@ model = dict(
     type='FastBEVFusionTransfusionheadPillar',
     backbone=dict(
         type='SwinTransformer',
-        embed_dims=96,
         depths=[2, 2, 6, 2],
         num_heads= [3, 6, 12, 24],
         frozen_stages=1,
