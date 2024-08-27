@@ -22,7 +22,6 @@ class M2BevNeckTransOnly(nn.Module):
         self.with_cp = with_cp
         
        
-    @auto_fp16()
     def forward(self, x):
         """Forward function.
 
