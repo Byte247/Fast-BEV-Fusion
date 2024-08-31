@@ -272,7 +272,7 @@ test_pipeline = [
         use_dim=5,),
     dict(
         type='LoadPointsFromMultiSweeps',
-        sweeps_num=9,
+        sweeps_num=10,
         use_dim=[0, 1, 2, 3, 4],
         pad_empty_sweeps=True),
     dict(
@@ -338,13 +338,13 @@ lr_config = dict(
      policy='cyclic',
      target_ratio=(10, 1e-4),
      cyclic_times=1,
-     step_ratio_up=0.4,
+     step_ratio_up=0.3,
  )
 momentum_config = dict(
     policy='cyclic',
     target_ratio=(0.8947368421052632, 1),
     cyclic_times=1,
-    step_ratio_up=0.4)
+    step_ratio_up=0.3)
 
 
 # runtime settings
