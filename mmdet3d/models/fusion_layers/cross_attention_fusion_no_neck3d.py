@@ -21,6 +21,70 @@ class ConvBNReLU(nn.Module):
         x = self.relu(x)
         return x
 
+    
+class SliceSampDownsample(nn.Module):
+    def __init__(self, in_channels, out_channels, kernel_size=3, norm_cfg=dict(type='BN', requires_grad=True)):
+        super(SliceSampDownsample, self).__init__()
+        # Depthwise convolution (groups=in_channels makes it depthwise)
+        self.depthwise_conv = nn.Conv2d(in_channels*4, in_channels*4, kernel_size=kernel_size, groups=in_channels*4, padding=kernel_size//2, bias=False)
+        self.depthwise_bn = build_norm_layer(norm_cfg, in_channels*4)[1]
+        self.pointwise_conv = nn.Conv2d(in_channels*4, out_channels, kernel_size=1, bias=False)
+        self.pointwise_bn = build_norm_layer(norm_cfg, out_channels)[1]
+        self.gelu = nn.GELU()
+
+    def forward(self, X):
+        # Step 1: Slice the input feature map
+        X_slice = torch.cat([
+            X[..., ::2, ::2],  # Upper-left corner
+            X[..., 1::2, ::2],  # Upper-right corner
+            X[..., ::2, 1::2],  # Lower-left corner
+            X[..., 1::2, 1::2]  # Lower-right corner
+        ], dim=1)
+        
+        # Step 2: Depthwise Separable Convolution
+        X_depthwise = self.depthwise_conv(X_slice)
+        X_depthwise = self.depthwise_bn(X_depthwise)
+        X_depthwise = self.gelu(X_depthwise)
+        
+        # Step 3: Pointwise Convolution
+        X_pointwise = self.pointwise_conv(X_depthwise)
+        X_pointwise = self.pointwise_bn(X_pointwise)
+        output = self.gelu(X_pointwise)
+        
+        return output
+    
+class SliceUpsamp(nn.Module):
+    def __init__(self, in_channels, out_channels, kernel_size=3, norm_cfg=dict(type='BN', requires_grad=True)):
+        super(SliceUpsamp, self).__init__()
+        # Depthwise convolution (groups=in_channels makes it depthwise)
+        self.depthwise_conv = nn.Conv2d(in_channels // 4, in_channels // 4, kernel_size=kernel_size, groups=in_channels // 4, padding=kernel_size // 2, bias=False)
+        self.depthwise_bn = build_norm_layer(norm_cfg, in_channels // 4)[1]
+        self.pointwise_conv = nn.Conv2d(in_channels // 4, out_channels, kernel_size=1, bias=False)
+        self.pointwise_bn = build_norm_layer(norm_cfg, out_channels)[1]
+        self.gelu = nn.GELU()
+
+    def forward(self, X):
+        B, C, H, W = X.shape
+        assert C % 4 == 0, "Number of input channels must be divisible by 4"
+        new_C = C // 4
+        
+        # Step 1: Inverted slicing
+        X_reshaped = X.view(B, new_C, 4, H, W)
+        X_reorganized = X_reshaped.permute(0, 1, 3, 4, 2).contiguous()
+        X_upsampled = X_reorganized.view(B, new_C, 2*H, 2*W)
+        
+        # Step 2: Depthwise Separable Convolution
+        X_depthwise = self.depthwise_conv(X_upsampled)
+        X_depthwise = self.depthwise_bn(X_depthwise)
+        X_depthwise = self.gelu(X_depthwise)
+        
+        X_pointwise = self.pointwise_conv(X_depthwise)
+        X_pointwise = self.pointwise_bn(X_pointwise)
+        output = self.gelu(X_pointwise)
+        
+        return output
+
+
 class Decoder(nn.Module):
 
     def __init__(self, d_model = 256, hidden_dim = 512, num_heads = 8, dropout = 0.1, show_weights=False) -> None:
@@ -154,15 +218,15 @@ class MultiHeadCrossAttentionNoNeck(nn.Module):
         self.embed_dim = embed_dim
         self.norm_cfg = norm_cfg
 
-        self.reduce_lidar_channel = ConvBNReLU(384, self.embed_dim, kernel_size=3, stride=2, padding=1, norm_cfg = self.norm_cfg)
+        self.reduce_lidar_channel = SliceSampDownsample(384, self.embed_dim, kernel_size=3, norm_cfg = self.norm_cfg)
         self.fuse_on_lidar = fuse_on_lidar
 
 
-        self.reduce_camera_spatialy = ConvBNReLU(384, 512, kernel_size=3, stride=2, padding=1, norm_cfg = self.norm_cfg)
+        self.reduce_camera_spatialy = SliceSampDownsample(384, 512, kernel_size=3, norm_cfg = self.norm_cfg)
 
         self.reduce_camera_spatialy_between = ConvBNReLU(512, self.embed_dim, kernel_size=3, stride=1, padding=1, norm_cfg = self.norm_cfg)
         
-        self.reduce_camera_spatialy_2 = ConvBNReLU(self.embed_dim, self.embed_dim, kernel_size=3, stride=2, padding=1, norm_cfg = self.norm_cfg)
+        self.reduce_camera_spatialy_2 = SliceSampDownsample(self.embed_dim, self.embed_dim, kernel_size=3, norm_cfg = self.norm_cfg)
     
 
         self.lidar_camera_cross_attention = Decoder(self.embed_dim, hidden_dim=self.embed_dim * 2, num_heads= num_heads, dropout=dropout, show_weights=False)
@@ -170,7 +234,7 @@ class MultiHeadCrossAttentionNoNeck(nn.Module):
         self.pos_embed_camera = nn.Parameter(torch.randn(1, self.embed_dim, 4096) * .02) #done as in ViT: https://github.com/lucidrains/vit-pytorch/blob/main/vit_pytorch/vit.py, (14 (image hight) * 25 image width * 6 images) / 16 (image patches)
         self.pos_embed_lidar = nn.Parameter(torch.randn(1, self.embed_dim, 4096) * .02) #done as in ViT: https://github.com/lucidrains/vit-pytorch/blob/main/vit_pytorch/vit.py, no reduction for now
 
-        self.upsample_layer = nn.ConvTranspose2d(embed_dim, 3 * 128, kernel_size=2, stride=2) # match centerpoint
+        self.upsample_layer = SliceUpsamp(embed_dim, 3 * 128) # match centerpoint
         if norm_cfg is None:
             self.upsample_layer_norm = nn.BatchNorm2d(3 * 128)
         else:
