@@ -332,7 +332,7 @@ optimizer = dict(type='AdamW', lr=1e-4,
                                'pos_embed_lidar': dict(lr_mult=1.0, decay_mult=.0)}))
 
 
-optimizer_config = dict(grad_clip=dict(max_norm=0.1, norm_type=2))
+optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
 lr_config = dict(
      policy='cyclic',
      target_ratio=(10, 1e-4),
