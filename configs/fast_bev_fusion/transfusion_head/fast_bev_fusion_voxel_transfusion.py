@@ -120,6 +120,8 @@ model = dict(
 
     bbox_head_2d=dict(
         type='FCOSHead',
+        norm_on_bbox = True,
+        centerness_on_reg = True,
         num_classes=10,
         in_channels=64,
         stacked_convs=2,
