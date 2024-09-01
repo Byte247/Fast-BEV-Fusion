@@ -111,7 +111,6 @@ model = dict(
     
     bbox_head_2d=dict(
         type='FCOSHead',
-        norm_cfg = dict(type='SyncBN', requires_grad=True),
         num_classes=10,
         in_channels=64,
         stacked_convs=2,
