@@ -21,69 +21,6 @@ class ConvBNReLU(nn.Module):
         x = self.relu(x)
         return x
 
-    
-class SliceSampDownsample(nn.Module):
-    def __init__(self, in_channels, out_channels, kernel_size=3, norm_cfg=dict(type='BN', requires_grad=True)):
-        super(SliceSampDownsample, self).__init__()
-        # Depthwise convolution (groups=in_channels makes it depthwise)
-        self.depthwise_conv = nn.Conv2d(in_channels*4, in_channels*4, kernel_size=kernel_size, groups=in_channels*4, padding=kernel_size//2, bias=False)
-        self.depthwise_bn = build_norm_layer(norm_cfg, in_channels*4)[1]
-        self.pointwise_conv = nn.Conv2d(in_channels*4, out_channels, kernel_size=1, bias=False)
-        self.pointwise_bn = build_norm_layer(norm_cfg, out_channels)[1]
-        self.gelu = nn.GELU()
-
-    def forward(self, X):
-        # Step 1: Slice the input feature map
-        X_slice = torch.cat([
-            X[..., ::2, ::2],  # Upper-left corner
-            X[..., 1::2, ::2],  # Upper-right corner
-            X[..., ::2, 1::2],  # Lower-left corner
-            X[..., 1::2, 1::2]  # Lower-right corner
-        ], dim=1)
-        
-        # Step 2: Depthwise Separable Convolution
-        X_depthwise = self.depthwise_conv(X_slice)
-        X_depthwise = self.depthwise_bn(X_depthwise)
-        X_depthwise = self.gelu(X_depthwise)
-        
-        # Step 3: Pointwise Convolution
-        X_pointwise = self.pointwise_conv(X_depthwise)
-        X_pointwise = self.pointwise_bn(X_pointwise)
-        output = self.gelu(X_pointwise)
-        
-        return output
-    
-class SliceUpsamp(nn.Module):
-    def __init__(self, in_channels, out_channels, kernel_size=3, norm_cfg=dict(type='BN', requires_grad=True)):
-        super(SliceUpsamp, self).__init__()
-        # Depthwise convolution (groups=in_channels makes it depthwise)
-        self.depthwise_conv = nn.Conv2d(in_channels // 4, in_channels // 4, kernel_size=kernel_size, groups=in_channels // 4, padding=kernel_size // 2, bias=False)
-        self.depthwise_bn = build_norm_layer(norm_cfg, in_channels // 4)[1]
-        self.pointwise_conv = nn.Conv2d(in_channels // 4, out_channels, kernel_size=1, bias=False)
-        self.pointwise_bn = build_norm_layer(norm_cfg, out_channels)[1]
-        self.gelu = nn.GELU()
-
-    def forward(self, X):
-        B, C, H, W = X.shape
-        assert C % 4 == 0, "Number of input channels must be divisible by 4"
-        new_C = C // 4
-        
-        # Step 1: Inverted slicing
-        X_reshaped = X.view(B, new_C, 4, H, W)
-        X_reorganized = X_reshaped.permute(0, 1, 3, 4, 2).contiguous()
-        X_upsampled = X_reorganized.view(B, new_C, 2*H, 2*W)
-        
-        # Step 2: Depthwise Separable Convolution
-        X_depthwise = self.depthwise_conv(X_upsampled)
-        X_depthwise = self.depthwise_bn(X_depthwise)
-        X_depthwise = self.gelu(X_depthwise)
-        
-        X_pointwise = self.pointwise_conv(X_depthwise)
-        X_pointwise = self.pointwise_bn(X_pointwise)
-        output = self.gelu(X_pointwise)
-        
-        return output
-
 
 class Decoder(nn.Module):
 
