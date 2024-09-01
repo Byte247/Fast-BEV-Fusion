@@ -218,15 +218,15 @@ class MultiHeadCrossAttentionNoNeck(nn.Module):
         self.embed_dim = embed_dim
         self.norm_cfg = norm_cfg
 
-        self.reduce_lidar_channel = SliceSampDownsample(384, self.embed_dim, kernel_size=3, norm_cfg = self.norm_cfg)
+        self.reduce_lidar_channel = ConvBNReLU(384, self.embed_dim, kernel_size=3, stride=2, padding=1, norm_cfg = self.norm_cfg)
         self.fuse_on_lidar = fuse_on_lidar
 
 
-        self.reduce_camera_spatialy = SliceSampDownsample(384, 512, kernel_size=3, norm_cfg = self.norm_cfg)
+        self.reduce_camera_spatialy = ConvBNReLU(384, 512, kernel_size=3, stride=2, padding=1, norm_cfg = self.norm_cfg)
 
         self.reduce_camera_spatialy_between = ConvBNReLU(512, self.embed_dim, kernel_size=3, stride=1, padding=1, norm_cfg = self.norm_cfg)
         
-        self.reduce_camera_spatialy_2 = SliceSampDownsample(self.embed_dim, self.embed_dim, kernel_size=3, norm_cfg = self.norm_cfg)
+        self.reduce_camera_spatialy_2 = ConvBNReLU(self.embed_dim, self.embed_dim, kernel_size=3, stride=2, padding=1, norm_cfg = self.norm_cfg)
     
 
         self.lidar_camera_cross_attention = Decoder(self.embed_dim, hidden_dim=self.embed_dim * 2, num_heads= num_heads, dropout=dropout, show_weights=False)
@@ -234,11 +234,11 @@ class MultiHeadCrossAttentionNoNeck(nn.Module):
         self.pos_embed_camera = nn.Parameter(torch.randn(1, self.embed_dim, 4096) * .02) #done as in ViT: https://github.com/lucidrains/vit-pytorch/blob/main/vit_pytorch/vit.py, (14 (image hight) * 25 image width * 6 images) / 16 (image patches)
         self.pos_embed_lidar = nn.Parameter(torch.randn(1, self.embed_dim, 4096) * .02) #done as in ViT: https://github.com/lucidrains/vit-pytorch/blob/main/vit_pytorch/vit.py, no reduction for now
 
-        self.upsample_layer = SliceUpsamp(embed_dim, 3 * 128) # match centerpoint
+        self.upsample_layer = nn.ConvTranspose2d(embed_dim, 512, kernel_size=2, stride=2) # match centerpoint
         if norm_cfg is None:
-            self.upsample_layer_norm = nn.BatchNorm2d(3 * 128)
+            self.upsample_layer_norm = nn.BatchNorm2d(512)
         else:
-            self.upsample_layer_norm = build_norm_layer(norm_cfg, 3 * 128)[1]
+            self.upsample_layer_norm = build_norm_layer(norm_cfg, 512)[1]
         self.upsample_layer_act = nn.LeakyReLU(inplace=True)
 
         self.last_norm = nn.LayerNorm(self.embed_dim)
@@ -304,7 +304,7 @@ class MultiHeadCrossAttentionNoNeck(nn.Module):
         output = output.view(output.shape[0], output.shape[1], 64, 64)  # Shape: [batch * 6, 256, 64, 64]
 
 
-        output = self.upsample_layer(output)
+        output = self.upsample_layer_act(self.upsample_layer_norm(self.upsample_layer(output)))
 
         
         return [output]
