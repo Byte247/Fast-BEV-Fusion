@@ -218,7 +218,7 @@ class MultiHeadCrossAttentionNoNeck(nn.Module):
         self.embed_dim = embed_dim
         self.norm_cfg = norm_cfg
 
-        self.reduce_lidar_channel = SliceSampDownsample(384, self.embed_dim, kernel_size=3, stride=2, padding=1, norm_cfg = self.norm_cfg)
+        self.reduce_lidar_channel = SliceSampDownsample(384, self.embed_dim, kernel_size=3, norm_cfg = self.norm_cfg)
         self.fuse_on_lidar = fuse_on_lidar
 
 
