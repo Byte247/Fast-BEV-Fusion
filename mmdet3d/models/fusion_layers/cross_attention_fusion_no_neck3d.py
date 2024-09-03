@@ -77,50 +77,53 @@ class Decoder(nn.Module):
 
 
     def vis_attention_scores(self, weights):
-         
         attention_heatmaps = weights.squeeze(0).cpu().detach().numpy()  # Remove batch dimension and convert to NumPy
 
-        # #Create plot objects outside the loop
+        # Create plot objects outside the loop
         fig_heatmap, axs_heatmap = plt.subplots(2)
 
         # Precompute highlighted grid outside the loop
         highlighted_grid = np.zeros((64, 64))
 
-        for i in range(3200, 3264):
-            # Clear previous plot
-            axs_heatmap[0].clear()
-            axs_heatmap[1].clear()
-            
-            # Reset previously highlighted point
-            if i > 0:
-                prev_i = i - 1
-                prev_row_index = prev_i // 64
-                prev_col_index = prev_i % 64
-                highlighted_grid[prev_row_index, prev_col_index] = 0
-            
-            # Update highlighted grid
-            row_index = i // 64
-            col_index = i % 64
-            highlighted_grid[row_index, col_index] = 1
-            
-            # Plot attention heatmap
-            attention_heatmap = attention_heatmaps[i]
-            attention_heatmap_2d = attention_heatmap.reshape((64, 64)).T
-            
-            axs_heatmap[0].imshow(attention_heatmap_2d, cmap='viridis', interpolation='nearest')
-            axs_heatmap[0].set_xlabel('Wide Image Patch X-Axis')
-            axs_heatmap[0].set_ylabel('Wide Image Patch Y-Axis')
-            axs_heatmap[0].set_title(f'Attention Heatmap for Target Token {i}')
-            
-            # Plot highlighted grid
-            axs_heatmap[1].imshow(highlighted_grid, cmap='viridis', interpolation='nearest')
-            axs_heatmap[1].set_xlabel('Column Index')
-            axs_heatmap[1].set_ylabel('Row Index')
-            axs_heatmap[1].set_title(f'Position of Token {i} in 64x64 Grid')
-            
-            # Update the plots
-            fig_heatmap.canvas.draw()
-            plt.pause(0.2)  # Adjust the delay time as needed
+        i = 3344
+
+        # Clear previous plot
+        axs_heatmap[0].clear()
+        axs_heatmap[1].clear()
+        
+        # Reset previously highlighted point
+        if i > 0:
+            prev_i = i - 1
+            prev_row_index = prev_i // 64
+            prev_col_index = prev_i % 64
+            highlighted_grid[prev_row_index, prev_col_index] = 0
+        
+        # Update highlighted grid
+        row_index = i // 64
+        col_index = i % 64
+        highlighted_grid[row_index, col_index] = 1
+        
+        # Plot attention heatmap
+        attention_heatmap = attention_heatmaps[i]
+        attention_heatmap_2d = attention_heatmap.reshape((64, 64)).T
+        
+        # Plot the heatmap with a colorbar
+        heatmap_img = axs_heatmap[0].imshow(attention_heatmap_2d, cmap='viridis', interpolation='nearest')
+        axs_heatmap[0].set_xlabel('Wide Image Patch X-Axis')
+        axs_heatmap[0].set_ylabel('Wide Image Patch Y-Axis')
+        axs_heatmap[0].set_title(f'Attention Heatmap for Target Token {i}')
+        fig_heatmap.colorbar(heatmap_img, ax=axs_heatmap[0], orientation='vertical', label='Attention Score Intensity')
+        
+        # Plot highlighted grid with a colorbar
+        highlighted_img = axs_heatmap[1].imshow(highlighted_grid, cmap='viridis', interpolation='nearest')
+        axs_heatmap[1].set_xlabel('Column Index')
+        axs_heatmap[1].set_ylabel('Row Index')
+        axs_heatmap[1].set_title(f'Position of Token {i} in 64x64 Grid')
+        fig_heatmap.colorbar(highlighted_img, ax=axs_heatmap[1], orientation='vertical', label='Highlight Presence')
+        
+        # Update the plots
+        fig_heatmap.canvas.draw()
+        plt.pause(0.2)  # Adjust the delay time as needed
 
         # Keep the plot windows open
         plt.show()
@@ -149,7 +152,7 @@ Same as V1 but with an addition skip connection around the cross attention
 """
 @FUSION_LAYERS.register_module()
 class MultiHeadCrossAttentionNoNeck(nn.Module):
-    def __init__(self, embed_dim = 512, num_heads=8, dropout = 0.1, fuse_on_lidar=True, norm_cfg = None):
+    def __init__(self, embed_dim = 512, num_heads=8, dropout = 0.1, output_dim = 384, fuse_on_lidar=True, norm_cfg = None):
         super(MultiHeadCrossAttentionNoNeck, self).__init__()
 
         self.embed_dim = embed_dim
@@ -171,11 +174,11 @@ class MultiHeadCrossAttentionNoNeck(nn.Module):
         self.pos_embed_camera = nn.Parameter(torch.randn(1, self.embed_dim, 4096) * .02) #done as in ViT: https://github.com/lucidrains/vit-pytorch/blob/main/vit_pytorch/vit.py, (14 (image hight) * 25 image width * 6 images) / 16 (image patches)
         self.pos_embed_lidar = nn.Parameter(torch.randn(1, self.embed_dim, 4096) * .02) #done as in ViT: https://github.com/lucidrains/vit-pytorch/blob/main/vit_pytorch/vit.py, no reduction for now
 
-        self.upsample_layer = nn.ConvTranspose2d(embed_dim, 512, kernel_size=2, stride=2) # match centerpoint
+        self.upsample_layer = nn.ConvTranspose2d(embed_dim, output_dim, kernel_size=2, stride=2) # match centerpoint
         if norm_cfg is None:
-            self.upsample_layer_norm = nn.BatchNorm2d(512)
+            self.upsample_layer_norm = nn.BatchNorm2d(output_dim)
         else:
-            self.upsample_layer_norm = build_norm_layer(norm_cfg, 512)[1]
+            self.upsample_layer_norm = build_norm_layer(norm_cfg, output_dim)[1]
         self.upsample_layer_act = nn.LeakyReLU(inplace=True)
 
         self.last_norm = nn.LayerNorm(self.embed_dim)
