@@ -13,14 +13,14 @@ class_names = [
 
 
 model = dict(
-    type='FastBEVFusionTransfusionhead',
+    type='FastBEVFusionTransfusionheadPillar',
     backbone=dict(
         type='ResNet',
         depth=50,
         num_stages=4,
         out_indices=(0, 1, 2, 3),
         frozen_stages=1,
-        norm_cfg=dict(type='SyncBN', requires_grad=True),
+        norm_cfg=dict(type='BN', requires_grad=True),
         norm_eval=True,
         init_cfg=dict(type='Pretrained', checkpoint='torchvision://resnet50'),
         style='pytorch',
@@ -29,25 +29,27 @@ model = dict(
     ),
     neck=dict(
         type='FPN',
-        norm_cfg=dict(type='SyncBN', requires_grad=True),
+        norm_cfg=dict(type='BN', requires_grad=True),
         in_channels=[256, 512, 1024, 2048],
         out_channels=64,
         num_outs=4),
+    neck_fuse=dict(in_channels=256, out_channels=64),
     neck_3d=dict(
         type='M2BevNeckTransOnly',
         is_transpose=False),
 
     #Point Modules:
     pts_voxel_layer=dict(
-        max_num_points=20, voxel_size=voxel_size, max_voxels=(30000, 40000), point_cloud_range=point_cloud_range),
+        max_num_points=20, voxel_size=voxel_size, max_voxels=(30000, 60000), point_cloud_range=point_cloud_range),
     pts_voxel_encoder=dict(
         type='PillarFeatureNet',
         in_channels=5,
-        feat_channels=[64],
+        feat_channels=[64,64],
         with_distance=False,
         voxel_size=(0.2, 0.2, 8),
-        norm_cfg=dict(type='SyncBN', requires_grad=True),
-        legacy=False),
+        norm_cfg=dict(type='BN1d', eps=1e-3, momentum=0.01),
+        legacy=False,
+        freeze_layers=True),
     pts_middle_encoder=dict(
         type='PointPillarsScatter', in_channels=64, output_shape=(512, 512)),
     pts_backbone=dict(
@@ -56,22 +58,24 @@ model = dict(
         out_channels=[64, 128, 256],
         layer_nums=[3, 5, 5],
         layer_strides=[2, 2, 2],
-        norm_cfg=dict(type='SyncBN', requires_grad=True),
-        conv_cfg=dict(type='Conv2d', bias=False)),
+        norm_cfg=dict(type='BN', requires_grad=True),
+        conv_cfg=dict(type='Conv2d', bias=False),
+        freeze_layers=True),
     pts_neck=dict(
         type='SECONDFPN',
         in_channels=[64, 128, 256],
         out_channels=[128, 128, 128],
         upsample_strides=[0.5, 1, 2],
-        norm_cfg=dict(type='SyncBN', requires_grad=True),
+        norm_cfg=dict(type='BN', requires_grad=True),
         upsample_cfg=dict(type='deconv', bias=False),
-        use_conv_for_no_stride=True),
+        use_conv_for_no_stride=True,
+        freeze_layers=True),
 
 
     #Fusion layer
-    fusion_module = dict(type='MultiHeadCrossAttentionNoNeck',embed_dim = 512, num_heads=8, dropout = 0.1, fuse_on_lidar=True, norm_cfg=dict(type='SyncBN', requires_grad=True)),
+    fusion_module = dict(type='MultiHeadCrossAttentionNoNeck',embed_dim = 512, num_heads=1, dropout = 0.1, output_dim = 384, fuse_on_lidar=True, norm_cfg=dict(type='BN', requires_grad=True)),
 
-     bbox_head=dict(
+    bbox_head=dict(
         type='TransFusionHead',
         num_proposals=200,
         auxiliary=True,
@@ -87,7 +91,8 @@ model = dict(
         dropout=0.1,
         bn_momentum=0.1,
         activation='relu',
-        norm_cfg = dict(type='SyncBN', requires_grad=True),
+        norm_cfg = dict(type='BN1d', requires_grad=True),
+        two_d_norm_cfg=dict(type='BN', requires_grad=True),
         common_heads=dict(center=(2, 2), height=(1, 2), dim=(3, 2), rot=(2, 2), vel=(2, 2)),
         bbox_coder=dict(
             type='TransFusionBBoxCoder',
@@ -112,6 +117,8 @@ model = dict(
         feat_channels=32,
         strides=[4, 8, 16, 32],
         regress_ranges=((-1, 64), (64, 128), (128, 256), (256, 1e8)),
+        norm_on_bbox = True,
+        centerness_on_reg = True,
         loss_cls=dict(
             type='FocalLoss',
             use_sigmoid=True,
@@ -192,6 +199,26 @@ input_modality = dict(
 
 img_norm_cfg = dict(mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 
+data_config = {
+    'src_size': (448, 800),
+    'input_size': (448, 800),
+    # train-aug
+    'resize': (-0.06, 0.11),
+    'crop': (-0.05, 0.05),
+    'rot': (-5.4, 5.4),
+    'flip': True,
+    # test-aug
+    'test_input_size': (448, 800),
+    'test_resize': 0.0,
+    'test_rotate': 0.0,
+    'test_flip': False,
+    # top, right, bottom, left
+    'pad': (0, 0, 0, 0),
+    'pad_divisor': 32,
+    'pad_color': (0, 0, 0),
+}
+
+
 train_pipeline = [
     dict(type='LoadAnnotations3D',
          with_bbox=True,
@@ -207,19 +234,33 @@ train_pipeline = [
         sweeps_num=10,
         use_dim=[0, 1, 2, 3, 4],
         pad_empty_sweeps=True),
-    dict(type='PointsRangeFilter', point_cloud_range=point_cloud_range),
+    dict(
+       type='GlobalRotScaleTrans',
+       rot_range=[-0.3925 * 2, 0.3925 * 2],
+       scale_ratio_range=[0.9, 1.1],
+       translation_std=[0.5, 0.5, 0.5],
+       update_img2lidar=True),
+    dict(
+        type='RandomFlip3D',
+        flip_2d=False,
+        sync_2d=False,
+        flip_ratio_bev_horizontal=0.5,
+        flip_ratio_bev_vertical=0.5,
+        update_img2lidar=True),
     dict(
         type='MultiViewPipeline',
         n_images=6,
         transforms=[
             dict(type='LoadImageFromFile'),
-            dict(type='Resize', img_scale=(1600, 900), keep_ratio=True),
-            dict(type='Normalize', **img_norm_cfg),
+            dict(type='Resize', img_scale=(800, 448), keep_ratio=True),
             dict(type='Pad', size_divisor=32)]),
+    dict(type='RandomAugImageMultiViewImage', data_config=data_config),
+    dict(type='PointsRangeFilter', point_cloud_range=point_cloud_range),
     dict(type='ObjectRangeFilter', point_cloud_range=point_cloud_range),
     dict(type='ObjectNameFilter', classes=class_names),
-    dict(type='KittiSetOrigin', point_cloud_range=point_cloud_range),
     dict(type='PointShuffle'),
+    dict(type='NormalizeMultiviewImage', **img_norm_cfg),
+    dict(type='KittiSetOrigin', point_cloud_range=point_cloud_range),
     dict(type='DefaultFormatBundle3D', class_names=class_names),
     dict(type='Collect3D', keys=['img', 'gt_bboxes', 'gt_labels', 
                                  'gt_bboxes_3d', 'gt_labels_3d',
@@ -240,9 +281,10 @@ test_pipeline = [
         n_images=6,
         transforms=[
             dict(type='LoadImageFromFile'),
-            dict(type='Resize', img_scale=(1600, 900), keep_ratio=True),
-            dict(type='Normalize', **img_norm_cfg),
+            dict(type='Resize', img_scale=(800, 448), keep_ratio=True),
             dict(type='Pad', size_divisor=32)]),
+    dict(type='RandomAugImageMultiViewImage', data_config=data_config, is_train=False),
+    dict(type='NormalizeMultiviewImage', **img_norm_cfg),
     dict(type='KittiSetOrigin', point_cloud_range=point_cloud_range),
     dict(type='DefaultFormatBundle3D', class_names=class_names, with_label=False),
     dict(type='Collect3D', keys=['img','points'])]
@@ -250,10 +292,9 @@ test_pipeline = [
 
 data = dict(
     samples_per_gpu=1,
-    workers_per_gpu=1,
+    workers_per_gpu=4,
     train=dict(
-        type='RepeatDataset',
-        times=1,
+        type='CBGSDataset',
         dataset=dict(
             type=dataset_type,
             data_root=data_root,
@@ -285,35 +326,26 @@ data = dict(
         box_type_3d='LiDAR'))
 
 optimizer = dict(type='AdamW', lr=1e-4,
-                 weight_decay=0.02)
-# max_norm=10 is better for SECOND
+                  weight_decay=0.01,
+                  paramwise_cfg=dict(
+                  custom_keys={'backbone': dict(lr_mult=0.1, decay_mult=1.0),
+                               'bbox_head': dict(lr_mult=0.1, decay_mult=1.0),
+                               'pos_embed_camera': dict(lr_mult=1.0, decay_mult=.0),
+                               'pos_embed_lidar': dict(lr_mult=1.0, decay_mult=.0)}))
+
+
 optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
-
-# learning policy
 lr_config = dict(
-    policy='poly',
-    warmup='linear',
-    warmup_iters=1000,
-    warmup_ratio=1e-6,
-    power=1.0,
-    min_lr=0,
-    by_epoch=False
-    )
-
-# # max_norm=10 is better for SECOND
-# optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
-# lr_config = dict(
-#     policy='cyclic',
-#     target_ratio=(10, 1e-4),
-#     cyclic_times=1,
-#     step_ratio_up=0.4,
-# )
-# momentum_config = dict(
-#     policy='cyclic',
-#     target_ratio=(0.85 / 0.95, 1),
-#     cyclic_times=1,
-#     step_ratio_up=0.4,
-# )
+     policy='cyclic',
+     target_ratio=(10, 1e-4),
+     cyclic_times=1,
+     step_ratio_up=0.3,
+ )
+momentum_config = dict(
+    policy='cyclic',
+    target_ratio=(0.8947368421052632, 1),
+    cyclic_times=1,
+    step_ratio_up=0.3)
 
 
 # runtime settings
@@ -322,7 +354,7 @@ runner = dict(type='EpochBasedRunner', max_epochs=20)
 #total_epochs = 20
 checkpoint_config = dict(interval=1)
 log_config = dict(
-    interval=50,
+    interval=1000,
     hooks=[
         dict(type='TextLoggerHook'),
         dict(type='TensorboardLoggerHook'),
@@ -332,10 +364,8 @@ dist_params = dict(backend='nccl')
 find_unused_parameters = True  # todo: fix number of FPN outputs
 log_level = 'INFO'
 # load_from = None
-load_from = 'https://download.openmmlab.com/mmdetection3d/v0.1.0_models/nuimages_semseg/cascade_mask_rcnn_r50_fpn_coco-20e_20e_nuim/cascade_mask_rcnn_r50_fpn_coco-20e_20e_nuim_20201009_124951-40963960.pth'
+load_additional_from = None
 resume_from = None
+load_from = 'https://download.openmmlab.com/mmdetection3d/v0.1.0_models/nuimages_semseg/cascade_mask_rcnn_r50_fpn_coco-20e_20e_nuim/cascade_mask_rcnn_r50_fpn_coco-20e_20e_nuim_20201009_124951-40963960.pth'
 workflow = [('train', 1)]
-
-# fp16 settings, the loss scale is specifically tuned to avoid Nan
-#fp16 = dict(loss_scale='dynamic')
 
