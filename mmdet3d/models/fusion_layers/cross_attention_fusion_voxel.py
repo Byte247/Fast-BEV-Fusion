@@ -272,7 +272,7 @@ class MultiHeadCrossAttentionVoxel(nn.Module):
 
         cross_attention = F.interpolate(cross_attention, size=(90, 90), mode='bilinear', align_corners=False)
 
-        cross_attention = torch.add(cross_attention, reduced_lidar_bev_features_twice_no_reshape)
+        cross_attention = torch.add(cross_attention, reduced_lidar_bev_features)
 
         upsampled_once = self.upsample_layer(cross_attention)
 
