@@ -261,7 +261,7 @@ class MultiHeadCrossAttentionVoxel(nn.Module):
 
         # # get patch embeddings
         image_patch_embedding = self.create_camera_patches(camera_bev_features)
-        lidar_patch_embedding = self.create_lidar_patches(reduced_lidar_bev_features)
+        lidar_patch_embedding = self.create_lidar_patches(reduced_lidar_bev_features_twice)
 
 
         cross_attention = self.lidar_camera_cross_attention(lidar_patch_embedding, image_patch_embedding)
