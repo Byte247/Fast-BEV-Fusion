@@ -2,9 +2,10 @@ _base_ = [
     '../../_base_/datasets/nus-3d.py'
 ]
 
-point_cloud_range = [-54.0, -54.0, -5.0, 54.0, 54.0, 3.0]
-voxel_size = [0.075, 0.075, 0.2]
-out_size_factor = 8
+point_cloud_range = [-50.4, -50.4, -5.0, 50.4, 50.4, 3.0]
+
+voxel_size = [0.075, 0.075, 8]
+out_size_factor = 4
 
 # For nuScenes we usually do 10-class detection
 class_names = [
@@ -12,45 +13,42 @@ class_names = [
     'motorcycle', 'pedestrian', 'traffic_cone', 'barrier'
 ]
 
-
 model = dict(
     type='TransFusionHeadPretrain',
     #Point Modules:
     pts_voxel_layer=dict(
-        max_num_points=10, voxel_size=voxel_size, max_voxels=(120000, 160000), point_cloud_range=point_cloud_range),
-    pts_voxel_encoder=dict(type='HardSimpleVFE', num_features=5),
-    pts_middle_encoder=dict(
-        type='SparseEncoder',
+        max_num_points=20, voxel_size=voxel_size, max_voxels=(30000, 60000), point_cloud_range=point_cloud_range),
+    pts_voxel_encoder=dict(
+        type='PillarFeatureNet',
         in_channels=5,
-        sparse_shape=[41, 1440, 1440],
-        output_channels=128,
-        order=('conv', 'norm', 'act'),
-        encoder_channels=((16, 16, 32), (32, 32, 64), (64, 64, 128), (128, 128)),
-        encoder_paddings=((0, 0, 1), (0, 0, 1), (0, 0, [0, 1, 1]), (0, 0)),
-        block_type='basicblock',
-        norm_cfg=dict(type='SyncBN', requires_grad=True)),
+        feat_channels=[64,64],
+        with_distance=False,
+        voxel_size=voxel_size,
+        norm_cfg=dict(type='SyncBN', requires_grad=True),
+        legacy=False),
+    pts_middle_encoder=dict(
+        type='PointPillarsScatter', in_channels=64, output_shape=(1344, 1344)),
     pts_backbone=dict(
         type='SECOND',
-        in_channels=256,
-        out_channels=[128, 256],
-        layer_nums=[5, 5],
-        layer_strides=[1, 2],
+        in_channels=64,
+        out_channels=[64, 128, 256],
+        layer_nums=[3, 5, 5],
+        layer_strides=[2, 2, 2],
         norm_cfg=dict(type='SyncBN', requires_grad=True),
         conv_cfg=dict(type='Conv2d', bias=False)),
     pts_neck=dict(
         type='SECONDFPN',
-        in_channels=[128, 256],
-        out_channels=[256, 256],
-        upsample_strides=[1, 2],
+        in_channels=[64, 128, 256],
+        out_channels=[128, 128, 128],
+        upsample_strides=[0.5, 1, 2],
         norm_cfg=dict(type='SyncBN', requires_grad=True),
         upsample_cfg=dict(type='deconv', bias=False),
         use_conv_for_no_stride=True),
-    
     bbox_head=dict(
         type='TransFusionHead',
         num_proposals=200,
         auxiliary=True,
-        in_channels=256 * 2,
+        in_channels=384,
         hidden_channel=128,
         num_classes=len(class_names),
         num_decoder_layers=1,
@@ -59,11 +57,11 @@ model = dict(
         initialize_by_heatmap=True,
         nms_kernel_size=3,
         ffn_channel=256,
-        norm_cfg=dict(type='SyncBN', requires_grad=True),
-        two_d_norm_cfg=dict(type='SyncBN', requires_grad=True),
         dropout=0.1,
         bn_momentum=0.1,
         activation='relu',
+        norm_cfg=dict(type='SyncBN', requires_grad=True),
+        two_d_norm_cfg=dict(type='SyncBN', requires_grad=True),
         common_heads=dict(center=(2, 2), height=(1, 2), dim=(3, 2), rot=(2, 2), vel=(2, 2)),
         bbox_coder=dict(
             type='TransFusionBBoxCoder',
@@ -82,8 +80,8 @@ model = dict(
     # model training and testing settings
     # model training and testing settings for the head
     train_cfg=dict(
-         pts=dict(
-            grid_size=[1440, 1440, 40],
+            pts=dict(
+            grid_size=[1344, 1344, 8],
             assigner=dict(
                 type='HungarianAssigner3D',
                 iou_calculator=dict(type='BboxOverlaps3D', coordinate='lidar'),
@@ -101,8 +99,8 @@ model = dict(
             code_weights=[1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.2, 0.2],
             point_cloud_range = point_cloud_range)),
      test_cfg=dict(
-          pts=dict(
-            grid_size=[1440, 1440, 1],
+         pts=dict(
+            grid_size=[1344, 1344, 1],
             post_center_limit_range=[-61.2, -61.2, -10.0, 61.2, 61.2, 10.0],
             max_per_img=500,
             max_pool_nms=False,
@@ -110,11 +108,11 @@ model = dict(
             score_threshold=0.0,
             pc_range=point_cloud_range[:2],
             out_size_factor=out_size_factor,
-            voxel_size=[0.075, 0.075],
+            voxel_size=[0.2, 0.2],
             nms_type=None,
             pre_max_size=1000,
             post_max_size=83,
-            nms_thr=0.2))    
+            nms_thr=0.2))
     )
 
 
@@ -173,7 +171,7 @@ train_pipeline = [
         pad_empty_sweeps=True,
         remove_close=True),
     dict(type='LoadAnnotations3D', with_bbox_3d=True, with_label_3d=True),
-    #dict(type='ObjectSample', db_sampler=db_sampler),
+    dict(type='ObjectSample', db_sampler=db_sampler),
     dict(
         type='GlobalRotScaleTrans',
         rot_range=[-0.3925 * 2, 0.3925 * 2],
@@ -197,25 +195,26 @@ test_pipeline = [
         type='LoadPointsFromFile',
         coord_type='LIDAR',
         load_dim=5,
-        use_dim=[0, 1, 2, 3, 4],
-    ),
+        use_dim=5,
+        file_client_args=file_client_args),
     dict(
         type='LoadPointsFromMultiSweeps',
         sweeps_num=10,
         use_dim=[0, 1, 2, 3, 4],
-    ),
+        file_client_args=file_client_args,
+        pad_empty_sweeps=True,
+        remove_close=True),
     dict(
         type='MultiScaleFlipAug3D',
-        img_scale=(1333, 800),
+        img_scale=(512, 512),
         pts_scale_ratio=1,
         flip=False,
         transforms=[
             dict(
                 type='GlobalRotScaleTrans',
                 rot_range=[0, 0],
-                scale_ratio_range=[1.0, 1.0],
+                scale_ratio_range=[1., 1.],
                 translation_std=[0, 0, 0]),
-            dict(type='RandomFlip3D'),
             dict(
                 type='DefaultFormatBundle3D',
                 class_names=class_names,
@@ -247,7 +246,7 @@ eval_pipeline = [
 ]
 
 data = dict(
-    samples_per_gpu=8,
+    samples_per_gpu=2,
     workers_per_gpu=1,
     train=dict(
          type='CBGSDataset',
@@ -273,8 +272,13 @@ input_modality = dict(
     use_map=False,
     use_external=False)
 
-optimizer = dict(type='AdamW', lr=0.00001, weight_decay=0.01)  # for 8gpu * 2sample_per_gpu
-optimizer_config = dict(grad_clip=dict(max_norm=0.1, norm_type=2))
+optimizer = dict(type='AdamW', lr=0.0001,
+                 weight_decay=0.01)
+
+# max_norm=10 is better for SECOND
+optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
+
+# learning policy
 lr_config = dict(
     policy='cyclic',
     target_ratio=(10, 0.0001),
@@ -287,7 +291,7 @@ momentum_config = dict(
     step_ratio_up=0.4)
 
 # runtime settings
-runner = dict(type='EpochBasedRunner', max_epochs=10)
+runner = dict(type='EpochBasedRunner', max_epochs=20)
 
 
 
@@ -297,7 +301,7 @@ checkpoint_config = dict(interval=1)
 # For more loggers see
 # https://mmcv.readthedocs.io/en/latest/api.html#mmcv.runner.LoggerHook
 log_config = dict(
-    interval=100,
+    interval=500,
     hooks=[
         dict(type='TextLoggerHook'),
         dict(type='TensorboardLoggerHook')
@@ -308,10 +312,7 @@ log_level = 'INFO'
 work_dir = None
 #load_from = "/media/tom/Volume/master_thesis/Fast-BEV-Fusion/workdirs/att_v2/fast_bev_fusion_centerhead_sub2d_att_v2/epoch_1.pth"
 load_from = None
-load_additional_from = None
 resume_from = None
 workflow = [('train', 1)]
-
-#find_unused_parameters = True  # as pts_box head still exists but is not used
 
 evaluation = dict(interval=1, pipeline=eval_pipeline)
