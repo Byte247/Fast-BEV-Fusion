@@ -116,7 +116,7 @@ model = dict(
     
     
     camera_n_voxels=(256, 256, 6), 
-    camera_voxel_size=[0.4, 0.4, 1],
+    camera_voxel_size=[0.421, 0.421, 1],
 
     bbox_head_2d=dict(
         type='FCOSHead',
