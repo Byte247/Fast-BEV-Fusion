@@ -312,6 +312,7 @@ log_level = 'INFO'
 work_dir = None
 #load_from = "/media/tom/Volume/master_thesis/Fast-BEV-Fusion/workdirs/att_v2/fast_bev_fusion_centerhead_sub2d_att_v2/epoch_1.pth"
 load_from = None
+load_additional_from = None
 resume_from = None
 workflow = [('train', 1)]
 
