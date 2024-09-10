@@ -206,7 +206,7 @@ test_pipeline = [
         remove_close=True),
     dict(
         type='MultiScaleFlipAug3D',
-        img_scale=(512, 512),
+        img_scale=(1344, 1344),
         pts_scale_ratio=1,
         flip=False,
         transforms=[
