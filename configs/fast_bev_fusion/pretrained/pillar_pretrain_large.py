@@ -272,7 +272,7 @@ input_modality = dict(
     use_map=False,
     use_external=False)
 
-optimizer = dict(type='AdamW', lr=1e-5,
+optimizer = dict(type='AdamW', lr=1e-6,
                  weight_decay=0.01)
 
 # max_norm=10 is better for SECOND
