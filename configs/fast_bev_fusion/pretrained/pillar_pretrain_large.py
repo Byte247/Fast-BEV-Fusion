@@ -291,7 +291,7 @@ momentum_config = dict(
     step_ratio_up=0.2)
 
 # runtime settings
-runner = dict(type='EpochBasedRunner', max_epochs=20)
+runner = dict(type='EpochBasedRunner', max_epochs=10)
 
 
 
