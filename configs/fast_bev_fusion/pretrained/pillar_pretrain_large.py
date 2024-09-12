@@ -246,7 +246,7 @@ eval_pipeline = [
 ]
 
 data = dict(
-    samples_per_gpu=1,
+    samples_per_gpu=2,
     workers_per_gpu=1,
     train=dict(
          type='CBGSDataset',
@@ -272,7 +272,7 @@ input_modality = dict(
     use_map=False,
     use_external=False)
 
-optimizer = dict(type='AdamW', lr=1e-4,
+optimizer = dict(type='AdamW', lr=1e-6,
                  weight_decay=0.01)
 
 # max_norm=10 is better for SECOND
@@ -291,7 +291,7 @@ momentum_config = dict(
     step_ratio_up=0.2)
 
 # runtime settings
-runner = dict(type='EpochBasedRunner', max_epochs=20)
+runner = dict(type='EpochBasedRunner', max_epochs=40)
 
 
 
