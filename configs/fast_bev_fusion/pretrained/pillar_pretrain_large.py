@@ -272,7 +272,7 @@ input_modality = dict(
     use_map=False,
     use_external=False)
 
-optimizer = dict(type='AdamW', lr=1e-4,
+optimizer = dict(type='AdamW', lr=1e-5,
                  weight_decay=0.01)
 
 # max_norm=10 is better for SECOND
@@ -283,12 +283,12 @@ lr_config = dict(
     policy='cyclic',
     target_ratio=(10, 0.0001),
     cyclic_times=1,
-    step_ratio_up=0.2)
+    step_ratio_up=0.1)
 momentum_config = dict(
     policy='cyclic',
     target_ratio=(0.8947368421052632, 1),
     cyclic_times=1,
-    step_ratio_up=0.2)
+    step_ratio_up=0.1)
 
 # runtime settings
 runner = dict(type='EpochBasedRunner', max_epochs=40)
