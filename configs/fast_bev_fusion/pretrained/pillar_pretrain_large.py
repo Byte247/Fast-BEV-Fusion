@@ -35,7 +35,7 @@ model = dict(
         layer_nums=[3, 5, 5],
         layer_strides=[2, 2, 2],
         norm_cfg=dict(type='BN', requires_grad=True),
-        conv_cfg=dict(type='BN', bias=False)),
+        conv_cfg=dict(type='Conv2d', bias=False)),
     pts_neck=dict(
         type='SECONDFPN',
         in_channels=[64, 128, 256],
