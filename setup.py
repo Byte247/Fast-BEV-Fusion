@@ -303,6 +303,14 @@ if __name__ == '__main__':
                 sources=['src/furthest_point_sample.cpp'],
                 sources_cuda=['src/furthest_point_sample_cuda.cu']),
             make_cuda_ext(
+                name='ingroup_inds_cuda',
+                module='mmdet3d.ops.ingroup_inds',
+                sources=[
+                    'src/ingroup_inds.cpp',
+                    'src/ingroup_inds_kernel.cu',
+                ]
+            ),
+            make_cuda_ext(
                 name='gather_points_ext',
                 module='mmdet3d.ops.gather_points',
                 sources=['src/gather_points.cpp'],

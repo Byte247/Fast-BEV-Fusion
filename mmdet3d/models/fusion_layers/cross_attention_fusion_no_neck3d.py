@@ -44,8 +44,8 @@ class Decoder(nn.Module):
 
         attention_output, attn_weights = self.multiheadAttention(query=query, key=key, value=value, need_weights=self.show_weights)
         if self.show_weights:
-            self.vis_attention_scores(attn_weights)
-            #self.vis_mean_attention_scores(attn_weights)
+            #self.vis_attention_scores(attn_weights)
+            self.vis_mean_attention_scores(attn_weights)
 
         add_norm_0 = torch.add(attention_output, query)
         
@@ -69,24 +69,26 @@ class Decoder(nn.Module):
         # Plot the mean attention heatmap
         plt.figure(figsize=(100, 80))
         plt.imshow(mean_attention_heatmap_2d, cmap='viridis', interpolation='nearest')
-        plt.xlabel('Wide Image Patch X-Axis')
-        plt.ylabel('Wide Image Patch Y-Axis')
+        plt.xlabel('Image Features X-Axis')
+        plt.ylabel('Image Features Y-Axis')
         plt.title(f'Mean Attention Heatmap for Tokens')
         plt.colorbar(label='Attention Score')
         plt.show()
 
 
     def vis_attention_scores(self, weights):
+         
         attention_heatmaps = weights.squeeze(0).cpu().detach().numpy()  # Remove batch dimension and convert to NumPy
 
-        # Create plot objects outside the loop
+        # #Create plot objects outside the loop
         fig_heatmap, axs_heatmap = plt.subplots(2)
 
         # Precompute highlighted grid outside the loop
         highlighted_grid = np.zeros((64, 64))
 
-        i = 3344
 
+        #for i in range(200, 500):
+        i = 304
         # Clear previous plot
         axs_heatmap[0].clear()
         axs_heatmap[1].clear()
@@ -107,19 +109,16 @@ class Decoder(nn.Module):
         attention_heatmap = attention_heatmaps[i]
         attention_heatmap_2d = attention_heatmap.reshape((64, 64)).T
         
-        # Plot the heatmap with a colorbar
-        heatmap_img = axs_heatmap[0].imshow(attention_heatmap_2d, cmap='viridis', interpolation='nearest')
+        axs_heatmap[0].imshow(attention_heatmap_2d, cmap='viridis', interpolation='nearest')
         axs_heatmap[0].set_xlabel('Wide Image Patch X-Axis')
         axs_heatmap[0].set_ylabel('Wide Image Patch Y-Axis')
         axs_heatmap[0].set_title(f'Attention Heatmap for Target Token {i}')
-        fig_heatmap.colorbar(heatmap_img, ax=axs_heatmap[0], orientation='vertical', label='Attention Score Intensity')
         
-        # Plot highlighted grid with a colorbar
-        highlighted_img = axs_heatmap[1].imshow(highlighted_grid, cmap='viridis', interpolation='nearest')
+        # Plot highlighted grid
+        axs_heatmap[1].imshow(highlighted_grid, cmap='viridis', interpolation='nearest')
         axs_heatmap[1].set_xlabel('Column Index')
         axs_heatmap[1].set_ylabel('Row Index')
         axs_heatmap[1].set_title(f'Position of Token {i} in 64x64 Grid')
-        fig_heatmap.colorbar(highlighted_img, ax=axs_heatmap[1], orientation='vertical', label='Highlight Presence')
         
         # Update the plots
         fig_heatmap.canvas.draw()
@@ -169,7 +168,7 @@ class MultiHeadCrossAttentionNoNeck(nn.Module):
         self.reduce_camera_spatialy_2 = ConvBNReLU(self.embed_dim, self.embed_dim, kernel_size=3, stride=2, padding=1, norm_cfg = self.norm_cfg)
     
 
-        self.lidar_camera_cross_attention = Decoder(self.embed_dim, hidden_dim=self.embed_dim * 2, num_heads= num_heads, dropout=dropout, show_weights=False)
+        self.lidar_camera_cross_attention = Decoder(self.embed_dim, hidden_dim=self.embed_dim * 2, num_heads= num_heads, dropout=dropout, show_weights=True)
         
         self.pos_embed_camera = nn.Parameter(torch.randn(1, self.embed_dim, 4096) * .02) #done as in ViT: https://github.com/lucidrains/vit-pytorch/blob/main/vit_pytorch/vit.py, (14 (image hight) * 25 image width * 6 images) / 16 (image patches)
         self.pos_embed_lidar = nn.Parameter(torch.randn(1, self.embed_dim, 4096) * .02) #done as in ViT: https://github.com/lucidrains/vit-pytorch/blob/main/vit_pytorch/vit.py, no reduction for now

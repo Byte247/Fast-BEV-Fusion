@@ -8,10 +8,11 @@ from .second import SECOND
 from .vovnet import VoVNet
 from .swin_transformer import SwinTransformer
 from .point_resnet import PointResNet34V2
+from .dsvt import DSVT
 # from .dla import *
 
 
 __all__ = [
     'ResNet', 'ResNetV1d', 'ResNeXt', 'SSDVGG', 'HRNet', 'NoStemRegNet',
-    'SECOND', 'PointNet2SASSG', 'PointNet2SAMSG', 'MultiBackbone', 'PointResNet34V2'
+    'SECOND', 'PointNet2SASSG', 'PointNet2SAMSG', 'MultiBackbone', 'PointResNet34V2',"DSVT"
 ]
