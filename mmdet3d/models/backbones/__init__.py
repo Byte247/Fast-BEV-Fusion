@@ -9,10 +9,11 @@ from .vovnet import VoVNet
 from .swin_transformer import SwinTransformer
 from .point_resnet import PointResNet34V2
 from .dsvt import DSVT
+from .base_bev_res_backbone import BaseBEVResBackbone
 # from .dla import *
 
 
 __all__ = [
     'ResNet', 'ResNetV1d', 'ResNeXt', 'SSDVGG', 'HRNet', 'NoStemRegNet',
-    'SECOND', 'PointNet2SASSG', 'PointNet2SAMSG', 'MultiBackbone', 'PointResNet34V2',"DSVT"
+    'SECOND', 'PointNet2SASSG', 'PointNet2SAMSG', 'MultiBackbone', 'PointResNet34V2',"DSVT","BaseBEVResBackbone"
 ]

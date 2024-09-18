@@ -89,9 +89,8 @@ class TransFusionHeadDSVT(MVXTwoStageDetector):
         if self.with_pts_backbone:
             x = self.pts_backbone(x)
 
-        
-        x = self.pts_neck(x)
-        
+        if self.with_pts_neck:
+            x = self.pts_neck(x)
 
 
         return x

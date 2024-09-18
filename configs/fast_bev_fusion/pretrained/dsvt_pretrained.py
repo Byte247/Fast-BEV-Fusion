@@ -4,7 +4,7 @@ _base_ = [
 
 point_cloud_range = [-51.2, -51.2, -5.0, 51.2, 51.2, 3.0]
 
-out_size_factor = 4
+out_size_factor = 2
 
 # For nuScenes we usually do 10-class detection
 class_names = [
@@ -53,21 +53,14 @@ model = dict(
         type='PointPillarsScatter', in_channels=128, output_shape=(512, 512)),
 
     pts_backbone=dict(
-        type='SECOND',
-        in_channels=128,
-        out_channels=[128, 128, 256],
-        layer_nums=[3, 5, 5],
-        layer_strides=[2, 2, 2],
-        norm_cfg=dict(type='BN', requires_grad=True),
-        conv_cfg=dict(type='Conv2d', bias=False)),
-    pts_neck=dict(
-        type='SECONDFPN',
-        in_channels=[128, 128, 256],
-        out_channels=[128, 128, 128],
-        upsample_strides=[0.5, 1, 2],
-        norm_cfg=dict(type='BN', requires_grad=True),
-        upsample_cfg=dict(type='deconv', bias=False),
-        use_conv_for_no_stride=True),
+        type='BaseBEVResBackbone',
+        input_channels = 128,
+        LAYER_NUMS=[ 1, 2, 2 ],
+        LAYER_STRIDES=[ 1, 2, 2 ],
+        NUM_FILTERS= [ 128, 128, 256 ],
+        UPSAMPLE_STRIDES= [ 0.5, 1, 2 ],
+        NUM_UPSAMPLE_FILTERS= [ 128, 128, 128 ]),
+
 
     bbox_head=dict(
         type='TransFusionHead',
