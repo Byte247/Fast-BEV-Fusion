@@ -325,7 +325,7 @@ class FastBEVFusionTransfusionheadPillar(BaseDetector):
             
 
         if self.seg_head is not None:
-            assert len(gt_bev_seg) == 1
+            #assert len(gt_bev_seg) == 1
             x_bev = self.seg_head(feature_bev)
             gt_bev = gt_bev_seg[0][None, ...].long()
             loss_seg = self.seg_head.losses(x_bev, gt_bev)

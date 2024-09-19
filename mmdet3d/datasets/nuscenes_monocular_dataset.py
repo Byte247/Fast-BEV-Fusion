@@ -51,10 +51,12 @@ class NuScenesMultiViewMultiModalDataset(MultiViewMixin, NuScenesDataset):
             gt_bboxes_3d = gt_bboxes_3d[mask]
             gt_names = data_info['ann_info']['gt_names'][mask]
             gt_labels_3d = gt_labels_3d[mask]
+            
+            
             new_info['ann_info'] = dict(
-                gt_bboxes_3d=gt_bboxes_3d,
-                gt_names=gt_names,
-                gt_labels_3d=gt_labels_3d
+            gt_bboxes_3d=gt_bboxes_3d,
+            gt_names=gt_names,
+            gt_labels_3d=gt_labels_3d
             )
         return new_info
     
