@@ -14,14 +14,15 @@ class_names = [
 model = dict(
     type='FastBEVFusionTransfusionheadPillar',
     backbone=dict(
-        type='ResNet',
-        depth=50,
+        type='ResNeXt',
+        depth=101,
+        groups=64,
+        base_width=4,
         num_stages=4,
         out_indices=(0, 1, 2, 3),
         frozen_stages=1,
         norm_cfg=dict(type='BN', requires_grad=True),
         norm_eval=True,
-        init_cfg=dict(type='Pretrained', checkpoint='torchvision://resnet50'),
         style='pytorch',
         dcn=dict(type='DCN', deform_groups=1, fallback_on_stride=False),
         stage_with_dcn=(False, True, True, True)
@@ -346,9 +347,7 @@ data = dict(
 optimizer = dict(type='AdamW', lr=1e-4,
                   weight_decay=0.01,
                   paramwise_cfg=dict(
-                  custom_keys={'backbone': dict(lr_mult=0.1, decay_mult=1.0),
-                               'bbox_head': dict(lr_mult=0.1, decay_mult=1.0),
-                               'pos_embed_camera': dict(lr_mult=0.1, decay_mult=.0),
+                  custom_keys={'pos_embed_camera': dict(lr_mult=0.1, decay_mult=.0),
                                'pos_embed_lidar': dict(lr_mult=0.1, decay_mult=.0)}))
 
 
@@ -384,6 +383,6 @@ log_level = 'INFO'
 # load_from = None
 load_additional_from = None
 resume_from = None
-load_from = 'https://download.openmmlab.com/mmdetection3d/v0.1.0_models/nuimages_semseg/cascade_mask_rcnn_r50_fpn_coco-20e_20e_nuim/cascade_mask_rcnn_r50_fpn_coco-20e_20e_nuim_20201009_124951-40963960.pth'
+load_from = 'https://download.openmmlab.com/mmdetection3d/v0.1.0_models/nuimages_semseg/htc_x101_64x4d_fpn_dconv_c3-c5_coco-20e_16x1_20e_nuim/htc_x101_64x4d_fpn_dconv_c3-c5_coco-20e_16x1_20e_nuim_20201008_211222-0b16ac4b.pth'
 workflow = [('train', 1)]
 
