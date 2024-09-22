@@ -11,7 +11,6 @@ class_names = [
     'motorcycle', 'pedestrian', 'traffic_cone', 'barrier'
 ]
 
-
 model = dict(
     type='FastBEVFusionTransfusionheadPillar',
     backbone=dict(
@@ -73,7 +72,7 @@ model = dict(
 
 
     #Fusion layer
-    fusion_module = dict(type='MultiHeadCrossAttentionNoNeck',embed_dim = 512, num_heads=1, dropout = 0.0, output_dim = 384, fuse_on_lidar=True, norm_cfg=dict(type='BN', requires_grad=True)),
+    fusion_module = dict(type='MultiHeadCrossAttentionNoNeck',embed_dim = 512, num_heads=1, dropout = 0.1, output_dim = 384, fuse_on_lidar=True, norm_cfg=dict(type='BN', requires_grad=True)),
 
     seg_head=dict(
         type='BEV_FCNHead',
@@ -346,8 +345,7 @@ data = dict(
 optimizer = dict(type='AdamW', lr=1e-4,
                   weight_decay=0.01,
                   paramwise_cfg=dict(
-                  custom_keys={'backbone': dict(lr_mult=0.1, decay_mult=1.0),
-                               'pos_embed_camera': dict(lr_mult=1.0, decay_mult=.0),
+                  custom_keys={'pos_embed_camera': dict(lr_mult=1.0, decay_mult=.0),
                                'pos_embed_lidar': dict(lr_mult=1.0, decay_mult=.0)}))
 
 
