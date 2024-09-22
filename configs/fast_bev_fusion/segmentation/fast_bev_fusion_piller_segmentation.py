@@ -126,6 +126,7 @@ model = dict(
         # loss_iou=dict(type='CrossEntropyLoss', use_sigmoid=True, reduction='mean', loss_weight=0.0),
         loss_bbox=dict(type='L1Loss', reduction='mean', loss_weight=0.25),
         loss_heatmap=dict(type='GaussianFocalLoss', reduction='mean', loss_weight=1.0),
+        freeze_layers=True
     ),
     
     bbox_head_2d=dict(
@@ -346,8 +347,8 @@ optimizer = dict(type='AdamW', lr=1e-4,
                   weight_decay=0.01,
                   paramwise_cfg=dict(
                   custom_keys={'backbone': dict(lr_mult=0.1, decay_mult=1.0),
-                               'pos_embed_camera': dict(lr_mult=1.0, decay_mult=.0),
-                               'pos_embed_lidar': dict(lr_mult=1.0, decay_mult=.0)}))
+                               'pos_embed_camera': dict(lr_mult=0.1, decay_mult=.0),
+                               'pos_embed_lidar': dict(lr_mult=0.1, decay_mult=.0)}))
 
 
 optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))

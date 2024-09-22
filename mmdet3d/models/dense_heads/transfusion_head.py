@@ -634,6 +634,7 @@ class TransFusionHead(nn.Module):
                  train_cfg=None,
                  test_cfg=None,
                  bbox_coder=None,
+                 freeze_layers=False,
                  ):
         super(TransFusionHead, self).__init__()
 
@@ -763,6 +764,19 @@ class TransFusionHead(nn.Module):
 
         self.img_feat_pos = None
         self.img_feat_collapsed_pos = None
+
+        if freeze_layers:
+            print("Freeze TransFusion head")
+            for name, module in self.named_modules():
+                # Check if the layer is a normalization layer
+                if isinstance(module, (nn.BatchNorm1d, nn.BatchNorm2d, nn.SyncBatchNorm)):
+                    continue  # Skip freezing normalization layers
+
+                # Freeze the parameters of non-normalization layers
+                for param in module.parameters():
+                    param.requires_grad = False
+            
+
 
     def create_2D_grid(self, x_size, y_size):
         meshgrid = [[0, x_size - 1, x_size], [0, y_size - 1, y_size]]
