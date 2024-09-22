@@ -366,7 +366,7 @@ momentum_config = dict(
 
 
 # runtime settings
-runner = dict(type='EpochBasedRunner', max_epochs=6)
+runner = dict(type='EpochBasedRunner', max_epochs=20)
 
 #total_epochs = 20
 checkpoint_config = dict(interval=1)
