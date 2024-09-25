@@ -72,7 +72,7 @@ model = dict(
 
 
     #Fusion layer
-    fusion_module = dict(type='MultiHeadCrossAttentionNoNeck',embed_dim = 512, num_heads=1, dropout = 0.1, output_dim = 384, fuse_on_lidar=True, norm_cfg=dict(type='BN', requires_grad=True)),
+    fusion_module = dict(type='MultiHeadCrossAttentionSegmentation',embed_dim = 512, num_heads=1, dropout = 0.0, output_dim = 384, fuse_on_lidar=True, norm_cfg=dict(type='BN', requires_grad=True)),
 
     seg_head=dict(
         type='BEV_FCNHead',
@@ -91,81 +91,9 @@ model = dict(
         loss_dice=dict(type='DiceLoss_zq', loss_weight=1.0)
     ),
     
-    camera_n_voxels=(256, 256, 6), 
-    camera_voxel_size=[0.4, 0.4, 1],
+    camera_n_voxels=(512, 512, 8), 
+    camera_voxel_size=[0.2, 0.2, 1],
 
-    bbox_head=dict(
-        type='TransFusionHead',
-        num_proposals=200,
-        auxiliary=True,
-        in_channels=384,
-        hidden_channel=128,
-        num_classes=len(class_names),
-        num_decoder_layers=1,
-        num_heads=8,
-        learnable_query_pos=False,
-        initialize_by_heatmap=True,
-        nms_kernel_size=3,
-        ffn_channel=256,
-        dropout=0.1,
-        bn_momentum=0.1,
-        activation='relu',
-        norm_cfg = dict(type='BN1d', requires_grad=True),
-        two_d_norm_cfg=dict(type='BN', requires_grad=True),
-        common_heads=dict(center=(2, 2), height=(1, 2), dim=(3, 2), rot=(2, 2), vel=(2, 2)),
-        bbox_coder=dict(
-            type='TransFusionBBoxCoder',
-            pc_range=point_cloud_range[:2],
-            voxel_size=[0.2, 0.2],
-            out_size_factor=out_size_factor,
-            post_center_range=[-61.2, -61.2, -10.0, 61.2, 61.2, 10.0],
-            score_threshold=0.0,
-            code_size=10,
-        ),
-        loss_cls=dict(type='FocalLoss', use_sigmoid=True, gamma=2, alpha=0.25, reduction='mean', loss_weight=1.0),
-        # loss_iou=dict(type='CrossEntropyLoss', use_sigmoid=True, reduction='mean', loss_weight=0.0),
-        loss_bbox=dict(type='L1Loss', reduction='mean', loss_weight=0.25),
-        loss_heatmap=dict(type='GaussianFocalLoss', reduction='mean', loss_weight=1.0),
-        freeze_layers=False,
-    ),
-    
-    bbox_head_2d=dict(
-        type='FCOSHead',
-        num_classes=10,
-        in_channels=64,
-        stacked_convs=2,
-        feat_channels=32,
-        strides=[4, 8, 16, 32],
-        regress_ranges=((-1, 64), (64, 128), (128, 256), (256, 1e8)),
-        norm_on_bbox = True,
-        centerness_on_reg = True,
-        loss_cls=dict(
-            type='FocalLoss',
-            use_sigmoid=True,
-            gamma=2.0,
-            alpha=0.25,
-            loss_weight=1.0),
-        loss_bbox=dict(type='IoULoss', loss_weight=1.0),
-        loss_centerness=dict(type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0)),
-
-
-    # training and testing settings for 2d
-    train_cfg_2d=dict(
-        assigner=dict(
-            type='MaxIoUAssigner',
-            pos_iou_thr=0.5,
-            neg_iou_thr=0.4,
-            min_pos_iou=0,
-            ignore_iof_thr=-1),
-        allowed_border=-1,
-        pos_weight=-1,
-        debug=False),
-    test_cfg_2d=dict(
-        nms_pre=1000,
-        min_bbox_size=0,
-        score_thr=0.05,
-        nms=dict(type='nms', iou_threshold=0.5),
-        max_per_img=100),
 
     # model training and testing settings for the head
     train_cfg=dict(
