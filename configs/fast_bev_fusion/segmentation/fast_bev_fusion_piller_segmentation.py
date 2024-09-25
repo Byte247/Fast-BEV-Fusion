@@ -48,7 +48,7 @@ model = dict(
         voxel_size=(0.2, 0.2, 8),
         norm_cfg=dict(type='BN1d', eps=1e-3, momentum=0.01),
         legacy=False,
-        freeze_layers=True),
+        freeze_layers=False),
     pts_middle_encoder=dict(
         type='PointPillarsScatter', in_channels=64, output_shape=(512, 512)),
     pts_backbone=dict(
@@ -59,7 +59,7 @@ model = dict(
         layer_strides=[2, 2, 2],
         norm_cfg=dict(type='BN', requires_grad=True),
         conv_cfg=dict(type='Conv2d', bias=False),
-        freeze_layers=True),
+        freeze_layers=False),
     pts_neck=dict(
         type='SECONDFPN',
         in_channels=[64, 128, 256],
@@ -68,7 +68,7 @@ model = dict(
         norm_cfg=dict(type='BN', requires_grad=True),
         upsample_cfg=dict(type='deconv', bias=False),
         use_conv_for_no_stride=True,
-        freeze_layers=True),
+        freeze_layers=False),
 
 
     #Fusion layer
