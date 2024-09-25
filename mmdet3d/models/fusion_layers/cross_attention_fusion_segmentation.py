@@ -155,9 +155,9 @@ class FeedForwardBlock(nn.Module):
 Same as V1 but with an addition skip connection around the cross attention
 """
 @FUSION_LAYERS.register_module()
-class MultiHeadCrossAttentionNoNeck(nn.Module):
+class MultiHeadCrossAttentionSegmentation(nn.Module):
     def __init__(self, embed_dim = 512, num_heads=8, dropout = 0.1, output_dim = 384, fuse_on_lidar=True, norm_cfg = None):
-        super(MultiHeadCrossAttentionNoNeck, self).__init__()
+        super(MultiHeadCrossAttentionSegmentation, self).__init__()
 
         self.embed_dim = embed_dim
         self.norm_cfg = norm_cfg

@@ -90,6 +90,7 @@ model = dict(
         loss_ce=dict(type='CrossEntropyLoss',use_sigmoid=True, loss_weight=1.0),
         loss_dice=dict(type='DiceLoss_zq', loss_weight=1.0)
     ),
+    bbox_head = None,
     
     camera_n_voxels=(512, 512, 8), 
     camera_voxel_size=[0.2, 0.2, 1],
@@ -240,7 +241,8 @@ data = dict(
     samples_per_gpu=1,
     workers_per_gpu=4,
     train=dict(
-        type='CBGSDataset',
+        type='RepeatDataset',
+        times=1,
         dataset=dict(
             type=dataset_type,
             data_root=data_root,
@@ -274,8 +276,7 @@ data = dict(
 optimizer = dict(type='AdamW', lr=1e-4,
                   weight_decay=0.01,
                   paramwise_cfg=dict(
-                  custom_keys={'bbox_head': dict(lr_mult=0.1, decay_mult=1.0),
-                               'pos_embed_camera': dict(lr_mult=0.1, decay_mult=.0),
+                  custom_keys={'pos_embed_camera': dict(lr_mult=0.1, decay_mult=.0),
                                'pos_embed_lidar': dict(lr_mult=0.1, decay_mult=.0)}))
 
 
