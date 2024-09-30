@@ -239,7 +239,7 @@ test_pipeline = [
 
 data = dict(
     samples_per_gpu=1,
-    workers_per_gpu=4,
+    workers_per_gpu=1,
     train=dict(
         type='RepeatDataset',
         times=1,
@@ -273,7 +273,7 @@ data = dict(
         test_mode=True,
         box_type_3d='LiDAR'))
 
-optimizer = dict(type='AdamW', lr=1e-4,
+optimizer = dict(type='AdamW', lr=1e-5,
                   weight_decay=0.01,
                   paramwise_cfg=dict(
                   custom_keys={'pos_embed_camera': dict(lr_mult=1.0, decay_mult=.0),
