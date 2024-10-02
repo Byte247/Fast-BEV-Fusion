@@ -162,7 +162,7 @@ class MultiHeadCrossAttentionSegmentation(nn.Module):
         self.embed_dim = embed_dim
         self.norm_cfg = norm_cfg
 
-        #self.reduce_lidar_channel = ConvBNReLU(384, self.embed_dim, kernel_size=3, stride=2, padding=1, norm_cfg = self.norm_cfg)
+        self.adjust_lidar_channel = ConvBNReLU(384, self.embed_dim, kernel_size=1, stride=1, padding=0, norm_cfg = self.norm_cfg)
         self.fuse_on_lidar = fuse_on_lidar
 
 
@@ -191,9 +191,12 @@ class MultiHeadCrossAttentionSegmentation(nn.Module):
 
 
     def create_lidar_patches(self, lidar_tensor):
+
+        
         
         #flatten all patches:   
         lidar_tensor = lidar_tensor.view(lidar_tensor.shape[0], lidar_tensor.shape[1], -1)
+
 
         lidar_tensor = torch.add(lidar_tensor, self.pos_embed_lidar)
 
@@ -229,6 +232,7 @@ class MultiHeadCrossAttentionSegmentation(nn.Module):
         camera_bev_features = camera_bev_features[0]
         
         #lidar_bev_features_reduced = self.reduce_lidar_channel(lidar_bev_features)
+        lidar_bev_features = self.adjust_lidar_channel(lidar_bev_features)
 
         camera_bev_features = self.reduce_camera_spatialy(camera_bev_features)
         camera_bev_features = self.reduce_camera_spatialy_between(camera_bev_features)
