@@ -230,6 +230,7 @@ class MultiHeadCrossAttentionSegmentation(nn.Module):
 
         camera_bev_features = self.reduce_camera_spatialy(camera_bev_features)
         camera_bev_features = self.reduce_camera_spatialy_between(camera_bev_features)
+        camera_bev_features = self.reduce_camera_spatialy_2(camera_bev_features)
         
 
         # # get patch embeddings
