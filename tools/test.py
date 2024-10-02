@@ -251,8 +251,8 @@ def main():
             ]:
                 eval_kwargs.pop(key, None)
             eval_kwargs.update(dict(metric=args.eval, **kwargs))
-            #print(dataset.evaluate(outputs, vis_mode=args.vis,jsonfile_prefix=args.workdir, **eval_kwargs))
-            print(dataset.evaluate(outputs,jsonfile_prefix=args.workdir, **eval_kwargs))
+            print(dataset.evaluate(outputs, vis_mode=args.vis,jsonfile_prefix=args.workdir, **eval_kwargs))
+            #print(dataset.evaluate(outputs,jsonfile_prefix=args.workdir, **eval_kwargs))
 
 
 if __name__ == '__main__':

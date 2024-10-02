@@ -162,7 +162,7 @@ class MultiHeadCrossAttentionSegmentation(nn.Module):
         self.embed_dim = embed_dim
         self.norm_cfg = norm_cfg
 
-        self.reduce_lidar_channel = ConvBNReLU(384, self.embed_dim, kernel_size=3, stride=2, padding=1, norm_cfg = self.norm_cfg)
+        #self.reduce_lidar_channel = ConvBNReLU(384, self.embed_dim, kernel_size=3, stride=2, padding=1, norm_cfg = self.norm_cfg)
         self.fuse_on_lidar = fuse_on_lidar
 
 
@@ -170,13 +170,13 @@ class MultiHeadCrossAttentionSegmentation(nn.Module):
 
         self.reduce_camera_spatialy_between = ConvBNReLU(512, self.embed_dim, kernel_size=3, stride=1, padding=1, norm_cfg = self.norm_cfg)
         
-        self.patch_creation_layer = ConvBNReLU(self.embed_dim, self.embed_dim, kernel_size=4, stride=4, padding=0, norm_cfg = self.norm_cfg)
+        #self.patch_creation_layer = ConvBNReLU(self.embed_dim, self.embed_dim, kernel_size=4, stride=4, padding=0, norm_cfg = self.norm_cfg)
     
 
         self.lidar_camera_cross_attention = Decoder(self.embed_dim, hidden_dim=self.embed_dim * 2, num_heads= num_heads, dropout=dropout, show_weights=False)
         
-        self.pos_embed_camera = nn.Parameter(torch.randn(1, self.embed_dim, 4096) * .02) #done as in ViT: https://github.com/lucidrains/vit-pytorch/blob/main/vit_pytorch/vit.py, (14 (image hight) * 25 image width * 6 images) / 16 (image patches)
-        self.pos_embed_lidar = nn.Parameter(torch.randn(1, self.embed_dim, 4096) * .02) #done as in ViT: https://github.com/lucidrains/vit-pytorch/blob/main/vit_pytorch/vit.py, no reduction for now
+        self.pos_embed_camera = nn.Parameter(torch.randn(1, self.embed_dim, 16384) * .02) #done as in ViT: https://github.com/lucidrains/vit-pytorch/blob/main/vit_pytorch/vit.py, (14 (image hight) * 25 image width * 6 images) / 16 (image patches)
+        self.pos_embed_lidar = nn.Parameter(torch.randn(1, self.embed_dim, 16384) * .02) #done as in ViT: https://github.com/lucidrains/vit-pytorch/blob/main/vit_pytorch/vit.py, no reduction for now
 
         self.upsample_layer = nn.ConvTranspose2d(embed_dim, output_dim, kernel_size=2, stride=2) # match centerpoint
         if norm_cfg is None:
@@ -203,7 +203,7 @@ class MultiHeadCrossAttentionSegmentation(nn.Module):
     
     def create_camera_patches(self, camera_tensor):
 
-        camera_tensor = self.patch_creation_layer(camera_tensor)
+        #camera_tensor = self.patch_creation_layer(camera_tensor)
         
         #flatten all patches:
         camera_patches = camera_tensor.view(camera_tensor.shape[0], camera_tensor.shape[1], -1)
@@ -226,7 +226,7 @@ class MultiHeadCrossAttentionSegmentation(nn.Module):
         lidar_bev_features = lidar_bev_features[0]
         camera_bev_features = camera_bev_features[0]
         
-        lidar_bev_features_reduced = self.reduce_lidar_channel(lidar_bev_features)
+        #lidar_bev_features_reduced = self.reduce_lidar_channel(lidar_bev_features)
 
         camera_bev_features = self.reduce_camera_spatialy(camera_bev_features)
         camera_bev_features = self.reduce_camera_spatialy_between(camera_bev_features)
@@ -234,7 +234,7 @@ class MultiHeadCrossAttentionSegmentation(nn.Module):
 
         # # get patch embeddings
         image_patch_embedding = self.create_camera_patches(camera_bev_features)
-        lidar_patch_embedding = self.create_lidar_patches(lidar_bev_features_reduced)
+        lidar_patch_embedding = self.create_lidar_patches(camera_bev_features)
 
         
         cross_attention = self.lidar_camera_cross_attention(lidar_patch_embedding, image_patch_embedding)
@@ -243,11 +243,11 @@ class MultiHeadCrossAttentionSegmentation(nn.Module):
 
         # Reshape the 1d tensor back to a 2d representation used in the CenterHead
         output = cross_attention.permute(0,2,1)
-        output = output.view(output.shape[0], output.shape[1], 64, 64)  # Shape: [batch * 6, 256, 64, 64]
+        output = output.view(output.shape[0], output.shape[1], 128, 128)  # Shape: [batch * 6, 256, 64, 64]
 
 
-        output = self.upsample_layer_act(self.upsample_layer_norm(self.upsample_layer(output)))
-        output = torch.add(lidar_bev_features, output)
+        #output = self.upsample_layer_act(self.upsample_layer_norm(self.upsample_layer(output)))
+        #output = torch.add(lidar_bev_features, output)
 
         
         return [output]
