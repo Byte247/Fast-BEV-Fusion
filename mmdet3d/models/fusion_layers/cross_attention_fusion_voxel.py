@@ -187,8 +187,10 @@ class MultiHeadCrossAttentionVoxel(nn.Module):
         self.norm_cfg = norm_cfg
         self.out_channels = out_channels
 
-        self.reduce_camera_spatialy = ConvBNReLU(1536, self.embed_dim, kernel_size=3, stride=2, padding=1, norm_cfg = self.norm_cfg)
-        self.reduce_camera_spatialy_conv1 = ConvBNReLU(self.embed_dim, self.embed_dim, kernel_size=3, stride=1, padding=1, norm_cfg = self.norm_cfg)
+
+        self.reduce_camera_channels = ConvBNReLU(6144, self.embed_dim, kernel_size=1, stride=1, padding=1, norm_cfg = self.norm_cfg)
+        self.reduce_camera_spatialy = ConvBNReLU(self.embed_dim, self.embed_dim, kernel_size=3, stride=2, padding=1, norm_cfg = self.norm_cfg)
+        
 
         self.reduce_lidar_spatially = ConvBNReLU(512, self.embed_dim, kernel_size=3, stride=2, padding=1,norm_cfg = self.norm_cfg)
         self.lidar_conv_0 = ConvBNReLU(self.embed_dim, self.embed_dim, kernel_size=3, stride=1, padding=1,norm_cfg = self.norm_cfg)
@@ -199,7 +201,7 @@ class MultiHeadCrossAttentionVoxel(nn.Module):
         self.pos_embed_camera = nn.Parameter(torch.randn(1, self.embed_dim, 8100) * .02) #done as in ViT: https://github.com/lucidrains/vit-pytorch/blob/main/vit_pytorch/vit.py, (14 (image hight) * 25 image width * 6 images) / 16 (image patches)
         self.pos_embed_lidar = nn.Parameter(torch.randn(1, self.embed_dim, 8100) * .02) #done as in ViT: https://github.com/lucidrains/vit-pytorch/blob/main/vit_pytorch/vit.py, no reduction for now
 
-        #self.upsample_layer = ConvTransposeBNReLU(embed_dim, self.out_channels, kernel_size=2, stride=2, norm_cfg = self.norm_cfg)
+        self.out_conv = ConvBNReLU(embed_dim, self.out_channels, kernel_size=1, stride=1, padding=0, norm_cfg = self.norm_cfg)
 
 
 
@@ -239,8 +241,9 @@ class MultiHeadCrossAttentionVoxel(nn.Module):
         lidar_bev_features = lidar_bev_features[0]
         camera_bev_features = camera_bev_features[0]
 
+        camera_bev_features = self.reduce_camera_channels(camera_bev_features)
         camera_bev_features = self.reduce_camera_spatialy(camera_bev_features)
-        camera_bev_features = self.reduce_camera_spatialy_conv1(camera_bev_features)
+        
 
         reduced_lidar_bev_features = self.reduce_lidar_spatially(lidar_bev_features)
         reduced_lidar_bev_features = self.lidar_conv_0(reduced_lidar_bev_features) #90x90
@@ -259,5 +262,7 @@ class MultiHeadCrossAttentionVoxel(nn.Module):
 
 
         output = torch.add(cross_attention, reduced_lidar_bev_features)
+
+        output = self.out_conv(output)
 
         return [output]
