@@ -188,8 +188,11 @@ class MultiHeadCrossAttentionVoxel(nn.Module):
         self.out_channels = out_channels
 
 
-        self.reduce_camera_channels = ConvBNReLU(6144, self.embed_dim, kernel_size=1, stride=1, padding=1, norm_cfg = self.norm_cfg)
-        self.reduce_camera_spatialy = ConvBNReLU(self.embed_dim, self.embed_dim, kernel_size=3, stride=2, padding=1, norm_cfg = self.norm_cfg)
+        self.reduce_camera_spatialy = ConvBNReLU(384, 512, kernel_size=3, stride=2, padding=1, norm_cfg = self.norm_cfg)
+
+        self.reduce_camera_spatialy_between = ConvBNReLU(512, self.embed_dim, kernel_size=3, stride=1, padding=1, norm_cfg = self.norm_cfg)
+        
+        self.reduce_camera_spatialy_2 = ConvBNReLU(self.embed_dim, self.embed_dim, kernel_size=3, stride=2, padding=1, norm_cfg = self.norm_cfg)
         
 
         self.reduce_lidar_spatially = ConvBNReLU(512, self.embed_dim, kernel_size=3, stride=2, padding=1,norm_cfg = self.norm_cfg)
@@ -198,7 +201,7 @@ class MultiHeadCrossAttentionVoxel(nn.Module):
 
         self.lidar_camera_cross_attention = Decoder(self.embed_dim, hidden_dim=self.embed_dim, num_heads=num_heads, dropout=dropout, show_weights=True)
         
-        self.pos_embed_camera = nn.Parameter(torch.randn(1, self.embed_dim, 8100) * .02) #done as in ViT: https://github.com/lucidrains/vit-pytorch/blob/main/vit_pytorch/vit.py, (14 (image hight) * 25 image width * 6 images) / 16 (image patches)
+        self.pos_embed_camera = nn.Parameter(torch.randn(1, self.embed_dim, 4096) * .02) #done as in ViT: https://github.com/lucidrains/vit-pytorch/blob/main/vit_pytorch/vit.py, (14 (image hight) * 25 image width * 6 images) / 16 (image patches)
         self.pos_embed_lidar = nn.Parameter(torch.randn(1, self.embed_dim, 8100) * .02) #done as in ViT: https://github.com/lucidrains/vit-pytorch/blob/main/vit_pytorch/vit.py, no reduction for now
 
         self.out_conv = ConvBNReLU(embed_dim, self.out_channels, kernel_size=1, stride=1, padding=0, norm_cfg = self.norm_cfg)
@@ -239,10 +242,10 @@ class MultiHeadCrossAttentionVoxel(nn.Module):
     def forward(self, lidar_bev_features, camera_bev_features):
 
         lidar_bev_features = lidar_bev_features[0]
-        camera_bev_features = camera_bev_features[0]
-
-        camera_bev_features = self.reduce_camera_channels(camera_bev_features)
         camera_bev_features = self.reduce_camera_spatialy(camera_bev_features)
+        camera_bev_features = self.reduce_camera_spatialy_between(camera_bev_features)
+
+        camera_bev_features = self.reduce_camera_spatialy_2(camera_bev_features)
         
 
         reduced_lidar_bev_features = self.reduce_lidar_spatially(lidar_bev_features)
