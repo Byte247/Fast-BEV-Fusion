@@ -65,6 +65,14 @@ class FastBEVFusionTransfusionheadVoxel(BaseDetector):
         self.neck = builder.build_neck(neck)
         self.neck_3d = builder.build_neck(neck_3d)
 
+        self.neck_fuse = nn.Conv2d(
+            neck_fuse["in_channels"],
+            neck_fuse["out_channels"],
+            kernel_size=3,
+            stride=1,
+            padding=1,
+        )
+
         if bbox_head is not None:
             bbox_head.update(train_cfg=train_cfg)
             bbox_head.update(test_cfg=test_cfg)
@@ -179,6 +187,15 @@ class FastBEVFusionTransfusionheadVoxel(BaseDetector):
         )  # [6, 64, 232, 400]
 
         x = torch.cat([c1, c2, c3, c4], dim=1)
+
+        def _inner_forward(x):
+            out = self.neck_fuse(x)  # [6, 64, 232, 400]
+            return out
+
+        if self.with_cp and x.requires_grad and self.neck_fuse is not None:
+            x = cp.checkpoint(_inner_forward, x)
+        elif self.neck_fuse is not None:
+            x = _inner_forward(x)
 
         x = x.reshape([batch_size, -1] + list(x.shape[1:]))  # [1, 6, 64, 232, 400]
 
