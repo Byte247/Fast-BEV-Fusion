@@ -17,15 +17,14 @@ class_names = [
 model = dict(
     type='FastBEVFusionTransfusionheadVoxel',
     backbone=dict(
-        type='ResNeXt',
-        depth=101,
-        groups=64,
-        base_width=4,
+        type='ResNet',
+        depth=50,
         num_stages=4,
         out_indices=(0, 1, 2, 3),
         frozen_stages=1,
         norm_cfg=dict(type='SyncBN', requires_grad=True),
         norm_eval=True,
+        init_cfg=dict(type='Pretrained', checkpoint='torchvision://resnet50'),
         style='pytorch',
         dcn=dict(type='DCN', deform_groups=1, fallback_on_stride=False),
         stage_with_dcn=(False, True, True, True)
@@ -371,6 +370,6 @@ find_unused_parameters = True  # todo: fix number of FPN outputs
 log_level = 'INFO'
 #load_from = None
 load_additional_from = None
-load_from = 'https://download.openmmlab.com/mmdetection3d/v0.1.0_models/nuimages_semseg/htc_x101_64x4d_fpn_dconv_c3-c5_coco-20e_16x1_20e_nuim/htc_x101_64x4d_fpn_dconv_c3-c5_coco-20e_16x1_20e_nuim_20201008_211222-0b16ac4b.pth'
+load_from = 'https://download.openmmlab.com/mmdetection3d/v0.1.0_models/nuimages_semseg/cascade_mask_rcnn_r50_fpn_coco-20e_20e_nuim/cascade_mask_rcnn_r50_fpn_coco-20e_20e_nuim_20201009_124951-40963960.pth'
 resume_from = None
 workflow = [('train', 1)]
