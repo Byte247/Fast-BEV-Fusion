@@ -4,7 +4,6 @@ import torch.nn as nn
 from mmcv.cnn import ConvModule
 from mmseg.ops import resize
 from mmseg.models.builder import HEADS, build_loss
-from mmdet3d.models.builder import build_loss as mmdet3D_loss
 from .bev_decoder_head import BEV_BaseDecodeHead
 from mmcv.runner import BaseModule, auto_fp16, force_fp32
 from mmseg.core import build_pixel_sampler
@@ -46,7 +45,7 @@ class BEV_FCNHead(BEV_BaseDecodeHead):
         if num_convs == 0:
             assert self.in_channels == self.channels
 
-        self.loss_ce = mmdet3D_loss(loss_ce)
+        self.loss_ce = build_loss(loss_ce)
         self.loss_dice = build_loss(loss_dice)
 
         conv_padding = (kernel_size // 2) * dilation

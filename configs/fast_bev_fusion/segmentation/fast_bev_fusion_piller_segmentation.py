@@ -87,7 +87,7 @@ model = dict(
         num_classes=2,
         norm_cfg=dict(type='BN', requires_grad=True),
         align_corners=False,
-        loss_ce=dict(type='FocalLoss', use_sigmoid=True, gamma=2, alpha=0.25, reduction='mean', loss_weight=1.0),
+        loss_ce=dict(type='CrossEntropyLoss',use_sigmoid=True, loss_weight=1.0),
         loss_dice=dict(type='DiceLoss_zq', loss_weight=1.0)
     ),
     bbox_head = None,
