@@ -72,7 +72,7 @@ model = dict(
 
 
     #Fusion layer
-    fusion_module = dict(type='MultiHeadCrossAttentionSegmentation',embed_dim = 512, num_heads=1, dropout = 0.1, output_dim = 384, fuse_on_lidar=True, norm_cfg=dict(type='SyncBN', requires_grad=True)),
+    fusion_module = dict(type='MultiHeadCrossAttentionSegmentation',embed_dim = 512, num_heads=1, dropout = 0.3, output_dim = 384, fuse_on_lidar=True, norm_cfg=dict(type='SyncBN', requires_grad=True)),
 
     seg_head=dict(
         type='BEV_FCNHead',
@@ -183,8 +183,8 @@ train_pipeline = [
         pad_empty_sweeps=True),
     dict(
        type='GlobalRotScaleTrans',
-       rot_range=[-0.3925 * 2, 0.3925 * 2],
-       scale_ratio_range=[0.9, 1.1],
+       rot_range=[-0.3925, 0.3925],
+       scale_ratio_range=[0.95, 1.05],
        translation_std=[0.5, 0.5, 0.5],
        update_img2lidar=True),
     dict(
@@ -295,7 +295,7 @@ momentum_config = dict(
 
 
 # runtime settings
-runner = dict(type='EpochBasedRunner', max_epochs=20)
+runner = dict(type='EpochBasedRunner', max_epochs=40)
 
 #total_epochs = 20
 checkpoint_config = dict(interval=1)
