@@ -204,7 +204,7 @@ class MultiHeadCrossAttentionVoxel(nn.Module):
         self.pos_embed_camera = nn.Parameter(torch.randn(1, self.embed_dim, 4096) * .02) #done as in ViT: https://github.com/lucidrains/vit-pytorch/blob/main/vit_pytorch/vit.py, (14 (image hight) * 25 image width * 6 images) / 16 (image patches)
         self.pos_embed_lidar = nn.Parameter(torch.randn(1, self.embed_dim, 8100) * .02) #done as in ViT: https://github.com/lucidrains/vit-pytorch/blob/main/vit_pytorch/vit.py, no reduction for now
 
-        self.out_conv = ConvBNReLU(embed_dim, self.out_channels, kernel_size=1, stride=1, padding=0, norm_cfg = self.norm_cfg)
+        self.out_conv = ConvTransposeBNReLU(embed_dim, self.out_channels, kernel_size=2, stride=2, padding=0, norm_cfg = self.norm_cfg)
 
 
 
