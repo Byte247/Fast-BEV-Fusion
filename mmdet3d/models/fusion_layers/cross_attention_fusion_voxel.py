@@ -189,24 +189,17 @@ class MultiHeadCrossAttentionVoxel(nn.Module):
 
         self.reduce_camera_spatialy = ConvBNReLU(1536, self.embed_dim, kernel_size=3, stride=2, padding=1, norm_cfg = self.norm_cfg)
         self.reduce_camera_spatialy_conv1 = ConvBNReLU(self.embed_dim, self.embed_dim, kernel_size=3, stride=1, padding=1, norm_cfg = self.norm_cfg)
-        self.reduce_camera_spatialy_2 = ConvBNReLU(self.embed_dim, self.embed_dim, kernel_size=3, stride=2, padding=1, norm_cfg = self.norm_cfg)
 
         self.reduce_lidar_spatially = ConvBNReLU(512, self.embed_dim, kernel_size=3, stride=2, padding=1,norm_cfg = self.norm_cfg)
         self.lidar_conv_0 = ConvBNReLU(self.embed_dim, self.embed_dim, kernel_size=3, stride=1, padding=1,norm_cfg = self.norm_cfg)
 
-        self.reduce_lidar_2 = ConvBNReLU(self.embed_dim, self.embed_dim, kernel_size=3, stride=2, padding=1, norm_cfg = self.norm_cfg)
-        self.lidar_conv_2 = ConvBNReLU(self.embed_dim, self.embed_dim, kernel_size=3, stride=1, padding=1, norm_cfg = self.norm_cfg)
 
-
-        self.lidar_camera_cross_attention = Decoder(self.embed_dim, hidden_dim=self.embed_dim, num_heads=num_heads, dropout=dropout, show_weights=False)
+        self.lidar_camera_cross_attention = Decoder(self.embed_dim, hidden_dim=self.embed_dim, num_heads=num_heads, dropout=dropout, show_weights=True)
         
-        self.pos_embed_camera = nn.Parameter(torch.randn(1, self.embed_dim, 4096) * .02) #done as in ViT: https://github.com/lucidrains/vit-pytorch/blob/main/vit_pytorch/vit.py, (14 (image hight) * 25 image width * 6 images) / 16 (image patches)
-        self.pos_embed_lidar = nn.Parameter(torch.randn(1, self.embed_dim, 4096) * .02) #done as in ViT: https://github.com/lucidrains/vit-pytorch/blob/main/vit_pytorch/vit.py, no reduction for now
+        self.pos_embed_camera = nn.Parameter(torch.randn(1, self.embed_dim, 8100) * .02) #done as in ViT: https://github.com/lucidrains/vit-pytorch/blob/main/vit_pytorch/vit.py, (14 (image hight) * 25 image width * 6 images) / 16 (image patches)
+        self.pos_embed_lidar = nn.Parameter(torch.randn(1, self.embed_dim, 8100) * .02) #done as in ViT: https://github.com/lucidrains/vit-pytorch/blob/main/vit_pytorch/vit.py, no reduction for now
 
-        self.upsample_layer = ConvTransposeBNReLU(embed_dim, self.out_channels, kernel_size=2, stride=2, norm_cfg = self.norm_cfg)
-
-
-        
+        #self.upsample_layer = ConvTransposeBNReLU(embed_dim, self.out_channels, kernel_size=2, stride=2, norm_cfg = self.norm_cfg)
 
 
 
@@ -248,35 +241,23 @@ class MultiHeadCrossAttentionVoxel(nn.Module):
 
         camera_bev_features = self.reduce_camera_spatialy(camera_bev_features)
         camera_bev_features = self.reduce_camera_spatialy_conv1(camera_bev_features)
-        camera_bev_features = self.reduce_camera_spatialy_2(camera_bev_features)
 
         reduced_lidar_bev_features = self.reduce_lidar_spatially(lidar_bev_features)
         reduced_lidar_bev_features = self.lidar_conv_0(reduced_lidar_bev_features) #90x90
 
 
-        reduced_lidar_bev_features_twice = self.reduce_lidar_2(reduced_lidar_bev_features)
-        reduced_lidar_bev_features_twice_no_reshape = self.lidar_conv_2(reduced_lidar_bev_features_twice)#45x45
-
-        reduced_lidar_bev_features_twice = F.interpolate(reduced_lidar_bev_features_twice_no_reshape, size=(64, 64), mode='bilinear', align_corners=False)
-
         # # get patch embeddings
         image_patch_embedding = self.create_camera_patches(camera_bev_features)
-        lidar_patch_embedding = self.create_lidar_patches(reduced_lidar_bev_features_twice)
+        lidar_patch_embedding = self.create_lidar_patches(reduced_lidar_bev_features)
 
 
         cross_attention = self.lidar_camera_cross_attention(lidar_patch_embedding, image_patch_embedding)
 
         # Reshape the 1d tensor back to a 2d representation used in the CenterHead
         cross_attention = cross_attention.permute(0,2,1)
-        cross_attention = cross_attention.view(cross_attention.shape[0], cross_attention.shape[1], 64, 64)  # Shape: [batch * 6, 256, 64, 64]
+        cross_attention = cross_attention.view(cross_attention.shape[0], cross_attention.shape[1], 90, 90)  # Shape: [batch * 6, 256, 64, 64]
 
-        cross_attention = F.interpolate(cross_attention, size=(90, 90), mode='bilinear', align_corners=False)
 
-        cross_attention = torch.add(cross_attention, reduced_lidar_bev_features)
-
-        upsampled_once = self.upsample_layer(cross_attention)
-
-        #residual around fusion
-        output = torch.add(upsampled_once, lidar_bev_features)
+        output = torch.add(cross_attention, reduced_lidar_bev_features)
 
         return [output]

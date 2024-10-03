@@ -78,7 +78,7 @@ model = dict(
         freeze_layers=True),
 
     #Fusion layer
-    fusion_module = dict(type='MultiHeadCrossAttentionVoxel',embed_dim = 512, num_heads=1, dropout = 0.1, out_channels = 512, norm_cfg=dict(type='SyncBN', requires_grad=True)),
+    fusion_module = dict(type='MultiHeadCrossAttentionVoxel',embed_dim = 512, num_heads=1, dropout = 0.0, out_channels = 512, norm_cfg=dict(type='SyncBN', requires_grad=True)),
 
     bbox_head=dict(
         type='TransFusionHead',
@@ -115,8 +115,8 @@ model = dict(
     ),
     
     
-    camera_n_voxels=(256, 256, 6), 
-    camera_voxel_size=[0.421, 0.421, 1],
+    camera_n_voxels=(512, 512, 6), 
+    camera_voxel_size=[0.21, 0.21, 1],
 
     bbox_head_2d=dict(
         type='FCOSHead',
@@ -355,7 +355,7 @@ momentum_config = dict(
     step_ratio_up=0.3)
 
 # runtime settings
-runner = dict(type='EpochBasedRunner', max_epochs=20)
+runner = dict(type='EpochBasedRunner', max_epochs=10)
 
 #total_epochs = 20
 checkpoint_config = dict(interval=1)
