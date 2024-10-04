@@ -182,11 +182,11 @@ train_pipeline = [
         use_dim=[0, 1, 2, 3, 4],
         pad_empty_sweeps=True),
     dict(
-       type='GlobalRotScaleTrans',
-       rot_range=[-0.3925, 0.3925],
-       scale_ratio_range=[0.95, 1.05],
-       translation_std=[0.5, 0.5, 0.5],
-       update_img2lidar=True),
+        type='GlobalRotScaleTrans',
+        rot_range=[-0.3925, 0.3925],
+        scale_ratio_range=[0.95, 1.05],
+        translation_std=[0.05, 0.05, 0.05],
+        update_img2lidar=True),
     dict(
         type='RandomFlip3D',
         flip_2d=False,
