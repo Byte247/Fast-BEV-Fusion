@@ -178,8 +178,10 @@ def main():
     if args.seed is not None:
         set_random_seed(args.seed, deterministic=args.deterministic)
 
+
     # build the dataloader
     dataset = build_dataset(cfg.data.test)
+    print(dataset)
     data_loader = build_dataloader(
         dataset,
         samples_per_gpu=samples_per_gpu,
@@ -251,8 +253,8 @@ def main():
             ]:
                 eval_kwargs.pop(key, None)
             eval_kwargs.update(dict(metric=args.eval, **kwargs))
-            print(dataset.evaluate(outputs, vis_mode=args.vis,jsonfile_prefix=args.workdir, **eval_kwargs))
-            #print(dataset.evaluate(outputs,jsonfile_prefix=args.workdir, **eval_kwargs))
+            #print(dataset.evaluate(outputs, vis_mode=args.vis,jsonfile_prefix=args.workdir, **eval_kwargs))
+            print(dataset.evaluate(outputs,jsonfile_prefix=args.workdir, **eval_kwargs))
 
 
 if __name__ == '__main__':

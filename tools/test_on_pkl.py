@@ -168,11 +168,13 @@ def main():
     # set random seeds
     if args.seed is not None:
         set_random_seed(args.seed, deterministic=args.deterministic)
+    
 
+    
     # build the dataloader
     dataset = build_dataset(cfg.data.test)
     
-
+    print(dataset)
     # build the model and load checkpoint
     # if args.vis:
     #     nms_thr = 0.0001

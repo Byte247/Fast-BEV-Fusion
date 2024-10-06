@@ -150,11 +150,11 @@ class NuScenesMultiViewMultiModalDataset(MultiViewMixin, NuScenesDataset):
         return img
     
 
-    def show(self, results, out_dir='figs', bev_seg_results=None, thr=0.3, fps=3):
+    def show(self, results, out_dir='figs', bev_seg_results=None, thr=0.3, fps=15):
         assert out_dir is not None, 'Expect out_dir, got none.'
         colors = get_colors()
         img_width, img_height = 6600, 1800   # Adjust based on actual image size
-        bev_width, bev_height = 500, 500  # Adjust based on actual BEV image size
+        bev_width, bev_height = 512, 512  # Adjust based on actual BEV image size
 
         # Define the codec and create VideoWriter objects
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')

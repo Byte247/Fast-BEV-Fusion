@@ -271,7 +271,7 @@ class Visualizer:
         cams = ['CAM_FRONT_LEFT', 'CAM_FRONT', 'CAM_FRONT_RIGHT', 'CAM_BACK_LEFT', 'CAM_BACK', 'CAM_BACK_RIGHT']
 
         if ax is None:
-            _, ax = plt.subplots(4, 3, figsize=(24, 18))
+            _, ax = plt.subplots(4, 3, figsize=(48, 36))
         j = 0
         for ind, cam in enumerate(cams):
             sample_data_token = sample['data'][cam]
@@ -335,11 +335,11 @@ class Visualizer:
 
 if __name__ == '__main__':
     nusc = NuScenes(version='v1.0-trainval', dataroot='./data/nuscenes', verbose=True)
-    workdir = "/home/tom/ws/Fast-BEV-Fusion/work_dirs/centerpoint_02pillar_second_secfpn_4x8_cyclic_20e_nus/pts_bbox"
+    workdir = "/home/tom/ws/Fast-BEV-Fusion/work_dirs/pillar_pretrain/pts_bbox"
     bevformer_results = mmcv.load(f'{workdir}/results_nusc.json')
     sample_token_list = list(bevformer_results['results'].keys())
 
     vis = Visualizer()
-    for id in range(49, 250):
+    for id in range(0, 5000):
        vis.render_sample_data(sample_token_list[id], pred_data=bevformer_results, out_path=f"{workdir}/figs/", use_flat_vehicle_coordinates=False, verbose=False, id = id)
 
