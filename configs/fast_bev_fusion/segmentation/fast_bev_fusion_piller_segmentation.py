@@ -3,7 +3,7 @@
 point_cloud_range = [-51.2, -51.2, -5.0, 51.2, 51.2, 3.0]
 
 voxel_size = [0.2, 0.2, 8]
-out_size_factor = 2
+out_size_factor = 4
 
 # For nuScenes we usually do 10-class detection
 class_names = [
@@ -19,7 +19,7 @@ model = dict(
         num_stages=4,
         out_indices=(0, 1, 2, 3),
         frozen_stages=1,
-        norm_cfg=dict(type='BN', requires_grad=True),
+        norm_cfg=dict(type='SyncBN', requires_grad=True),
         norm_eval=True,
         init_cfg=dict(type='Pretrained', checkpoint='torchvision://resnet50'),
         style='pytorch',
@@ -28,7 +28,7 @@ model = dict(
     ),
     neck=dict(
         type='FPN',
-        norm_cfg=dict(type='BN', requires_grad=True),
+        norm_cfg=dict(type='SyncBN', requires_grad=True),
         in_channels=[256, 512, 1024, 2048],
         out_channels=64,
         num_outs=4),
@@ -46,7 +46,7 @@ model = dict(
         feat_channels=[64,64],
         with_distance=False,
         voxel_size=(0.2, 0.2, 8),
-        norm_cfg=dict(type='BN1d', requires_grad=True),
+        norm_cfg=dict(type='SyncBN', requires_grad=True),
         legacy=False,
         freeze_layers=False),
     pts_middle_encoder=dict(
@@ -57,7 +57,7 @@ model = dict(
         out_channels=[64, 128, 256],
         layer_nums=[3, 5, 5],
         layer_strides=[2, 2, 2],
-        norm_cfg=dict(type='BN', requires_grad=True),
+        norm_cfg=dict(type='SyncBN', requires_grad=True),
         conv_cfg=dict(type='Conv2d', bias=False),
         freeze_layers=False),
     pts_neck=dict(
@@ -65,14 +65,14 @@ model = dict(
         in_channels=[64, 128, 256],
         out_channels=[128, 128, 128],
         upsample_strides=[0.5, 1, 2],
-        norm_cfg=dict(type='BN', requires_grad=True),
+        norm_cfg=dict(type='SyncBN', requires_grad=True),
         upsample_cfg=dict(type='deconv', bias=False),
         use_conv_for_no_stride=True,
         freeze_layers=False),
 
 
     #Fusion layer
-    fusion_module = dict(type='MultiHeadCrossAttentionSegmentation',embed_dim = 512, num_heads=1, dropout = 0.1, output_dim = 384, fuse_on_lidar=True, norm_cfg=dict(type='BN', requires_grad=True)),
+    fusion_module = dict(type='MultiHeadCrossAttentionSegmentation',embed_dim = 512, num_heads=1, dropout = 0.1, output_dim = 384, fuse_on_lidar=True, norm_cfg=dict(type='SyncBN', requires_grad=True)),
 
     seg_head=dict(
         type='BEV_FCNHead',
@@ -85,15 +85,15 @@ model = dict(
         concat_input=False,
         dropout_ratio=0.1,
         num_classes=2,
-        norm_cfg=dict(type='BN', requires_grad=True),
+        norm_cfg=dict(type='SyncBN', requires_grad=True),
         align_corners=False,
         loss_ce=dict(type='CrossEntropyLoss',use_sigmoid=True, loss_weight=1.0),
         loss_dice=dict(type='DiceLoss_zq', loss_weight=1.0)
     ),
     bbox_head = None,
     
-    camera_n_voxels=(512, 512, 8), 
-    camera_voxel_size=[0.2, 0.2, 1],
+    camera_n_voxels=(256, 256, 6), 
+    camera_voxel_size=[0.4, 0.4, 1],
 
 
     # model training and testing settings for the head

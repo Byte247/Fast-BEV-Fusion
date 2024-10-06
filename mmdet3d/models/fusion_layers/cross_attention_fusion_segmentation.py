@@ -175,8 +175,8 @@ class MultiHeadCrossAttentionSegmentation(nn.Module):
 
         self.lidar_camera_cross_attention = Decoder(self.embed_dim, hidden_dim=self.embed_dim, num_heads= num_heads, dropout=dropout, show_weights=False)
         
-        self.pos_embed_camera = nn.Parameter(torch.randn(1, self.embed_dim, 16384) * .02) #done as in ViT: https://github.com/lucidrains/vit-pytorch/blob/main/vit_pytorch/vit.py, (14 (image hight) * 25 image width * 6 images) / 16 (image patches)
-        self.pos_embed_lidar = nn.Parameter(torch.randn(1, self.embed_dim, 16384) * .02) #done as in ViT: https://github.com/lucidrains/vit-pytorch/blob/main/vit_pytorch/vit.py, no reduction for now
+        self.pos_embed_camera = nn.Parameter(torch.randn(1, self.embed_dim, 4096) * .02) #done as in ViT: https://github.com/lucidrains/vit-pytorch/blob/main/vit_pytorch/vit.py, (14 (image hight) * 25 image width * 6 images) / 16 (image patches)
+        self.pos_embed_lidar = nn.Parameter(torch.randn(1, self.embed_dim, 4096) * .02) #done as in ViT: https://github.com/lucidrains/vit-pytorch/blob/main/vit_pytorch/vit.py, no reduction for now
 
         self.upsample_layer = nn.ConvTranspose2d(embed_dim, output_dim, kernel_size=2, stride=2) # match centerpoint
         if norm_cfg is None:
@@ -186,8 +186,6 @@ class MultiHeadCrossAttentionSegmentation(nn.Module):
         self.upsample_layer_act = nn.LeakyReLU(inplace=True)
 
         self.last_norm = nn.LayerNorm(self.embed_dim)
-
-        #self.out_conv = ConvBNReLU(self.embed_dim, output_dim, kernel_size=1, stride=1, padding=1, norm_cfg=self.norm_cfg)
 
 
     def create_lidar_patches(self, lidar_tensor):
@@ -250,7 +248,7 @@ class MultiHeadCrossAttentionSegmentation(nn.Module):
 
         # Reshape the 1d tensor back to a 2d representation used in the CenterHead
         output = cross_attention.permute(0,2,1)
-        output = output.view(output.shape[0], output.shape[1], 128, 128)  # Shape: [batch * 6, 256, 64, 64]
+        output = output.view(output.shape[0], output.shape[1], 64, 64)  # Shape: [batch * 6, 256, 64, 64]
 
 
         output = self.upsample_layer_act(self.upsample_layer_norm(self.upsample_layer(output)))
