@@ -89,9 +89,9 @@ model = dict(
         nms_kernel_size=3,
         ffn_channel=256,
         dropout=0.1,
-        SyncBN_momentum=0.1,
+        bn_momentum=0.1,
         activation='relu',
-        norm_cfg=dict(type='SyncBN', requires_grad=True),
+        norm_cfg = dict(type='SyncBN', requires_grad=True),
         two_d_norm_cfg=dict(type='SyncBN', requires_grad=True),
         common_heads=dict(center=(2, 2), height=(1, 2), dim=(3, 2), rot=(2, 2), vel=(2, 2)),
         bbox_coder=dict(
@@ -350,7 +350,7 @@ runner = dict(type='EpochBasedRunner', max_epochs=1)
 #total_epochs = 20
 checkpoint_config = dict(interval=1)
 log_config = dict(
-    interval=500,
+    interval=100,
     hooks=[
         dict(type='TextLoggerHook'),
         dict(type='TensorboardLoggerHook'),
