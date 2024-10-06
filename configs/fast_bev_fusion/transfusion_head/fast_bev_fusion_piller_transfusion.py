@@ -11,6 +11,7 @@ class_names = [
     'motorcycle', 'pedestrian', 'traffic_cone', 'barrier'
 ]
 
+score_threshold = 0.1
 
 model = dict(
     type='FastBEVFusionTransfusionheadPillar',
@@ -100,7 +101,7 @@ model = dict(
             voxel_size=[0.2, 0.2],
             out_size_factor=out_size_factor,
             post_center_range=[-61.2, -61.2, -10.0, 61.2, 61.2, 10.0],
-            score_threshold=0.0,
+            score_threshold=score_threshold,
             code_size=10,
         ),
         loss_cls=dict(type='FocalLoss', use_sigmoid=True, gamma=2, alpha=0.25, reduction='mean', loss_weight=1.0),
@@ -174,7 +175,7 @@ model = dict(
             max_per_img=500,
             max_pool_nms=False,
             min_radius=[4, 12, 10, 1, 0.85, 0.175],
-            score_threshold=0.0,
+            score_threshold=score_threshold,
             pc_range=point_cloud_range[:2],
             out_size_factor=out_size_factor,
             voxel_size=[0.2, 0.2],
