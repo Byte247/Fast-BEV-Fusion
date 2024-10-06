@@ -43,7 +43,7 @@ model = dict(
     pts_voxel_encoder=dict(
         type='PillarFeatureNet',
         in_channels=5,
-        feat_channels=[64],
+        feat_channels=[64,64],
         with_distance=False,
         voxel_size=(0.2, 0.2, 8),
         norm_cfg=dict(type='BN1d', requires_grad=True),
