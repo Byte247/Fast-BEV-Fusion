@@ -166,7 +166,7 @@ class MultiHeadCrossAttentionSegmentation(nn.Module):
         self.fuse_on_lidar = fuse_on_lidar
 
 
-        self.reduce_camera_spatialy = ConvBNReLU(512, 512, kernel_size=3, stride=2, padding=1, norm_cfg = self.norm_cfg)
+        self.reduce_camera_spatialy = ConvBNReLU(384, 512, kernel_size=3, stride=2, padding=1, norm_cfg = self.norm_cfg)
 
         self.reduce_camera_spatialy_between = ConvBNReLU(512, self.embed_dim, kernel_size=3, stride=1, padding=1, norm_cfg = self.norm_cfg)
         
