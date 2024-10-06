@@ -162,7 +162,7 @@ class MultiHeadCrossAttentionSegmentation(nn.Module):
         self.embed_dim = embed_dim
         self.norm_cfg = norm_cfg
 
-        self.adjust_lidar_channel = ConvBNReLU(384, self.embed_dim, kernel_size=1, stride=1, padding=0, norm_cfg = self.norm_cfg)
+        self.adjust_lidar_channel = ConvBNReLU(384, self.embed_dim, kernel_size=3, stride=2, padding=1, norm_cfg = self.norm_cfg)
         self.fuse_on_lidar = fuse_on_lidar
 
 
@@ -252,9 +252,6 @@ class MultiHeadCrossAttentionSegmentation(nn.Module):
 
 
         output = self.upsample_layer_act(self.upsample_layer_norm(self.upsample_layer(output)))
-        #output = torch.add(lidar_bev_features, output)
-
-        #output = self.out_conv(output)
 
         
         return [output]
