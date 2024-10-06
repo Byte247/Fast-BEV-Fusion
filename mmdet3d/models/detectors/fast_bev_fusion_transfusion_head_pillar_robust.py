@@ -16,11 +16,12 @@ from mmcv.runner import force_fp32
 import torch.nn.functional as F
 
 import copy
+import random
 
 
 
 @DETECTORS.register_module()
-class FastBEVFusionTransfusionheadPillar(BaseDetector):
+class FastBEVFusionTransfusionheadPillarRobust(BaseDetector):
     def __init__(
         self,
         backbone,
@@ -76,6 +77,23 @@ class FastBEVFusionTransfusionheadPillar(BaseDetector):
 
         self.neck_3d = builder.build_neck(neck_3d)
 
+        #ONLY DO THIS FOR ROBUST TESTING!!!
+        ####
+        # Freeze backbone
+        for param in self.backbone.parameters():
+            param.requires_grad = False
+
+        # Freeze neck
+        for param in self.neck.parameters():
+            param.requires_grad = False
+
+        # Freeze neck_fuse
+        for param in self.neck_fuse.parameters():
+            param.requires_grad = False
+
+        #####
+        
+
         if bbox_head is not None:
             bbox_head.update(train_cfg=train_cfg)
             bbox_head.update(test_cfg=test_cfg)
@@ -121,9 +139,16 @@ class FastBEVFusionTransfusionheadPillar(BaseDetector):
 
         #print(f"intrinsic after stride: {intrinsic}")
         extrinsics = map(torch.tensor, img_meta["lidar2img"]["extrinsic"])
+
+        # Randomly set noise with 20% chance of being 1e-3, 80% chance of being 0.0
+        if random.random() < 0.2:  # 20% chance
+            noise = 2e-1
+        else:  # 80% chance
+            noise = 0.0
         #print(f"extrinsics: {extrinsics}")
         for extrinsic in extrinsics:
             if noise > 0:
+                #print(f"in noise")
                 projection.append(intrinsic @ extrinsic[:3] + noise)
             else:
                 projection.append(intrinsic @ extrinsic[:3])
