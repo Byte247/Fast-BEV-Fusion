@@ -11,7 +11,7 @@ class_names = [
     'motorcycle', 'pedestrian', 'traffic_cone', 'barrier'
 ]
 
-score_threshold = 0.1
+score_threshold = 0.0
 
 model = dict(
     type='FastBEVFusionTransfusionheadPillar',
