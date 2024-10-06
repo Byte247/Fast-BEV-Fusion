@@ -16,16 +16,14 @@ model = dict(
     type='FastBEVFusionTransfusionheadPillar',
     backbone=dict(
         type='ResNet',
-        depth=50,
+        depth=34,
         num_stages=4,
         out_indices=(0, 1, 2, 3),
         frozen_stages=1,
-        norm_cfg=dict(type='BN', requires_grad=True),
+        norm_cfg=dict(type='SyncBN', requires_grad=True),
         norm_eval=True,
-        init_cfg=dict(type='Pretrained', checkpoint='torchvision://resnet50'),
-        style='pytorch',
-        dcn=dict(type='DCN', deform_groups=1, fallback_on_stride=False),
-        stage_with_dcn=(False, True, True, True)
+        init_cfg=dict(type='Pretrained', checkpoint='torchvision://resnet34'),
+        style='pytorch'
     ),
     neck=dict(
         type='FPN',
@@ -178,7 +176,7 @@ model = dict(
             pc_range=point_cloud_range[:2],
             out_size_factor=out_size_factor,
             voxel_size=[0.2, 0.2],
-            nms_type=None,
+            nms_type='circle',
             pre_max_size=1000,
             post_max_size=83,
             nms_thr=0.2)
@@ -200,15 +198,15 @@ input_modality = dict(
 img_norm_cfg = dict(mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 
 data_config = {
-    'src_size': (448, 800),
-    'input_size': (448, 800),
+    'src_size': (900, 1600),
+    'input_size': (900, 1600),
     # train-aug
     'resize': (-0.06, 0.11),
     'crop': (-0.05, 0.05),
     'rot': (-5.4, 5.4),
     'flip': True,
     # test-aug
-    'test_input_size': (448, 800),
+    'test_input_size': (900, 1600),
     'test_resize': 0.0,
     'test_rotate': 0.0,
     'test_flip': False,
@@ -252,7 +250,7 @@ train_pipeline = [
         n_images=6,
         transforms=[
             dict(type='LoadImageFromFile'),
-            dict(type='Resize', img_scale=(800, 448), keep_ratio=True),
+            dict(type='Resize', img_scale=(1600, 900), keep_ratio=True),
             dict(type='Pad', size_divisor=32)]),
     dict(type='RandomAugImageMultiViewImage', data_config=data_config),
     dict(type='PointsRangeFilter', point_cloud_range=point_cloud_range),
@@ -281,7 +279,7 @@ test_pipeline = [
         n_images=6,
         transforms=[
             dict(type='LoadImageFromFile'),
-            dict(type='Resize', img_scale=(800, 448), keep_ratio=True),
+            dict(type='Resize', img_scale=(1600, 900), keep_ratio=True),
             dict(type='Pad', size_divisor=32)]),
     dict(type='RandomAugImageMultiViewImage', data_config=data_config, is_train=False),
     dict(type='NormalizeMultiviewImage', **img_norm_cfg),
@@ -291,7 +289,7 @@ test_pipeline = [
 
 
 data = dict(
-    samples_per_gpu=4,
+    samples_per_gpu=2,
     workers_per_gpu=4,
     train=dict(
         type='CBGSDataset',
@@ -349,7 +347,7 @@ momentum_config = dict(
 
 
 # runtime settings
-runner = dict(type='EpochBasedRunner', max_epochs=20)
+runner = dict(type='EpochBasedRunner', max_epochs=1)
 
 #total_epochs = 20
 checkpoint_config = dict(interval=1)
@@ -366,6 +364,6 @@ log_level = 'INFO'
 # load_from = None
 load_additional_from = None
 resume_from = None
-load_from = 'https://download.openmmlab.com/mmdetection3d/v0.1.0_models/nuimages_semseg/cascade_mask_rcnn_r50_fpn_coco-20e_20e_nuim/cascade_mask_rcnn_r50_fpn_coco-20e_20e_nuim_20201009_124951-40963960.pth'
+load_from = './work_dirs/backbones/cascade_mask_rcnn_r34.pth'
 workflow = [('train', 1)]
 
