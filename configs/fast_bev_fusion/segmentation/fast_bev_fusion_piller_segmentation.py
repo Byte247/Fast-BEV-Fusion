@@ -3,7 +3,7 @@
 point_cloud_range = [-51.2, -51.2, -5.0, 51.2, 51.2, 3.0]
 
 voxel_size = [0.2, 0.2, 8]
-out_size_factor = 4
+out_size_factor = 2
 
 # For nuScenes we usually do 10-class detection
 class_names = [
@@ -43,7 +43,7 @@ model = dict(
     pts_voxel_encoder=dict(
         type='PillarFeatureNet',
         in_channels=5,
-        feat_channels=[64,64],
+        feat_channels=[64],
         with_distance=False,
         voxel_size=(0.2, 0.2, 8),
         norm_cfg=dict(type='BN1d', requires_grad=True),
@@ -72,7 +72,7 @@ model = dict(
 
 
     #Fusion layer
-    fusion_module = dict(type='MultiHeadCrossAttentionSegmentation',embed_dim = 512, num_heads=1, dropout = 0.3, output_dim = 384, fuse_on_lidar=True, norm_cfg=dict(type='BN', requires_grad=True)),
+    fusion_module = dict(type='MultiHeadCrossAttentionSegmentation',embed_dim = 512, num_heads=1, dropout = 0.1, output_dim = 384, fuse_on_lidar=True, norm_cfg=dict(type='BN', requires_grad=True)),
 
     seg_head=dict(
         type='BEV_FCNHead',
@@ -81,7 +81,7 @@ model = dict(
         in_channels=384,
         in_index=0,
         channels=256,
-        num_convs=4,
+        num_convs=2,
         concat_input=False,
         dropout_ratio=0.1,
         num_classes=2,
