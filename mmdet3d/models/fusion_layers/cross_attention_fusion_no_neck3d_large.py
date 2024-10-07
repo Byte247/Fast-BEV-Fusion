@@ -161,7 +161,7 @@ class PositionEmbeddingLearned(nn.Module):
         if norm_cfg is not None:
             norm = build_norm_layer(norm_cfg, num_pos_feats)[1]
         else:
-            norm =  nn.BatchNorm1d(num_pos_feats),
+            norm =  nn.BatchNorm1d(num_pos_feats)
            
         self.position_embedding_head = nn.Sequential(
             nn.Conv1d(input_channel, num_pos_feats, kernel_size=1),
@@ -177,21 +177,18 @@ class PositionEmbeddingLearned(nn.Module):
 
 @FUSION_LAYERS.register_module()
 class MultiHeadCrossAttentionNoNeckLarge(nn.Module):
-    def __init__(self, embed_dim = 512, num_heads=8, dropout = 0.1, in_cam_channels, in_lidar_channels, output_dim = 384, fuse_on_lidar=True, norm_cfg = None):
-        super(MultiHeadCrossAttentionNoNeck, self).__init__()
+    def __init__(self, embed_dim = 512, num_heads=8, dropout = 0.1, in_cam_channels=512, in_lidar_channels=512, output_dim = 384, norm_cfg = None, one_d_norm = None):
+        super(MultiHeadCrossAttentionNoNeckLarge, self).__init__()
 
         self.embed_dim = embed_dim
         self.norm_cfg = norm_cfg
 
-        self.lidar_pos_embed = PositionEmbeddingLearned(embed_dim)
-        self.camera_pos_embed = PositionEmbeddingLearned(embed_dim)
+        self.lidar_pos_embed = PositionEmbeddingLearned(embed_dim, embed_dim, one_d_norm)
+        self.camera_pos_embed = PositionEmbeddingLearned(embed_dim, embed_dim, one_d_norm)
 
         self.camera_embedding = ConvBNReLU(in_cam_channels, embed_dim, kernel_size=3, stride=2, padding=1, norm_cfg = self.norm_cfg)
 
-        self.lidar_embedding = ConvBNReLU(in_lidar_channels, embed_dim, kernel_size=3, stride=2, padding=1, norm_cfg = self.norm_cfg)
-        
-        self.lidar_self_attention = Decoder(self.embed_dim, hidden_dim=self.embed_dim * 2, num_heads= num_heads, dropout=dropout, show_weights=False)
-        self.camera_self_attention = Decoder(self.embed_dim, hidden_dim=self.embed_dim * 2, num_heads= num_heads, dropout=dropout, show_weights=False)
+        self.lidar_embedding = ConvBNReLU(in_lidar_channels, embed_dim, kernel_size=3, stride=1, padding=1, norm_cfg = self.norm_cfg)
 
         self.lidar_camera_cross_attention = Decoder(self.embed_dim, hidden_dim=self.embed_dim * 2, num_heads= num_heads, dropout=dropout, show_weights=False)
         
@@ -200,6 +197,8 @@ class MultiHeadCrossAttentionNoNeckLarge(nn.Module):
         self.camera_self_attention_norm = nn.LayerNorm(self.embed_dim)
 
         self.cross_attention_layer_norm = nn.LayerNorm(self.embed_dim)
+
+        self.out_conv = ConvBNReLU(embed_dim, output_dim, kernel_size=1, stride=1, padding=0, norm_cfg = self.norm_cfg)
 
 
     def create_lidar_patches(self, lidar_tensor):
@@ -241,29 +240,20 @@ class MultiHeadCrossAttentionNoNeckLarge(nn.Module):
         lidar_bev_features = self.lidar_embedding(lidar_bev_features)
         camera_bev_features = self.camera_embedding(camera_bev_features)
         
-        print(f"lidar_bev_features 2D: {lidar_bev_features.shape}")
         # get patch embeddings
         image_patch_embedding = self.create_camera_patches(camera_bev_features)
         lidar_patch_embedding = self.create_lidar_patches(lidar_bev_features)
 
-        #camera self-attention
-        image_features = self.camera_self_attention(image_patch_embedding, image_patch_embedding)
-        image_features = self.camera_self_attention_norm(torch.add(image_features, image_patch_embedding))
-
-        #lidar self-attention
-
-        lidar_features = self.lidar_self_attention(lidar_patch_embedding, lidar_patch_embedding)
-        lidar_features = self.lidar_self_attention_norm(torch.add(lidar_features, lidar_patch_embedding))
-
         #cross-attention
         
-        cross_attention = self.lidar_camera_cross_attention(lidar_features, image_features)
-        cross_attention = self.last_norm(torch.add(cross_attention, lidar_features))
+        cross_attention = self.lidar_camera_cross_attention(lidar_patch_embedding, image_patch_embedding)
+        cross_attention = self.cross_attention_layer_norm(torch.add(cross_attention, lidar_patch_embedding))
 
 
         # Reshape the 1d tensor back to a 2d representation used in the CenterHead
         output = cross_attention.permute(0,2,1)
         output = output.view(output.shape[0], output.shape[1], 128, 128)  # Shape: [batch * 6, 256, 64, 64]
 
+        output = self.out_conv(output)
         
         return [output]

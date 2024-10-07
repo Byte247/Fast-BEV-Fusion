@@ -15,17 +15,16 @@ score_threshold = 0.0
 
 model = dict(
     type='FastBEVFusionTransfusionheadPillar',
-    freeze_2D_backbone=True
+    freeze_2D_backbone=False,
     backbone=dict(
-        type='ResNeXt',
-        depth=101,
-        groups=64,
-        base_width=4,
+        type='ResNet',
+        depth=50,
         num_stages=4,
         out_indices=(0, 1, 2, 3),
         frozen_stages=1,
         norm_cfg=dict(type='SyncBN', requires_grad=True),
         norm_eval=True,
+        init_cfg=dict(type='Pretrained', checkpoint='torchvision://resnet50'),
         style='pytorch',
         dcn=dict(type='DCN', deform_groups=1, fallback_on_stride=False),
         stage_with_dcn=(False, True, True, True)
@@ -34,9 +33,9 @@ model = dict(
         type='FPN',
         norm_cfg=dict(type='SyncBN', requires_grad=True),
         in_channels=[256, 512, 1024, 2048],
-        out_channels=128,
+        out_channels=64,
         num_outs=4),
-    neck_fuse=dict(in_channels=256, out_channels=64),
+    neck_fuse=dict(in_channels=256, out_channels=128),
     neck_3d=dict(
         type='M2BevNeckTransOnly',
         is_transpose=False),
@@ -50,7 +49,7 @@ model = dict(
         feat_channels=[64,64],
         with_distance=False,
         voxel_size=(0.2, 0.2, 8),
-        norm_cfg=dict(type='SyncBN', eps=1e-3, momentum=0.01),
+        norm_cfg=dict(type='SyncBN', requires_grad=True),
         legacy=False,
         freeze_layers=True),
     pts_middle_encoder=dict(
@@ -78,11 +77,12 @@ model = dict(
     #Fusion layer
     fusion_module = dict(type='MultiHeadCrossAttentionNoNeckLarge',
                         embed_dim = 512,
-                        in_cam_channels = 1500,
+                        in_cam_channels = 768,
                         in_lidar_channels=384,
                         num_heads=1,
                         dropout = 0.1,
                         output_dim = 384,
+                        one_d_norm= dict(type='SyncBN', requires_grad=True),
                         norm_cfg=dict(type='SyncBN', requires_grad=True)),
 
     bbox_head=dict(
@@ -100,7 +100,7 @@ model = dict(
         ffn_channel=256,
         dropout=0.1,
         bn_momentum=0.1,
-        activation='relu',
+        activation='gelu',
         norm_cfg = dict(type='SyncBN', requires_grad=True),
         two_d_norm_cfg=dict(type='SyncBN', requires_grad=True),
         common_heads=dict(center=(2, 2), height=(1, 2), dim=(3, 2), rot=(2, 2), vel=(2, 2)),
@@ -338,9 +338,9 @@ data = dict(
 optimizer = dict(type='AdamW', lr=1e-4,
                   weight_decay=0.01,
                   paramwise_cfg=dict(
-                  custom_keys={'backbone': dict(lr_mult=0.1, decay_mult=1.0),
-                               'pos_embed_camera': dict(lr_mult=1.0, decay_mult=.0),
-                               'pos_embed_lidar': dict(lr_mult=1.0, decay_mult=.0)}))
+                  custom_keys={'camera_pos_embed': dict(lr_mult=1.0, decay_mult=.0),
+                               'lidar_pos_embed': dict(lr_mult=1.0, decay_mult=.0),
+                               'backbone': dict(lr_mult=0.1, decay_mult=.0),}))
 
 
 optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
@@ -363,7 +363,7 @@ runner = dict(type='EpochBasedRunner', max_epochs=20)
 #total_epochs = 20
 checkpoint_config = dict(interval=1)
 log_config = dict(
-    interval=500,
+    interval=10,
     hooks=[
         dict(type='TextLoggerHook'),
         dict(type='TensorboardLoggerHook'),
@@ -375,7 +375,7 @@ log_level = 'INFO'
 # load_from = None
 load_additional_from = None
 resume_from = None
-load_from = 'https://download.openmmlab.com/mmdetection3d/v0.1.0_models/nuimages_semseg/htc_x101_64x4d_fpn_dconv_c3-c5_coco-20e_16x1_20e_nuim/htc_x101_64x4d_fpn_dconv_c3-c5_coco-20e_16x1_20e_nuim_20201008_211222-0b16ac4b.pth'
+load_from = 'https://download.openmmlab.com/mmdetection3d/v0.1.0_models/nuimages_semseg/cascade_mask_rcnn_r50_fpn_coco-20e_20e_nuim/cascade_mask_rcnn_r50_fpn_coco-20e_20e_nuim_20201009_124951-40963960.pth'
 workflow = [('train', 1)]
 
 # fp16 settings, the loss scale is specifically tuned to avoid Nan
