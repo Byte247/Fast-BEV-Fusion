@@ -17,6 +17,7 @@ from .cross_attention_fusion_no_neck3d import MultiHeadCrossAttentionNoNeck
 from .cross_attention_fusion_pillar_final import MultiHeadCrossAttentionPillar
 from .cross_attention_fusion_voxel_slice_samp import MultiHeadCrossAttentionVoxelSliceSamp
 from .cross_attention_fusion_segmentation import MultiHeadCrossAttentionSegmentation
+from .cross_attention_fusion_no_neck3d_large import MultiHeadCrossAttentionNoNeckLarge
 
 __all__ = [
     'PointFusion', 'VoteFusion', 'apply_3d_transformation',
@@ -32,5 +33,6 @@ __all__ = [
     "MultiHeadCrossAttentionNoNeck",
     "MultiHeadCrossAttentionPillar",
     "MultiHeadCrossAttentionVoxelSliceSamp",
-    "MultiHeadCrossAttentionSegmentation"
+    "MultiHeadCrossAttentionSegmentation",
+    "MultiHeadCrossAttentionNoNeckLarge"
 ]

@@ -45,6 +45,7 @@ class FastBEVFusionTransfusionheadPillar(BaseDetector):
         pretrained=None,
         init_cfg=None,
         extrinsic_noise=0,
+        freeze_2D_backbone=False,
         with_cp=False,
         style="v1",
     ):
@@ -64,6 +65,12 @@ class FastBEVFusionTransfusionheadPillar(BaseDetector):
         self.fusion_module = builder.build_fusion_layer(fusion_module)
 
         self.backbone = builder.build_backbone(backbone)
+
+        if freeze_2D_backbone:
+            # Freeze backbone
+            for param in self.backbone.parameters():
+                param.requires_grad = False
+
         self.neck = builder.build_neck(neck)
         
         self.neck_fuse = nn.Conv2d(
