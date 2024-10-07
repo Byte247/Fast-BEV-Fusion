@@ -15,7 +15,9 @@ score_threshold = 0.0
 
 model = dict(
     type='FastBEVFusionTransfusionheadPillar',
-    freeze_2D_backbone=False,
+    freeze_2D_backbone=True,
+    freeze_2D_neck=True,
+    freeze_neck_fuse=True,
     backbone=dict(
         type='ResNet',
         depth=50,
@@ -100,7 +102,7 @@ model = dict(
         ffn_channel=256,
         dropout=0.1,
         bn_momentum=0.1,
-        activation='gelu',
+        activation='relu',
         norm_cfg = dict(type='SyncBN', requires_grad=True),
         two_d_norm_cfg=dict(type='SyncBN', requires_grad=True),
         common_heads=dict(center=(2, 2), height=(1, 2), dim=(3, 2), rot=(2, 2), vel=(2, 2)),
@@ -340,7 +342,7 @@ optimizer = dict(type='AdamW', lr=1e-4,
                   paramwise_cfg=dict(
                   custom_keys={'camera_pos_embed': dict(lr_mult=1.0, decay_mult=.0),
                                'lidar_pos_embed': dict(lr_mult=1.0, decay_mult=.0),
-                               'backbone': dict(lr_mult=0.1, decay_mult=.0),}))
+                               'bbox_head': dict(lr_mult=0.1, decay_mult=.0),}))
 
 
 optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
@@ -358,12 +360,12 @@ momentum_config = dict(
 
 
 # runtime settings
-runner = dict(type='EpochBasedRunner', max_epochs=20)
+runner = dict(type='EpochBasedRunner', max_epochs=10)
 
 #total_epochs = 20
 checkpoint_config = dict(interval=1)
 log_config = dict(
-    interval=10,
+    interval=100,
     hooks=[
         dict(type='TextLoggerHook'),
         dict(type='TensorboardLoggerHook'),

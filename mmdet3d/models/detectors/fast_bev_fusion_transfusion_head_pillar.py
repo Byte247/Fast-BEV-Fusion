@@ -46,6 +46,8 @@ class FastBEVFusionTransfusionheadPillar(BaseDetector):
         init_cfg=None,
         extrinsic_noise=0,
         freeze_2D_backbone=False,
+        freeze_2D_neck=False,
+        freeze_neck_fuse=False,
         with_cp=False,
         style="v1",
     ):
@@ -72,6 +74,11 @@ class FastBEVFusionTransfusionheadPillar(BaseDetector):
                 param.requires_grad = False
 
         self.neck = builder.build_neck(neck)
+
+        if freeze_2D_neck:
+             # Freeze neck
+            for param in self.neck.parameters():
+                param.requires_grad = False
         
         self.neck_fuse = nn.Conv2d(
             neck_fuse["in_channels"],
@@ -80,6 +87,10 @@ class FastBEVFusionTransfusionheadPillar(BaseDetector):
             stride=1,
             padding=1,
         )
+
+        if freeze_neck_fuse:
+            for param in self.neck_fuse.parameters():
+                param.requires_grad = False
 
         self.neck_3d = builder.build_neck(neck_3d)
 
