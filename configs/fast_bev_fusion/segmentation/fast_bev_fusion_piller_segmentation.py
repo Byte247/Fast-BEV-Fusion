@@ -43,7 +43,7 @@ model = dict(
     pts_voxel_encoder=dict(
         type='PillarFeatureNet',
         in_channels=5,
-        feat_channels=[64,64],
+        feat_channels=[64],
         with_distance=False,
         voxel_size=(0.2, 0.2, 8),
         norm_cfg=dict(type='SyncBN', requires_grad=True),
@@ -254,7 +254,7 @@ data = dict(
         box_type_3d='LiDAR'))
 
 optimizer = dict(type='AdamW', lr=1e-5,
-                  weight_decay=0.05,
+                  weight_decay=0.1,
                   paramwise_cfg=dict(
                   custom_keys={'pos_embed_camera': dict(lr_mult=1.0, decay_mult=.0),
                                'pos_embed_lidar': dict(lr_mult=1.0, decay_mult=.0)}))
