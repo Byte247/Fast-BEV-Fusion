@@ -79,11 +79,11 @@ model = dict(
     #Fusion layer
     fusion_module = dict(type='MultiHeadCrossAttentionNoNeckLarge',
                         embed_dim = 512,
-                        in_cam_channels = 768,
+                        in_cam_channels = 384,
                         in_lidar_channels=384,
                         num_heads=1,
                         dropout = 0.1,
-                        output_dim = 384,
+                        output_dim = 512,
                         one_d_norm= dict(type='SyncBN', requires_grad=True),
                         norm_cfg=dict(type='SyncBN', requires_grad=True)),
 
@@ -91,7 +91,7 @@ model = dict(
         type='TransFusionHead',
         num_proposals=200,
         auxiliary=True,
-        in_channels=384,
+        in_channels=512,
         hidden_channel=128,
         num_classes=len(class_names),
         num_decoder_layers=1,
