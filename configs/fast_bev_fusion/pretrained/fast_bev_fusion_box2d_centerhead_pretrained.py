@@ -145,7 +145,6 @@ model = dict(
             code_weights=[1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.2, 0.2],
             point_cloud_range = point_cloud_range),
      test_cfg=dict(
-        
             post_center_limit_range=[-61.2, -61.2, -10.0, 61.2, 61.2, 10.0],
             max_per_img=500,
             max_pool_nms=False,

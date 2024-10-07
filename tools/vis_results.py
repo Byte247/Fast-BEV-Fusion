@@ -61,6 +61,9 @@ class Visualizer:
         :return: (data_path, boxes, camera_intrinsic <np.array: 3, 3>)
         """
         
+        max_detection_range = 50.2
+        min_detection_range = -50.2
+
         # Retrieve sensor & pose records
         sd_record = nusc.get('sample_data', sample_data_token)
         cs_record = nusc.get('calibrated_sensor', sd_record['calibrated_sensor_token'])
@@ -85,7 +88,7 @@ class Visualizer:
         # Make list of Box objects including coord system transforms.
         box_list = []
         for box in boxes:
-            
+
             if use_flat_vehicle_coordinates:
                 
                 # Move box to ego vehicle coord system parallel to world z plane.
@@ -102,6 +105,9 @@ class Visualizer:
                 box.translate(-np.array(cs_record['translation']))
                 box.rotate(Quaternion(cs_record['rotation']).inverse)
 
+            #skip gt box if outside detection range
+            if box.center[0] > max_detection_range or box.center[1] > max_detection_range or box.center[2] > max_detection_range or box.center[0] < min_detection_range or box.center[1] < min_detection_range or box.center[2] < min_detection_range:
+                continue
             if sensor_record['modality'] == 'camera' and not \
                     box_in_image(box, cam_intrinsic, imsize, vis_level=box_vis_level):
                 continue
@@ -209,7 +215,7 @@ class Visualizer:
         pred_annotations.add_boxes(sample_token, bbox_pred_list)
         print('green is ground truth')
         print('blue is the predited result')
-        visualize_sample(nusc, sample_token, gt_annotations, pred_annotations, savepath=f"{out_path}_bev_{id}_{sample_token}")
+        visualize_sample(nusc, sample_token, gt_annotations, pred_annotations, savepath=f"{out_path}_bev_{id}_{sample_token}", conf_th=0.1, eval_range=50.2)
 
 
     def get_color(self,category_name: str):
@@ -271,7 +277,8 @@ class Visualizer:
         cams = ['CAM_FRONT_LEFT', 'CAM_FRONT', 'CAM_FRONT_RIGHT', 'CAM_BACK_LEFT', 'CAM_BACK', 'CAM_BACK_RIGHT']
 
         if ax is None:
-            _, ax = plt.subplots(4, 3, figsize=(48, 36))
+            _, ax = plt.subplots(4, 3, figsize=(48, 32))
+            #_, ax = plt.subplots(4, 3, figsize=(96, 64))
         j = 0
         for ind, cam in enumerate(cams):
             sample_data_token = sample['data'][cam]
@@ -282,7 +289,7 @@ class Visualizer:
             # Load boxes and image.
             boxes = [Box(record['translation'], record['size'], Quaternion(record['rotation']),
                             name=record['detection_name'], token='predicted') for record in
-                        pred_data['results'][sample_token] if record['detection_score'] > 0.5]
+                        pred_data['results'][sample_token] if record['detection_score'] > 0.1]
             
             
             data_path, boxes_pred, camera_intrinsic = self.get_predicted_data(sample_data_token,
@@ -335,11 +342,11 @@ class Visualizer:
 
 if __name__ == '__main__':
     nusc = NuScenes(version='v1.0-trainval', dataroot='./data/nuscenes', verbose=True)
-    workdir = "/home/tom/ws/Fast-BEV-Fusion/work_dirs/pillar_pretrain/pts_bbox"
+    workdir = "/home/tom/ws/Fast-BEV-Fusion/work_dirs/fast_bev_fusion_piller_transfusion/"
     bevformer_results = mmcv.load(f'{workdir}/results_nusc.json')
     sample_token_list = list(bevformer_results['results'].keys())
 
     vis = Visualizer()
-    for id in range(0, 5000):
+    for id in range(500, 510):
        vis.render_sample_data(sample_token_list[id], pred_data=bevformer_results, out_path=f"{workdir}/figs/", use_flat_vehicle_coordinates=False, verbose=False, id = id)
 
