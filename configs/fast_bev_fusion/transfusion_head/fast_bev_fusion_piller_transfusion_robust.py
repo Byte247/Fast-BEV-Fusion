@@ -77,7 +77,7 @@ model = dict(
 
     bbox_head=dict(
         type='TransFusionHead',
-        num_proposals=200,
+        num_proposals=500,
         auxiliary=True,
         in_channels=384,
         hidden_channel=128,
@@ -179,9 +179,9 @@ model = dict(
             pc_range=point_cloud_range[:2],
             out_size_factor=out_size_factor,
             voxel_size=[0.2, 0.2],
-            nms_type=None,
-            pre_max_size=1000,
-            post_max_size=83,
+            nms_type='rotate',
+            pre_maxsize=1000,
+            post_maxsize=83,
             nms_thr=0.2)
             
 )
