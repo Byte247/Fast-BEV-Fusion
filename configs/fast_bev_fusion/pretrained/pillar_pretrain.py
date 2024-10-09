@@ -26,7 +26,8 @@ model = dict(
         with_distance=False,
         voxel_size=(0.2, 0.2, 8),
         norm_cfg=dict(type='BN1d', eps=1e-3, momentum=0.01),
-        legacy=False),
+        legacy=False,
+        freeze_layers=False),
     pts_middle_encoder=dict(
         type='PointPillarsScatter', in_channels=64, output_shape=(512, 512)),
     pts_backbone=dict(
@@ -36,7 +37,8 @@ model = dict(
         layer_nums=[3, 5, 5],
         layer_strides=[2, 2, 2],
         norm_cfg=dict(type='BN', requires_grad=True),
-        conv_cfg=dict(type='Conv2d', bias=False)),
+        conv_cfg=dict(type='Conv2d', bias=False),
+        freeze_layers=False),
     pts_neck=dict(
         type='SECONDFPN',
         in_channels=[64, 128, 256],
@@ -44,10 +46,11 @@ model = dict(
         upsample_strides=[0.5, 1, 2],
         norm_cfg=dict(type='BN', requires_grad=True),
         upsample_cfg=dict(type='deconv', bias=False),
-        use_conv_for_no_stride=True),
+        use_conv_for_no_stride=True,
+        freeze_layers=False),
     bbox_head=dict(
         type='TransFusionHead',
-        num_proposals=200,
+        num_proposals=500,
         auxiliary=True,
         in_channels=384,
         hidden_channel=128,
@@ -110,9 +113,9 @@ model = dict(
             pc_range=point_cloud_range[:2],
             out_size_factor=out_size_factor,
             voxel_size=[0.2, 0.2],
-            nms_type=None,
-            pre_max_size=1000,
-            post_max_size=83,
+            nms_type='rotate',
+            pre_maxsize=1000,
+            post_maxsize=83,
             nms_thr=0.2))
     )
 
@@ -166,7 +169,7 @@ train_pipeline = [
         file_client_args=file_client_args),
     dict(
         type='LoadPointsFromMultiSweeps',
-        sweeps_num=9,
+        sweeps_num=10,
         use_dim=[0, 1, 2, 3, 4],
         file_client_args=file_client_args,
         pad_empty_sweeps=True,
@@ -273,7 +276,7 @@ input_modality = dict(
     use_map=False,
     use_external=False)
 
-optimizer = dict(type='AdamW', lr=0.0001,
+optimizer = dict(type='AdamW', lr=1e-4,
                  weight_decay=0.01)
 
 # max_norm=10 is better for SECOND
@@ -282,7 +285,7 @@ optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
 # learning policy
 lr_config = dict(
     policy='cyclic',
-    target_ratio=(10, 0.0001),
+    target_ratio=(10, 1e-4),
     cyclic_times=1,
     step_ratio_up=0.3)
 momentum_config = dict(

@@ -18,21 +18,19 @@ model = dict(
     type='FastBEVFusionTransfusionheadVoxel',
     backbone=dict(
         type='ResNet',
-        depth=50,
+        depth=34,
         num_stages=4,
         out_indices=(0, 1, 2, 3),
         frozen_stages=1,
         norm_cfg=dict(type='SyncBN', requires_grad=True),
         norm_eval=True,
-        init_cfg=dict(type='Pretrained', checkpoint='torchvision://resnet50'),
-        style='pytorch',
-        dcn=dict(type='DCN', deform_groups=1, fallback_on_stride=False),
-        stage_with_dcn=(False, True, True, True)
+        init_cfg=dict(type='Pretrained', checkpoint='torchvision://resnet34'),
+        style='pytorch'
     ),
     neck=dict(
         type='FPN',
         norm_cfg=dict(type='SyncBN', requires_grad=True),
-        in_channels=[256, 512, 1024, 2048],
+        in_channels=[64, 128, 256, 512],
         out_channels=64,
         num_outs=4),
     neck_fuse=dict(in_channels=256, out_channels=64),
@@ -77,11 +75,11 @@ model = dict(
         freeze_layers=True),
 
     #Fusion layer
-    fusion_module = dict(type='MultiHeadCrossAttentionVoxel',embed_dim = 1024, num_heads=1, dropout = 0.0, out_channels = 512, norm_cfg=dict(type='SyncBN', requires_grad=True)),
+    fusion_module = dict(type='MultiHeadCrossAttentionVoxel',embed_dim = 512, num_heads=1, dropout = 0.1, out_channels = 512, norm_cfg=dict(type='SyncBN', requires_grad=True)),
 
     bbox_head=dict(
         type='TransFusionHead',
-        num_proposals=200,
+        num_proposals=500,
         auxiliary=True,
         in_channels=256 * 2,
         hidden_channel=128,

@@ -14,6 +14,7 @@ class_names = [
 
 model = dict(
     type='FastBEVFusionTransfusionheadPillarRobust',
+    extrinsic_noise = 2e-1,
     backbone=dict(
         type='ResNet',
         depth=50,

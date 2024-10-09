@@ -140,9 +140,9 @@ class FastBEVFusionTransfusionheadPillarRobust(BaseDetector):
         #print(f"intrinsic after stride: {intrinsic}")
         extrinsics = map(torch.tensor, img_meta["lidar2img"]["extrinsic"])
 
-        # Randomly set noise with 20% chance of being 1e-3, 80% chance of being 0.0
+        # Randomly set noise with 20% chance of being self.extrinsic_noise, 80% chance of being 0.0
         if random.random() < 0.2:  # 20% chance
-            noise = 2e-1
+            pass
         else:  # 80% chance
             noise = 0.0
         #print(f"extrinsics: {extrinsics}")
