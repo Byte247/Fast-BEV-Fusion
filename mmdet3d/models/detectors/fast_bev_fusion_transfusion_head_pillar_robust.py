@@ -145,7 +145,8 @@ class FastBEVFusionTransfusionheadPillarRobust(BaseDetector):
             pass
         else:  # 80% chance
             noise = 0.0
-        #print(f"extrinsics: {extrinsics}")
+
+        print(f"noise: {noise}")
         for extrinsic in extrinsics:
             if noise > 0:
                 #print(f"in noise")
