@@ -85,7 +85,7 @@ model = dict(
         type='TransFusionHead',
         num_proposals=200,
         auxiliary=True,
-        in_channels=512,
+        in_channels=384,
         hidden_channel=128,
         num_classes=len(class_names),
         num_decoder_layers=1,
@@ -331,17 +331,19 @@ data = dict(
         test_mode=True,
         box_type_3d='LiDAR'))
 
-optimizer = dict(type='AdamW', lr=1e-5,
+optimizer = dict(type='AdamW', lr=1e-6,
                   weight_decay=0.01,
                   paramwise_cfg=dict(
                   custom_keys={'pos_embed_camera': dict(lr_mult=1.0, decay_mult=.0),
-                               'pos_embed_lidar': dict(lr_mult=1.0, decay_mult=.0)}))
+                               'pos_embed_lidar': dict(lr_mult=1.0, decay_mult=.0),
+                               'backbone': dict(lr_mult=10.0, decay_mult=.0),
+                               'neck': dict(lr_mult=10.0, decay_mult=.0),}))
 
 
 optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
 lr_config = dict(
      policy='cyclic',
-     target_ratio=(10, 1e-5),
+     target_ratio=(10, 1e-6),
      cyclic_times=1,
      step_ratio_up=0.3,
  )
