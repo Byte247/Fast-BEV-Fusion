@@ -206,15 +206,15 @@ input_modality = dict(
 img_norm_cfg = dict(mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 
 data_config = {
-    'src_size': (900, 1600),
-    'input_size': (900, 1600),
+    'src_size': (450, 800),
+    'input_size': (450, 800),
     # train-aug
     'resize': (-0.06, 0.11),
     'crop': (-0.05, 0.05),
     'rot': (-5.4, 5.4),
     'flip': True,
     # test-aug
-    'test_input_size': (900, 1600),
+    'test_input_size': (450, 800),
     'test_resize': 0.0,
     'test_rotate': 0.0,
     'test_flip': False,
@@ -258,7 +258,7 @@ train_pipeline = [
         n_images=6,
         transforms=[
             dict(type='LoadImageFromFile'),
-            dict(type='Resize', img_scale=(1600, 900), keep_ratio=True),
+            dict(type='Resize', img_scale=(800, 450), keep_ratio=True),
             dict(type='Pad', size_divisor=32)]),
     dict(type='RandomAugImageMultiViewImage', data_config=data_config),
     dict(type='PointsRangeFilter', point_cloud_range=point_cloud_range),
@@ -287,7 +287,7 @@ test_pipeline = [
         n_images=6,
         transforms=[
             dict(type='LoadImageFromFile'),
-            dict(type='Resize', img_scale=(1600, 900), keep_ratio=True),
+            dict(type='Resize', img_scale=(800, 450), keep_ratio=True),
             dict(type='Pad', size_divisor=32)]),
     dict(type='RandomAugImageMultiViewImage', data_config=data_config, is_train=False),
     dict(type='NormalizeMultiviewImage', **img_norm_cfg),
@@ -297,7 +297,7 @@ test_pipeline = [
 
 
 data = dict(
-    samples_per_gpu=2,
+    samples_per_gpu=4,
     workers_per_gpu=1,
     train=dict(
         type='CBGSDataset',
