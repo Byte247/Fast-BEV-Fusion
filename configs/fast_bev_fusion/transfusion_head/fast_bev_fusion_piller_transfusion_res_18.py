@@ -210,14 +210,14 @@ img_norm_cfg = dict(mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375],
 
 data_config = {
     'src_size': (900, 1600),
-    'input_size': (320, 880),
+    'input_size': (450, 800),
     # train-aug
     'resize': (-0.06, 0.11),
     'crop': (-0.05, 0.05),
     'rot': (-5.4, 5.4),
     'flip': True,
     # test-aug
-    'test_input_size': (320, 880),
+    'test_input_size': (450, 800),
     'test_resize': 0.0,
     'test_rotate': 0.0,
     'test_flip': False,
