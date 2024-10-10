@@ -249,7 +249,8 @@ train_pipeline = [
         type='MultiViewPipeline',
         n_images=6,
         transforms=[
-            dict(type='LoadImageFromFile')]),
+            dict(type='LoadImageFromFile'),
+            dict(type='Pad', size_divisor=32)]),
     dict(type='RandomAugImageMultiViewImage', data_config=data_config),
     dict(type='PointsRangeFilter', point_cloud_range=point_cloud_range),
     dict(type='ObjectRangeFilter', point_cloud_range=point_cloud_range),
@@ -276,7 +277,8 @@ test_pipeline = [
         type='MultiViewPipeline',
         n_images=6,
         transforms=[
-            dict(type='LoadImageFromFile')]),
+            dict(type='LoadImageFromFile'),
+            dict(type='Pad', size_divisor=32)]),
     dict(type='RandomAugImageMultiViewImage', data_config=data_config, is_train=False),
     dict(type='NormalizeMultiviewImage', **img_norm_cfg),
     dict(type='KittiSetOrigin', point_cloud_range=point_cloud_range),
