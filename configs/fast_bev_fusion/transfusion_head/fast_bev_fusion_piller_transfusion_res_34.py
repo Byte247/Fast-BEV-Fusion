@@ -250,6 +250,7 @@ train_pipeline = [
         n_images=6,
         transforms=[
             dict(type='LoadImageFromFile'),
+            dict(type='Resize', img_scale=(1600, 900), keep_ratio=True),
             dict(type='Pad', size_divisor=32)]),
     dict(type='RandomAugImageMultiViewImage', data_config=data_config),
     dict(type='PointsRangeFilter', point_cloud_range=point_cloud_range),
@@ -278,6 +279,7 @@ test_pipeline = [
         n_images=6,
         transforms=[
             dict(type='LoadImageFromFile'),
+            dict(type='Resize', img_scale=(1600, 900), keep_ratio=True),
             dict(type='Pad', size_divisor=32)]),
     dict(type='RandomAugImageMultiViewImage', data_config=data_config, is_train=False),
     dict(type='NormalizeMultiviewImage', **img_norm_cfg),
