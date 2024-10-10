@@ -13,7 +13,7 @@ class_names = [
 
 
 model = dict(
-    type='FastBEVFusionTransfusionheadPillarRobust',
+    type='FastBEVFusionTransfusionheadPillar',
     extrinsic_noise = 2e-1,
     backbone=dict(
         type='ResNet',

@@ -13,8 +13,11 @@ class_names = [
 
 
 model = dict(
-    type='FastBEVFusionTransfusionheadPillarRobust',
+    type='FastBEVFusionTransfusionheadPillar',
     extrinsic_noise = 2e-1,
+    #freeze_2D_backbone=True,
+    #freeze_2D_neck=True,
+    #freeze_neck_fuse=True,
     backbone=dict(
         type='ResNet',
         depth=18,
@@ -287,7 +290,7 @@ test_pipeline = [
         n_images=6,
         transforms=[
             dict(type='LoadImageFromFile'),
-            dict(type='Resize', img_scale=(800, 450), keep_ratio=True),
+            dict(type='Resize', img_scale=(1600, 900), keep_ratio=True),
             dict(type='Pad', size_divisor=32)]),
     dict(type='RandomAugImageMultiViewImage', data_config=data_config, is_train=False),
     dict(type='NormalizeMultiviewImage', **img_norm_cfg),
