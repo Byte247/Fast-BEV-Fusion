@@ -276,8 +276,7 @@ optimizer = dict(type='AdamW', lr=1e-4,
                   paramwise_cfg=dict(
                   custom_keys={'pos_embed_camera': dict(lr_mult=1.0, decay_mult=.0),
                                'pos_embed_lidar': dict(lr_mult=1.0, decay_mult=.0),
-                               'seg_head': dict(lr_mult=0.1, decay_mult=1.0),
-                               'backbone': dict(lr_mult=0.1, decay_mult=1.0),}))
+                               'seg_head': dict(lr_mult=0.1, decay_mult=1.0),}))
 
 
 optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
