@@ -364,4 +364,3 @@ load_additional_from = None
 resume_from = None
 load_from = './work_dirs/backbones/cascade_mask_rcnn_r34.pth'
 workflow = [('train', 1)]
-

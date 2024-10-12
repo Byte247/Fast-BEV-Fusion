@@ -42,7 +42,7 @@ model = dict(
 
     #Point Modules:
     pts_voxel_layer=dict(
-        max_num_points=20, voxel_size=voxel_size, max_voxels=(30000, 60000), point_cloud_range=point_cloud_range),
+        max_num_points=20, voxel_size=voxel_size, max_voxels=(30000, 40000), point_cloud_range=point_cloud_range),
     pts_voxel_encoder=dict(
         type='PillarFeatureNet',
         in_channels=5,
@@ -376,3 +376,6 @@ resume_from = None
 load_from = './work_dirs/backbones/cascade_mask_rcnn_r18.pth'
 workflow = [('train', 1)]
 
+
+# fp16 settings, the loss scale is specifically tuned to avoid Nan
+fp16 = dict(loss_scale='dynamic')

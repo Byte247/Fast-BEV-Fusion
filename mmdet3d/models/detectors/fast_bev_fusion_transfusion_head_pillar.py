@@ -13,6 +13,7 @@ from mmcv.runner import get_dist_info
 from mmdet3d.ops import Voxelization
 from .. import builder
 from mmcv.runner import force_fp32
+from mmcv.runner import auto_fp16
 import torch.nn.functional as F
 
 import copy
@@ -288,7 +289,7 @@ class FastBEVFusionTransfusionheadPillar(BaseDetector):
         return voxels, num_points, coors_batch
 
 
-
+    @auto_fp16(apply_to=('img', ))
     def forward(self, img, img_metas, return_loss=True, **kwargs):
         """Calls either :func:`forward_train` or :func:`forward_test` depending
         on whether ``return_loss`` is ``True``.

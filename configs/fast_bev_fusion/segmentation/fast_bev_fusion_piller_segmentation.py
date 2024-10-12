@@ -39,7 +39,7 @@ model = dict(
 
     #Point Modules:
     pts_voxel_layer=dict(
-        max_num_points=20, voxel_size=voxel_size, max_voxels=(30000, 60000), point_cloud_range=point_cloud_range),
+        max_num_points=20, voxel_size=voxel_size, max_voxels=(30000, 40000), point_cloud_range=point_cloud_range),
     pts_voxel_encoder=dict(
         type='PillarFeatureNet',
         in_channels=5,
@@ -77,7 +77,7 @@ model = dict(
     seg_head=dict(
         type='BEV_FCNHead',
         use_centerness=True,
-        is_transpose=True,
+        is_transpose=False,
         in_channels=384,
         in_index=0,
         channels=256,
@@ -147,6 +147,24 @@ input_modality = dict(
 img_norm_cfg = dict(mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 
 
+data_config = {
+    'src_size': (900, 1600),
+    'input_size': (900, 1600),
+    # train-aug
+    'resize': (-0.06, 0.11),
+    'crop': (-0.05, 0.05),
+    'rot': (-5.4, 5.4),
+    'flip': True,
+    # test-aug
+    'test_input_size': (900, 1600),
+    'test_resize': 0.0,
+    'test_rotate': 0.0,
+    'test_flip': False,
+    # top, right, bottom, left
+    'pad': (0, 0, 0, 0),
+    'pad_divisor': 32,
+    'pad_color': (0, 0, 0),
+}
 
 train_pipeline = [
     dict(type='LoadAnnotations3D',
@@ -183,9 +201,8 @@ train_pipeline = [
             dict(type='LoadImageFromFile'),
             dict(type='Resize', img_scale=(1600, 900), keep_ratio=True),
             dict(type='Pad', size_divisor=32)]),
+    dict(type='RandomAugImageMultiViewImage', data_config=data_config),
     dict(type='PointsRangeFilter', point_cloud_range=point_cloud_range),
-    dict(type='ObjectRangeFilter', point_cloud_range=point_cloud_range),
-    dict(type='ObjectNameFilter', classes=class_names),
     dict(type='PointShuffle'),
     dict(type='NormalizeMultiviewImage', **img_norm_cfg),
     dict(type='KittiSetOrigin', point_cloud_range=point_cloud_range),
@@ -211,6 +228,7 @@ test_pipeline = [
             dict(type='LoadImageFromFile'),
             dict(type='Resize', img_scale=(1600, 900), keep_ratio=True),
             dict(type='Pad', size_divisor=32)]),
+    dict(type='RandomAugImageMultiViewImage', data_config=data_config, is_train=False),
     dict(type='NormalizeMultiviewImage', **img_norm_cfg),
     dict(type='KittiSetOrigin', point_cloud_range=point_cloud_range),
     dict(type='DefaultFormatBundle3D', class_names=class_names, with_label=False),
@@ -253,11 +271,13 @@ data = dict(
         test_mode=True,
         box_type_3d='LiDAR'))
 
-optimizer = dict(type='AdamW', lr=1e-5,
+optimizer = dict(type='AdamW', lr=1e-4,
                   weight_decay=0.1,
                   paramwise_cfg=dict(
                   custom_keys={'pos_embed_camera': dict(lr_mult=1.0, decay_mult=.0),
-                               'pos_embed_lidar': dict(lr_mult=1.0, decay_mult=.0)}))
+                               'pos_embed_lidar': dict(lr_mult=1.0, decay_mult=.0),
+                               'seg_head': dict(lr_mult=0.1, decay_mult=1.0),
+                               'backbone': dict(lr_mult=0.1, decay_mult=1.0),}))
 
 
 optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
@@ -295,3 +315,5 @@ resume_from = None
 load_from = 'https://download.openmmlab.com/mmdetection3d/v0.1.0_models/nuimages_semseg/cascade_mask_rcnn_r50_fpn_coco-20e_20e_nuim/cascade_mask_rcnn_r50_fpn_coco-20e_20e_nuim_20201009_124951-40963960.pth'
 workflow = [('train', 1)]
 
+# fp16 settings, the loss scale is specifically tuned to avoid Nan
+fp16 = dict(loss_scale='dynamic')
