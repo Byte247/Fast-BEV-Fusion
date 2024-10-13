@@ -14,6 +14,10 @@ class_names = [
 
 model = dict(
     type='FastBEVFusionTransfusionheadPillar',
+    extrinsic_noise = 2e-1,
+    freeze_2D_backbone=True,
+    freeze_2D_neck=True,
+    freeze_neck_fuse=True,
     backbone=dict(
         type='ResNet',
         depth=34,
@@ -75,7 +79,7 @@ model = dict(
 
     bbox_head=dict(
         type='TransFusionHead',
-        num_proposals=500,
+        num_proposals=200,
         auxiliary=True,
         in_channels=384,
         hidden_channel=128,
@@ -323,7 +327,7 @@ data = dict(
         test_mode=True,
         box_type_3d='LiDAR'))
 
-optimizer = dict(type='AdamW', lr=1e-5,
+optimizer = dict(type='AdamW', lr=1e-6,
                   weight_decay=0.01,
                   paramwise_cfg=dict(
                   custom_keys={'pos_embed_camera': dict(lr_mult=1.0, decay_mult=.0),
@@ -333,7 +337,7 @@ optimizer = dict(type='AdamW', lr=1e-5,
 optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
 lr_config = dict(
      policy='cyclic',
-     target_ratio=(10, 1e-5),
+     target_ratio=(10, 1e-6),
      cyclic_times=1,
      step_ratio_up=0.3,
  )
@@ -345,7 +349,7 @@ momentum_config = dict(
 
 
 # runtime settings
-runner = dict(type='EpochBasedRunner', max_epochs=10)
+runner = dict(type='EpochBasedRunner', max_epochs=1)
 
 #total_epochs = 20
 checkpoint_config = dict(interval=1)
