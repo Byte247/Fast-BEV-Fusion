@@ -75,7 +75,7 @@ model = dict(
 
     bbox_head=dict(
         type='TransFusionHead',
-        num_proposals=200,
+        num_proposals=500,
         auxiliary=True,
         in_channels=384,
         hidden_channel=128,
