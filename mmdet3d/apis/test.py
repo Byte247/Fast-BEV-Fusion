@@ -52,7 +52,10 @@ def single_gpu_test(model,
             if i > 30:
                 return results
         with torch.no_grad():
+            time_0 = time.perf_counter()
             result = model(return_loss=False, rescale=True, **data)
+            time_1 = time.perf_counter()
+            print(f"time: {time_1 - time_0}")
 
         if show:
             # Visualize the results of MMDetection3D model
