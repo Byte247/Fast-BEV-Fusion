@@ -6,6 +6,7 @@ import pickle
 import shutil
 import tempfile
 import time
+import numpy as np
 
 from mmdet3d.models import (Base3DDetector, Base3DSegmentor,
                             SingleStageMono3DDetector)
@@ -43,6 +44,7 @@ def single_gpu_test(model,
     results = []
     dataset = data_loader.dataset
     prog_bar = mmcv.ProgressBar(len(dataset))
+    times = []
 
     if debug:
         for i in range(5):
@@ -55,7 +57,7 @@ def single_gpu_test(model,
             time_0 = time.perf_counter()
             result = model(return_loss=False, rescale=True, **data)
             time_1 = time.perf_counter()
-            print(f"time: {time_1 - time_0}")
+            times.append(time_1 - time_0)
 
         if show:
             # Visualize the results of MMDetection3D model
@@ -101,6 +103,7 @@ def single_gpu_test(model,
         batch_size = len(result)
         for _ in range(batch_size):
             prog_bar.update()
+    print(f"mean times: {np.mean(times)}")
     return results
 
 
