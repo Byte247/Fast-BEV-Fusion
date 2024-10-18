@@ -156,7 +156,7 @@ Same as V1 but with an addition skip connection around the cross attention
 """
 @FUSION_LAYERS.register_module()
 class MultiHeadCrossAttentionNoNeck(nn.Module):
-    def __init__(self, embed_dim = 512, num_heads=8, dropout = 0.1, output_dim = 384, fuse_on_lidar=True, norm_cfg = None):
+    def __init__(self, embed_dim = 512, num_heads=8, dropout = 0.1, output_dim = 384, fuse_on_lidar=True, norm_cfg = None, freeze = False):
         super(MultiHeadCrossAttentionNoNeck, self).__init__()
 
         self.embed_dim = embed_dim
@@ -187,6 +187,15 @@ class MultiHeadCrossAttentionNoNeck(nn.Module):
 
         self.last_norm = nn.LayerNorm(self.embed_dim)
 
+        if freeze:
+            for name, module in self.named_modules():
+                # Check if the layer is a normalization layer
+                if isinstance(module, (nn.BatchNorm1d, nn.BatchNorm2d, nn.SyncBatchNorm)):
+                    continue  # Skip freezing normalization layers
+
+                # Freeze the parameters of non-normalization layers
+                for param in module.parameters():
+                    param.requires_grad = False
 
     def create_lidar_patches(self, lidar_tensor):
         

@@ -81,7 +81,8 @@ model = dict(
                          dropout = 0.1,
                          output_dim = 384,
                          fuse_on_lidar=True,
-                         norm_cfg=dict(type='SyncBN', requires_grad=True)
+                         norm_cfg=dict(type='SyncBN', requires_grad=True),
+                         freeze=True,
                          ),
 
     bbox_head=dict(
@@ -337,8 +338,7 @@ data = dict(
 optimizer = dict(type='AdamW', lr=1e-5,
                   weight_decay=0.01,
                   paramwise_cfg=dict(
-                  custom_keys={'pos_embed_camera': dict(lr_mult=1.0, decay_mult=.0),
-                               'pos_embed_lidar': dict(lr_mult=1.0, decay_mult=.0),}))
+                  custom_keys={'bbox_head': dict(lr_mult=0.1, decay_mult=1.0),}))
 
 
 optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
