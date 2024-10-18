@@ -368,7 +368,7 @@ log_config = dict(
     ])
 evaluation = dict(interval=1)
 dist_params = dict(backend='nccl')
-find_unused_parameters = True  # todo: fix number of FPN outputs
+#find_unused_parameters = True  # todo: fix number of FPN outputs
 log_level = 'INFO'
 # load_from = None
 load_additional_from = None
