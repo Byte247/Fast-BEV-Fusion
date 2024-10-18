@@ -14,10 +14,10 @@ class_names = [
 
 model = dict(
     type='FastBEVFusionTransfusionheadPillar',
-    extrinsic_noise = 2e-1,
-    freeze_2D_backbone=True,
-    freeze_2D_neck=True,
-    freeze_neck_fuse=True,
+    #extrinsic_noise = 2e-1,
+    #freeze_2D_backbone=True,
+    #freeze_2D_neck=True,
+    #freeze_neck_fuse=True,
     backbone=dict(
         type='ResNet',
         depth=34,
