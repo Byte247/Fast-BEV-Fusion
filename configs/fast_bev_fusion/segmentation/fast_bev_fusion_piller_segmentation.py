@@ -72,7 +72,7 @@ model = dict(
 
 
     #Fusion layer
-    fusion_module = dict(type='MultiHeadCrossAttentionSegmentation',embed_dim = 512, num_heads=1, dropout = 0.1, output_dim = 384, fuse_on_lidar=True, norm_cfg=dict(type='SyncBN', requires_grad=True)),
+    fusion_module = dict(type='MultiHeadCrossAttentionSegmentation',embed_dim = 512, num_heads=1, dropout = 0.3, output_dim = 384, fuse_on_lidar=True, norm_cfg=dict(type='SyncBN', requires_grad=True)),
 
     seg_head=dict(
         type='BEV_FCNHead',
@@ -272,7 +272,7 @@ data = dict(
         box_type_3d='LiDAR'))
 
 optimizer = dict(type='AdamW', lr=1e-4,
-                  weight_decay=0.1,
+                  weight_decay=0.2,
                   paramwise_cfg=dict(
                   custom_keys={'pos_embed_camera': dict(lr_mult=1.0, decay_mult=.0),
                                'pos_embed_lidar': dict(lr_mult=1.0, decay_mult=.0),
