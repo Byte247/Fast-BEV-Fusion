@@ -183,8 +183,8 @@ class MultiHeadCrossAttentionNoNeckSmall(nn.Module):
         self.embed_dim = embed_dim
         self.norm_cfg = norm_cfg
 
-        self.lidar_pos_embed = PositionEmbeddingLearned(384, embed_dim, one_d_norm)
-        self.camera_pos_embed = PositionEmbeddingLearned(384, embed_dim, one_d_norm)
+        self.lidar_pos_embed = PositionEmbeddingLearned(512, embed_dim, one_d_norm)
+        self.camera_pos_embed = PositionEmbeddingLearned(512, embed_dim, one_d_norm)
 
         self.camera_embedding = ConvBNReLU(in_cam_channels, embed_dim, kernel_size=1, stride=2, padding=1, norm_cfg = self.norm_cfg)
 
