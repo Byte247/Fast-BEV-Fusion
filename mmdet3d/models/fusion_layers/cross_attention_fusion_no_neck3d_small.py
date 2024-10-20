@@ -188,7 +188,7 @@ class MultiHeadCrossAttentionNoNeckSmall(nn.Module):
 
         self.camera_embedding = ConvBNReLU(in_cam_channels, embed_dim, kernel_size=3, stride=2, padding=1, norm_cfg = self.norm_cfg)
 
-        self.lidar_embedding = ConvBNReLU(in_lidar_channels, embed_dim, kernel_size=1, stride=1, padding=1, norm_cfg = self.norm_cfg)
+        self.lidar_embedding = ConvBNReLU(in_lidar_channels, embed_dim, kernel_size=1, stride=1, padding=0, norm_cfg = self.norm_cfg)
 
         self.lidar_camera_cross_attention = Decoder(self.embed_dim, hidden_dim=self.embed_dim, num_heads= num_heads, dropout=dropout, show_weights=False)
         
@@ -236,7 +236,7 @@ class MultiHeadCrossAttentionNoNeckSmall(nn.Module):
         
         lidar_bev_features = self.lidar_embedding(lidar_bev_features)
         camera_bev_features = self.camera_embedding(camera_bev_features)
-        print(f"lidar_bev_features: {lidar_bev_features.shape}")
+
         # get patch embeddings
         image_patch_embedding = self.create_camera_patches(camera_bev_features)
         lidar_patch_embedding = self.create_lidar_patches(lidar_bev_features)
