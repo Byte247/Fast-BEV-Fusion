@@ -176,9 +176,9 @@ class PositionEmbeddingLearned(nn.Module):
 
 
 @FUSION_LAYERS.register_module()
-class MultiHeadCrossAttentionNoNeckLarge(nn.Module):
+class MultiHeadCrossAttentionNoNeckSmall(nn.Module):
     def __init__(self, embed_dim = 512, num_heads=8, dropout = 0.1, in_cam_channels=512, in_lidar_channels=512, output_dim = 384, norm_cfg = None, one_d_norm = None):
-        super(MultiHeadCrossAttentionNoNeckLarge, self).__init__()
+        super(MultiHeadCrossAttentionNoNeckSmall, self).__init__()
 
         self.embed_dim = embed_dim
         self.norm_cfg = norm_cfg
@@ -186,15 +186,12 @@ class MultiHeadCrossAttentionNoNeckLarge(nn.Module):
         self.lidar_pos_embed = PositionEmbeddingLearned(embed_dim, embed_dim, one_d_norm)
         self.camera_pos_embed = PositionEmbeddingLearned(embed_dim, embed_dim, one_d_norm)
 
-        self.camera_embedding = ConvBNReLU(in_cam_channels, embed_dim, kernel_size=3, stride=2, padding=1, norm_cfg = self.norm_cfg)
+        self.camera_embedding = ConvBNReLU(in_cam_channels, embed_dim, kernel_size=1, stride=2, padding=1, norm_cfg = self.norm_cfg)
 
-        self.lidar_embedding = ConvBNReLU(in_lidar_channels, embed_dim, kernel_size=3, stride=1, padding=1, norm_cfg = self.norm_cfg)
+        self.lidar_embedding = ConvBNReLU(in_lidar_channels, embed_dim, kernel_size=1, stride=1, padding=1, norm_cfg = self.norm_cfg)
 
-        self.lidar_camera_cross_attention = Decoder(self.embed_dim, hidden_dim=self.embed_dim * 2, num_heads= num_heads, dropout=dropout, show_weights=False)
+        self.lidar_camera_cross_attention = Decoder(self.embed_dim, hidden_dim=self.embed_dim, num_heads= num_heads, dropout=dropout, show_weights=False)
         
-
-        self.lidar_self_attention_norm = nn.LayerNorm(self.embed_dim)
-        self.camera_self_attention_norm = nn.LayerNorm(self.embed_dim)
 
         self.cross_attention_layer_norm = nn.LayerNorm(self.embed_dim)
 

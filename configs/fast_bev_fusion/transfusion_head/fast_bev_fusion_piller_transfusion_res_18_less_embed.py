@@ -11,27 +11,28 @@ class_names = [
     'motorcycle', 'pedestrian', 'traffic_cone', 'barrier'
 ]
 
-score_threshold = 0.0
 
 model = dict(
     type='FastBEVFusionTransfusionheadPillar',
+    #extrinsic_noise = 2e-1,
+    #freeze_2D_backbone=True,
+    #freeze_2D_neck=True,
+    #freeze_neck_fuse=True,
     backbone=dict(
         type='ResNet',
-        depth=34,
+        depth=18,
         num_stages=4,
         out_indices=(0, 1, 2, 3),
         frozen_stages=1,
         norm_cfg=dict(type='SyncBN', requires_grad=True),
         norm_eval=True,
-        init_cfg=dict(type='Pretrained', checkpoint='torchvision://resnet34'),
-        style='pytorch',
-        dcn=dict(type='DCN', deform_groups=1, fallback_on_stride=False),
-        stage_with_dcn=(False, True, True, True)
+        init_cfg=dict(type='Pretrained', checkpoint='torchvision://resnet18'),
+        style='pytorch'
     ),
     neck=dict(
         type='FPN',
         norm_cfg=dict(type='SyncBN', requires_grad=True),
-        in_channels=[256, 512, 1024, 2048],
+        in_channels=[64, 128, 256, 512],
         out_channels=64,
         num_outs=4),
     neck_fuse=dict(in_channels=256, out_channels=64),
@@ -41,14 +42,14 @@ model = dict(
 
     #Point Modules:
     pts_voxel_layer=dict(
-        max_num_points=20, voxel_size=voxel_size, max_voxels=(30000, 60000), point_cloud_range=point_cloud_range),
+        max_num_points=20, voxel_size=voxel_size, max_voxels=(30000, 40000), point_cloud_range=point_cloud_range),
     pts_voxel_encoder=dict(
         type='PillarFeatureNet',
         in_channels=5,
         feat_channels=[64,64],
         with_distance=False,
         voxel_size=(0.2, 0.2, 8),
-        norm_cfg=dict(type='SyncBN', eps=1e-3, momentum=0.01),
+        norm_cfg=dict(type='SyncBN', requires_grad=True),
         legacy=False,
         freeze_layers=True),
     pts_middle_encoder=dict(
@@ -74,7 +75,14 @@ model = dict(
 
 
     #Fusion layer
-    fusion_module = dict(type='MultiHeadCrossAttentionNoNeck',embed_dim = 256, num_heads=1, dropout = 0.1, output_dim = 384, fuse_on_lidar=True, norm_cfg=dict(type='SyncBN', requires_grad=True),freeze=False),
+    fusion_module = dict(type='MultiHeadCrossAttentionNoNeckSmall',
+                         embed_dim = 256,
+                         num_heads=1,
+                         dropout = 0.1,
+                         output_dim = 384,
+                         fuse_on_lidar=True,
+                         norm_cfg=dict(type='SyncBN', requires_grad=True)
+                         ),
 
     bbox_head=dict(
         type='TransFusionHead',
@@ -90,7 +98,7 @@ model = dict(
         nms_kernel_size=3,
         ffn_channel=256,
         dropout=0.1,
-        SyncBN_momentum=0.1,
+        bn_momentum=0.1,
         activation='relu',
         norm_cfg = dict(type='SyncBN', requires_grad=True),
         two_d_norm_cfg=dict(type='SyncBN', requires_grad=True),
@@ -101,7 +109,7 @@ model = dict(
             voxel_size=[0.2, 0.2],
             out_size_factor=out_size_factor,
             post_center_range=[-61.2, -61.2, -10.0, 61.2, 61.2, 10.0],
-            score_threshold=score_threshold,
+            score_threshold=0.0,
             code_size=10,
         ),
         loss_cls=dict(type='FocalLoss', use_sigmoid=True, gamma=2, alpha=0.25, reduction='mean', loss_weight=1.0),
@@ -175,11 +183,11 @@ model = dict(
             max_per_img=500,
             max_pool_nms=False,
             min_radius=[4, 12, 10, 1, 0.85, 0.175],
-            score_threshold=score_threshold,
+            score_threshold=0.0,
             pc_range=point_cloud_range[:2],
             out_size_factor=out_size_factor,
             voxel_size=[0.2, 0.2],
-            nms_type='rotate', #nms_type='circle',
+            nms_type='rotate',
             pre_maxsize=1000,
             post_maxsize=83,
             nms_thr=0.2)
@@ -202,14 +210,14 @@ img_norm_cfg = dict(mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375],
 
 data_config = {
     'src_size': (900, 1600),
-    'input_size': (448, 800),
+    'input_size': (450, 800),
     # train-aug
     'resize': (-0.06, 0.11),
     'crop': (-0.05, 0.05),
     'rot': (-5.4, 5.4),
     'flip': True,
     # test-aug
-    'test_input_size': (448, 800),
+    'test_input_size': (450, 800),
     'test_resize': 0.0,
     'test_rotate': 0.0,
     'test_flip': False,
@@ -292,7 +300,7 @@ test_pipeline = [
 
 
 data = dict(
-    samples_per_gpu=2,
+    samples_per_gpu=4,
     workers_per_gpu=1,
     train=dict(
         type='CBGSDataset',
@@ -326,19 +334,16 @@ data = dict(
         test_mode=True,
         box_type_3d='LiDAR'))
 
-optimizer = dict(type='AdamW', lr=1e-4,
+optimizer = dict(type='AdamW', lr=1e-5,
                   weight_decay=0.01,
                   paramwise_cfg=dict(
-                  custom_keys={'backbone': dict(lr_mult=0.1, decay_mult=1.0),
-                               'bbox_head': dict(lr_mult=0.1, decay_mult=1.0),
-                               'pos_embed_camera': dict(lr_mult=0.1, decay_mult=.0),
-                               'pos_embed_lidar': dict(lr_mult=0.1, decay_mult=.0)}))
+                  custom_keys={'bbox_head': dict(lr_mult=0.1, decay_mult=1.0),}))
 
 
 optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
 lr_config = dict(
      policy='cyclic',
-     target_ratio=(10, 1e-4),
+     target_ratio=(10, 1e-5),
      cyclic_times=1,
      step_ratio_up=0.3,
  )
@@ -350,26 +355,22 @@ momentum_config = dict(
 
 
 # runtime settings
-runner = dict(type='EpochBasedRunner', max_epochs=1)
+runner = dict(type='EpochBasedRunner', max_epochs=10)
 
 #total_epochs = 20
 checkpoint_config = dict(interval=1)
 log_config = dict(
-    interval=500,
+    interval=100,
     hooks=[
         dict(type='TextLoggerHook'),
         dict(type='TensorboardLoggerHook'),
     ])
 evaluation = dict(interval=1)
 dist_params = dict(backend='nccl')
-find_unused_parameters = True  # todo: fix number of FPN outputs
+#find_unused_parameters = True  # todo: fix number of FPN outputs
 log_level = 'INFO'
 # load_from = None
 load_additional_from = None
 resume_from = None
 load_from = './work_dirs/backbones/cascade_mask_rcnn_r18.pth'
 workflow = [('train', 1)]
-
-# fp16 settings, the loss scale is specifically tuned to avoid Nan
-fp16 = dict(loss_scale='dynamic')
-
