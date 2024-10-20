@@ -227,9 +227,6 @@ def main():
     model.init_weights() #init weights from the load-from
 
 
-    for name, module in model.named_children():
-        num_params = sum(p.numel() for p in module.parameters())
-        print(f'Module: {name} has {num_params} parameters')
 
     # Count total number of parameters
     total_params = sum(p.numel() for p in model.parameters())
