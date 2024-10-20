@@ -74,11 +74,11 @@ model = dict(
 
 
     #Fusion layer
-    fusion_module = dict(type='MultiHeadCrossAttentionNoNeck',embed_dim = 512, num_heads=1, dropout = 0.1, output_dim = 384, fuse_on_lidar=True, norm_cfg=dict(type='BN', requires_grad=True),freeze=True),
+    fusion_module = dict(type='MultiHeadCrossAttentionNoNeck',embed_dim = 256, num_heads=1, dropout = 0.1, output_dim = 384, fuse_on_lidar=True, norm_cfg=dict(type='BN', requires_grad=True),freeze=False),
 
     bbox_head=dict(
         type='TransFusionHead',
-        num_proposals=500,
+        num_proposals=200,
         auxiliary=True,
         in_channels=384,
         hidden_channel=128,
