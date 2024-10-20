@@ -377,6 +377,6 @@ load_additional_from = None
 resume_from = None
 load_from = './work_dirs/backbones/cascade_mask_rcnn_r18.pth'
 workflow = [('train', 1)]
-
+find_unused_parameters = True  # todo: fix number of FPN outputs
 # fp16 settings, the loss scale is specifically tuned to avoid Nan
 #fp16 = dict(loss_scale='dynamic')
