@@ -240,7 +240,7 @@ class MultiHeadCrossAttentionNoNeckSmall(nn.Module):
         # get patch embeddings
         image_patch_embedding = self.create_camera_patches(camera_bev_features)
         lidar_patch_embedding = self.create_lidar_patches(lidar_bev_features)
-
+        print(f"lidar_patch_embedding: {lidar_patch_embedding.shape}")
         #cross-attention
         
         cross_attention = self.lidar_camera_cross_attention(lidar_patch_embedding, image_patch_embedding)
