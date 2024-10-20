@@ -231,6 +231,12 @@ def main():
         num_params = sum(p.numel() for p in module.parameters())
         print(f'Module: {name} has {num_params} parameters')
 
+    # Count total number of parameters
+    total_params = sum(p.numel() for p in model.parameters())
+
+    # Print the total number of parameters
+    print(f'Total number of parameters: {total_params}')
+
 
     # logger.info(f'Model:\n{model}')
     
