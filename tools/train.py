@@ -227,6 +227,13 @@ def main():
     model.init_weights() #init weights from the load-from
 
 
+    # Count total number of parameters
+    total_params = sum(p.numel() for p in model.parameters())
+
+    # Print the total number of parameters
+    print(f'Total number of parameters: {total_params}')
+
+
     # logger.info(f'Model:\n{model}')
     
     # frozen_det = cfg.get('frozen_det', False)
