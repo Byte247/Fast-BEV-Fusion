@@ -243,7 +243,8 @@ train_pipeline = [
         type='LoadPointsFromMultiSweeps',
         sweeps_num=10,
         use_dim=[0, 1, 2, 3, 4],
-        pad_empty_sweeps=True),
+        pad_empty_sweeps=True,
+        remove_close=True),
     dict(
        type='GlobalRotScaleTrans',
        rot_range=[-0.3925 * 2, 0.3925 * 2],
@@ -285,7 +286,8 @@ test_pipeline = [
         type='LoadPointsFromMultiSweeps',
         sweeps_num=10,
         use_dim=[0, 1, 2, 3, 4],
-        pad_empty_sweeps=True),
+        pad_empty_sweeps=True,
+        remove_close=True),
     dict(
         type='MultiViewPipeline',
         n_images=6,
