@@ -80,7 +80,6 @@ model = dict(
                          num_heads=1,
                          dropout = 0.1,
                          output_dim = 384,
-                         fuse_on_lidar=True,
                          norm_cfg=dict(type='SyncBN', requires_grad=True)
                          ),
 
