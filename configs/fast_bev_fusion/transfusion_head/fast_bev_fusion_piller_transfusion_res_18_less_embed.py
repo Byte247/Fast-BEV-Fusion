@@ -79,6 +79,8 @@ model = dict(
                          embed_dim = 256,
                          num_heads=1,
                          dropout = 0.1,
+                         in_lidar_channels=384,
+                         in_cam_channels=512,
                          output_dim = 384,
                          norm_cfg=dict(type='SyncBN', requires_grad=True)
                          ),
@@ -375,4 +377,4 @@ load_from = './work_dirs/backbones/cascade_mask_rcnn_r18.pth'
 workflow = [('train', 1)]
 
 # fp16 settings, the loss scale is specifically tuned to avoid Nan
-#fp16 = dict(loss_scale='dynamic')
+fp16 = dict(loss_scale='dynamic')
