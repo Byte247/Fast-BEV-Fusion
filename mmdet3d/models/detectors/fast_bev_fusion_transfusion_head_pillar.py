@@ -133,6 +133,11 @@ class FastBEVFusionTransfusionheadPillar(BaseDetector):
         self.style = style
         assert self.style in ["v1", "v2", "v3"], self.style
 
+        self.lidar_time = []
+        self.camera_time = []
+        self.fusion_time = []
+        self.head_time = []
+
     @staticmethod
     def _compute_projection(img_meta, stride, noise=0):
         projection = []
@@ -318,7 +323,6 @@ class FastBEVFusionTransfusionheadPillar(BaseDetector):
         self, img, img_metas, gt_bboxes_3d, gt_labels_3d, gt_bev_seg=None, points=None, **kwargs
     ):  
         
-        
         lidar_features = self.extract_pts_feat(points)
 
         feature_bev, valids, features_2d = self.extract_feat(img, img_metas, "train")
@@ -482,21 +486,50 @@ class FastBEVFusionTransfusionheadPillar(BaseDetector):
 
     def simple_test(self, img, img_metas, points):
         bbox_results = []
+                
+
+       
+        # Create CUDA events for timing
+        start_event = torch.cuda.Event(enable_timing=True)
+        end_event = torch.cuda.Event(enable_timing=True)
+
+        # Measure time for extract_feat (Camera features)
+        start_event.record()
         feature_bev, _, features_2d = self.extract_feat(img, img_metas, "test")
+        end_event.record()
 
+        # Wait for the event to complete and calculate elapsed time
+        torch.cuda.synchronize()  # Ensure all kernels are finished
+        extract_feat_time = start_event.elapsed_time(end_event)  # Time in milliseconds
+        print(f'Time for extract_feat: {extract_feat_time:.3f} ms')
+
+        # Measure time for extract_pts_feat (Lidar features)
+        start_event.record()
         lidar_features = self.extract_pts_feat(points)
+        end_event.record()
 
-        #fuse lidar BEV and camera BEV features
-        time_0 = time.perf_counter()
+        torch.cuda.synchronize()
+        extract_pts_feat_time = start_event.elapsed_time(end_event)
+        print(f'Time for extract_pts_feat: {extract_pts_feat_time:.3f} ms')
+
+        # Measure time for fusion_module (Fusing camera BEV and lidar BEV features)
+        start_event.record()
         feature_bev = self.fusion_module(lidar_features, feature_bev)
-        time_1 = time.perf_counter()
+        end_event.record()
 
-        took_time = time_1 - time_0
-        print(f"took_time: {took_time}")
+        torch.cuda.synchronize()
+        fusion_module_time = start_event.elapsed_time(end_event)
+        print(f'Time for fusion_module: {fusion_module_time:.3f} ms')
 
-
+        # Measure time for bbox_head (Bounding box head)
         if self.bbox_head is not None:
+            start_event.record()
             outs = self.bbox_head(feature_bev)
+            end_event.record()
+
+            torch.cuda.synchronize()
+            bbox_head_time = start_event.elapsed_time(end_event)
+            print(f'Time for bbox_head: {bbox_head_time:.3f} ms')
             bbox_list = self.bbox_head.get_bboxes(outs, img_metas, rescale=False)
                                     
             bbox_results = [bbox3d2result(bboxes, scores, labels)for bboxes, scores, labels in bbox_list]
