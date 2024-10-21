@@ -486,7 +486,12 @@ class FastBEVFusionTransfusionheadPillar(BaseDetector):
         lidar_features = self.extract_pts_feat(points)
 
         #fuse lidar BEV and camera BEV features
+        time_0 = time.perf_counter()
         feature_bev = self.fusion_module(lidar_features, feature_bev)
+        time_1 = time.perf_counter()
+
+        took_time = time_1 - time_0
+        print(f"took_time: {took_time}")
 
 
         if self.bbox_head is not None:
