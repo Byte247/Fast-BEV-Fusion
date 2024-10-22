@@ -135,7 +135,6 @@ mmdet3d/core/evaluation/waymo_utils/compute_detection_metrics_main
 work_dirs
 trash
 wandb
-pretrained
 *.swp
 fail*
 
@@ -147,6 +146,10 @@ pretrained_models
 
 # figs
 figs
+*.pdf
+
+# workdir
+workdirs/*
 
 # mac
 .DS_Store

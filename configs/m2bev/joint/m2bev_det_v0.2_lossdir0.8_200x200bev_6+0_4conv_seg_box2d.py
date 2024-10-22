@@ -7,7 +7,7 @@ model = dict(
         num_stages=4,
         out_indices=(0, 1, 2, 3),
         frozen_stages=1,
-        norm_cfg=dict(type='SyncBN', requires_grad=True),
+        norm_cfg=dict(type='BN', requires_grad=True),
         norm_eval=True,
         init_cfg=dict(type='Pretrained', checkpoint='torchvision://resnet50'),
         style='pytorch',
@@ -16,7 +16,7 @@ model = dict(
     ),
     neck=dict(
         type='FPN',
-        norm_cfg=dict(type='SyncBN', requires_grad=True),
+        norm_cfg=dict(type='BN', requires_grad=True),
         in_channels=[256, 512, 1024, 2048],
         out_channels=64,
         num_outs=4),
@@ -28,7 +28,7 @@ model = dict(
         num_layers=6,
         stride=2,
         is_transpose=False,
-        norm_cfg=dict(type='SyncBN', requires_grad=True)),
+        norm_cfg=dict(type='BN', requires_grad=True)),
     seg_head=dict(
         type='BEV_FCNHead',
         use_centerness=True,
@@ -40,7 +40,7 @@ model = dict(
         concat_input=False,
         dropout_ratio=0.1,
         num_classes=2,
-        norm_cfg=dict(type='SyncBN', requires_grad=True),
+        norm_cfg=dict(type='BN', requires_grad=True),
         align_corners=False,
         loss_ce=dict(type='CrossEntropyLoss',use_sigmoid=True, loss_weight=1.0),
         loss_dice=dict(type='DiceLoss_zq', loss_weight=1.0)
@@ -99,7 +99,7 @@ model = dict(
             alpha=0.25,
             loss_weight=1.0),
         loss_bbox=dict(type='IoULoss', loss_weight=1.0),
-        loss_centerness=dict(type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0)),
+        loss_centerness=dict(type='CrossEntropyLoss', use_sigmoid=True, loss_weight=0.1)), #centerness does not seem to work
     # training and testing settings for 2d
     train_cfg_2d=dict(
         assigner=dict(
@@ -233,7 +233,7 @@ data = dict(
 
 optimizer = dict(
     type='AdamW',
-    lr=0.001,
+    lr=0.00005,
     weight_decay=0.01,
     paramwise_cfg=dict(
         custom_keys={'backbone': dict(lr_mult=0.1, decay_mult=1.0)}))

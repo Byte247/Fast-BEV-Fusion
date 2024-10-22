@@ -1,6 +1,7 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import mmcv
 import numpy as np
+import json
 import torch
 import pyquaternion
 import tempfile
@@ -493,6 +494,78 @@ class NuScenesDataset(Custom3DDataset):
         )
         return anns_results
 
+    # def _format_bbox(self, results, jsonfile_prefix=None):
+    #     """Convert the results to the standard format and write them directly to a JSON file.
+
+    #     Args:
+    #         results (list[dict]): Testing results of the dataset.
+    #         jsonfile_prefix (str): The prefix of the output json file.
+    #             You can specify the output directory/filename by
+    #             modifying the jsonfile_prefix. Default: None.
+
+    #     Returns:
+    #         str: Path of the output json file.
+    #     """
+    #     mapped_class_names = self.CLASSES
+    #     mmcv.mkdir_or_exist(jsonfile_prefix)
+    #     results_list = list(mmcv.track_iter_progress(results))
+    #     print('Start to convert detection format...')
+    #     with open(osp.join(jsonfile_prefix, 'results_nusc.json'), 'w') as f:
+    #         f.write('{"meta": ' + json.dumps(self.modality) + ', "results": {')
+    #         for sample_id, det in enumerate(mmcv.track_iter_progress(results)):
+    #             annos = []
+    #             boxes = output_to_nusc_box(det,
+    #                                     self.sequential,
+    #                                     self.n_times,
+    #                                     self.data_infos[sample_id],
+    #                                     self.speed_mode,
+    #                                     self.min_interval,
+    #                                     self.max_interval,
+    #                                     self.test_adj,
+    #                                     self.test_time_id,
+    #                                     self.fix_direction,
+    #                                     self.test_adj_ids,
+    #                                     self.verbose)
+    #             sample_token = self.data_infos[sample_id]['token']
+    #             boxes = lidar_nusc_box_to_global(self.data_infos[sample_id], boxes,
+    #                                             mapped_class_names,
+    #                                             self.eval_detection_configs,
+    #                                             self.eval_version)
+    #             for i, box in enumerate(boxes):
+    #                 name = mapped_class_names[box.label]
+    #                 if np.sqrt(box.velocity[0]**2 + box.velocity[1]**2) > 0.2:
+    #                     if name in ['car', 'construction_vehicle', 'bus', 'truck', 'trailer']:
+    #                         attr = 'vehicle.moving'
+    #                     elif name in ['bicycle', 'motorcycle']:
+    #                         attr = 'cycle.with_rider'
+    #                     else:
+    #                         attr = NuScenesDataset.DefaultAttribute[name]
+    #                 else:
+    #                     if name in ['pedestrian']:
+    #                         attr = 'pedestrian.standing'
+    #                     elif name in ['bus']:
+    #                         attr = 'vehicle.stopped'
+    #                     else:
+    #                         attr = NuScenesDataset.DefaultAttribute[name]
+
+    #                 nusc_anno = dict(
+    #                     sample_token=sample_token,
+    #                     translation=box.center.tolist(),
+    #                     size=box.wlh.tolist(),
+    #                     rotation=box.orientation.elements.tolist(),
+    #                     velocity=box.velocity[:2].tolist(),
+    #                     detection_name=name,
+    #                     detection_score=box.score,
+    #                     attribute_name=attr)
+    #                 annos.append(nusc_anno)
+    #             f.write(json.dumps({sample_token: annos}))
+    #             if sample_id < len(results_list) - 1:
+    #                 f.write(',')
+    #         f.write('}}')
+
+    #     res_path = osp.join(jsonfile_prefix, 'results_nusc.json')
+    #     print('Results written to', res_path)
+    #     return res_path
     def _format_bbox(self, results, jsonfile_prefix=None):
         """Convert the results to the standard format.
 
@@ -595,6 +668,7 @@ class NuScenesDataset(Custom3DDataset):
         from nuscenes.eval.detection.evaluate import NuScenesEval
 
         output_dir = osp.join(*osp.split(result_path)[:-1])
+        print(f"NuScenes eval output dir: {output_dir}")
         nusc = NuScenes(
             version=self.version, dataroot=self.data_root, verbose=False)
         eval_set_map = {
@@ -607,8 +681,8 @@ class NuScenesDataset(Custom3DDataset):
             result_path=result_path,
             eval_set=eval_set_map[self.version],
             output_dir=output_dir,
-            verbose=False)
-        nusc_eval.main(render_curves=False)
+            verbose=True)
+        nusc_eval.main(render_curves=True, plot_examples=10)
 
         # record metrics
         metrics = mmcv.load(osp.join(output_dir, 'metrics_summary.json'))
@@ -646,9 +720,9 @@ class NuScenesDataset(Custom3DDataset):
                 `jsonfile_prefix` is not specified.
         """
         assert isinstance(results, list), 'results must be a list'
-        assert len(results) == len(self), (
-            'The length of results is not equal to the dataset len: {} != {}'.
-            format(len(results), len(self)))
+        # assert len(results) == len(self), (
+        #     'The length of results is not equal to the dataset len: {} != {}'.
+        #     format(len(results), len(self)))
 
         if jsonfile_prefix is None:
             tmp_dir = tempfile.TemporaryDirectory()
@@ -674,6 +748,54 @@ class NuScenesDataset(Custom3DDataset):
                 result_files.update(
                     {name: self._format_bbox(results_, tmp_file_)})
         return result_files, tmp_dir
+    
+
+    def evaluate_new(self,
+                 results,
+                 metric='bbox',
+                 logger=None,
+                 jsonfile_prefix=None,
+                 result_names=['pts_bbox'],
+                 show=False,
+                 out_dir=None,
+                 pipeline=None,
+                 vis_mode=None):
+        """Evaluation in nuScenes protocol.
+
+        Args:
+            results (list[dict]): Testing results of the dataset.
+            metric (str | list[str]): Metrics to be evaluated.
+            logger (logging.Logger | str | None): Logger used for printing
+                related information during evaluation. Default: None.
+            jsonfile_prefix (str | None): The prefix of json files. It includes
+                the file path and the prefix of filename, e.g., "a/b/prefix".
+                If not specified, a temp file will be created. Default: None.
+            show (bool): Whether to visualize.
+                Default: False.
+            out_dir (str): Path to save the visualization results.
+                Default: None.
+            pipeline (list[dict], optional): raw data loading for showing.
+                Default: None.
+
+        Returns:
+            dict[str, float]: Results of each evaluation metric.
+        """
+        result_files = results
+
+        print(f"type result_files : {type(result_files)}")
+        print(f"len result_files : {len(result_files)}")
+        if isinstance(result_files, dict):
+            results_dict = dict()
+            for name in result_names:
+                print('Evaluating bboxes of {}'.format(name))
+                ret_dict = self._evaluate_single(result_files[name])
+            results_dict.update(ret_dict)
+        elif isinstance(result_files, str):
+            results_dict = self._evaluate_single(result_files)
+
+        if show:
+            self.show(results, out_dir, pipeline=pipeline)
+        return results_dict
 
     def evaluate(self,
                  results,
@@ -705,6 +827,7 @@ class NuScenesDataset(Custom3DDataset):
             dict[str, float]: Results of each evaluation metric.
         """
         result_files, tmp_dir = self.format_results(results, jsonfile_prefix)
+
 
         if isinstance(result_files, dict):
             results_dict = dict()
@@ -841,6 +964,9 @@ def output_to_nusc_box(detection, sequential, n_times, info, speed_mode,
         # velo_ori = box3d[i, 6]
         # velocity = (
         # velo_val * np.cos(velo_ori), velo_val * np.sin(velo_ori), 0.0)
+        if np.any(np.isnan(box_gravity_center[i])) or np.any(np.isnan(box_dims[i])):
+            print(f"Found nan in box values. Skipping this box")
+            continue
         box = NuScenesBox(
             box_gravity_center[i],
             box_dims[i],

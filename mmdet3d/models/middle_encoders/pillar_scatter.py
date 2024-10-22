@@ -17,13 +17,18 @@ class PointPillarsScatter(nn.Module):
         output_shape (list[int]): Required output shape of features.
     """
 
-    def __init__(self, in_channels, output_shape):
+    def __init__(self, in_channels, output_shape, freeze_layers=False):
         super().__init__()
         self.output_shape = output_shape
         self.ny = output_shape[0]
         self.nx = output_shape[1]
         self.in_channels = in_channels
         self.fp16_enabled = False
+
+        if freeze_layers:
+            print("Freeze PointPillarsScatter layers")
+            for param in self.parameters():
+                param.requires_grad = False
 
     @auto_fp16(apply_to=('voxel_features', ))
     def forward(self, voxel_features, coors, batch_size=None):

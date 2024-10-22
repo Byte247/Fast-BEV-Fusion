@@ -228,6 +228,7 @@ class DCNSeparateHead(BaseModule):
                 -heatmap (torch.Tensor): Heatmap with the shape of \
                     [B, N, H, W].
         """
+        x = x.contiguous()
         center_feat = self.feature_adapt_cls(x)
         reg_feat = self.feature_adapt_reg(x)
 
@@ -453,6 +454,7 @@ class CenterHead(BaseModule):
                 - list[torch.Tensor]: Masks indicating which boxes \
                     are valid.
         """
+        
         device = gt_labels_3d.device
         gt_bboxes_3d = torch.cat(
             (gt_bboxes_3d.gravity_center, gt_bboxes_3d.tensor[:, 3:]),
@@ -586,6 +588,7 @@ class CenterHead(BaseModule):
         Returns:
             dict[str:torch.Tensor]: Loss of heatmap and bbox of each task.
         """
+
         heatmaps, anno_boxes, inds, masks = self.get_targets(
             gt_bboxes_3d, gt_labels_3d)
         loss_dict = dict()

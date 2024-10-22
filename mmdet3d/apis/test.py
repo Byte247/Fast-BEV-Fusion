@@ -6,6 +6,7 @@ import pickle
 import shutil
 import tempfile
 import time
+import numpy as np
 
 from mmdet3d.models import (Base3DDetector, Base3DSegmentor,
                             SingleStageMono3DDetector)
@@ -13,7 +14,7 @@ from mmdet3d.core.visualizer.image_vis import draw_lidar_bbox3d_on_img
 from mmcv.runner import (get_dist_info, init_dist, load_checkpoint,
                          wrap_fp16_model)
 import torch.distributed as dist
-import ipdb
+import numpy as np
 
 
 def single_gpu_test(model,
@@ -43,6 +44,9 @@ def single_gpu_test(model,
     results = []
     dataset = data_loader.dataset
     prog_bar = mmcv.ProgressBar(len(dataset))
+    times = []
+
+    times = []
 
     if debug:
         for i in range(5):
@@ -52,7 +56,10 @@ def single_gpu_test(model,
             if i > 30:
                 return results
         with torch.no_grad():
+            time_0 = time.perf_counter()
             result = model(return_loss=False, rescale=True, **data)
+            time_1 = time.perf_counter()
+            times.append(time_1 - time_0)
 
         if show:
             # Visualize the results of MMDetection3D model
@@ -98,6 +105,7 @@ def single_gpu_test(model,
         batch_size = len(result)
         for _ in range(batch_size):
             prog_bar.update()
+    print(f"mean times: {np.mean(times)}")
     return results
 
 

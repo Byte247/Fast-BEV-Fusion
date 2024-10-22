@@ -229,7 +229,7 @@ class ObjectSample(object):
                 input_dict['img'] = sampled_dict['img']
 
         input_dict['gt_bboxes_3d'] = gt_bboxes_3d
-        input_dict['gt_labels_3d'] = gt_labels_3d.astype(np.long)
+        input_dict['gt_labels_3d'] = gt_labels_3d.astype(np.longlong)
         input_dict['points'] = points
 
         return input_dict
@@ -467,7 +467,7 @@ class ObjectRangeFilter(object):
         # using mask to index gt_labels_3d will cause bug when
         # len(gt_labels_3d) == 1, where mask=1 will be interpreted
         # as gt_labels_3d[1] and cause out of index error
-        gt_labels_3d = gt_labels_3d[mask.numpy().astype(np.bool)]
+        gt_labels_3d = gt_labels_3d[mask.numpy().astype(bool)]
 
         # limit rad to [-pi, pi]
         gt_bboxes_3d.limit_yaw(offset=0.5, period=2 * np.pi)
@@ -552,7 +552,7 @@ class ObjectNameFilter(object):
         """
         gt_labels_3d = input_dict['gt_labels_3d']
         gt_bboxes_mask = np.array([n in self.labels for n in gt_labels_3d],
-                                  dtype=np.bool_)
+                                  dtype=bool)
         input_dict['gt_bboxes_3d'] = input_dict['gt_bboxes_3d'][gt_bboxes_mask]
         input_dict['gt_labels_3d'] = input_dict['gt_labels_3d'][gt_bboxes_mask]
 
@@ -1702,6 +1702,18 @@ class RandomAugImageMultiViewImage(object):
                 rotate=rotate,
                 pad=pad
             )
+
+            # test_image = np.asanyarray(post_pil_img)
+
+            # print(f"test_image: {test_image.shape}")
+
+            # # # Rescale values from 0-1 to 0-255
+            # new_image =  test_image * 255
+            # new_image = new_image.astype(np.uint8)
+
+            # cv2.imshow("post_pil_img", new_image)
+            # cv2.waitKey(0)
+            
             aug_imgs.append(np.asarray(post_pil_img))
             aug_extrinsics.append(
                 self.rts2proj(results['lidar2img']['lidar2img_aug'][cam_id], post_rot, post_tran)

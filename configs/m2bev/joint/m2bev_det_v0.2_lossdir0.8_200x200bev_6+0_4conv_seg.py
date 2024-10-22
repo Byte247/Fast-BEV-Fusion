@@ -7,7 +7,7 @@ model = dict(
         num_stages=4,
         out_indices=(0, 1, 2, 3),
         frozen_stages=1,
-        norm_cfg=dict(type='SyncBN', requires_grad=True),
+        norm_cfg=dict(type='BN', requires_grad=True),
         norm_eval=True,
         init_cfg=dict(type='Pretrained', checkpoint='torchvision://resnet50'),
         style='pytorch',
@@ -16,7 +16,7 @@ model = dict(
     ),
     neck=dict(
         type='FPN',
-        norm_cfg=dict(type='SyncBN', requires_grad=True),
+        norm_cfg=dict(type='BN', requires_grad=True),
         in_channels=[256, 512, 1024, 2048],
         out_channels=64,
         num_outs=4),
@@ -28,7 +28,7 @@ model = dict(
         num_layers=6,
         stride=2,
         is_transpose=False,
-        norm_cfg=dict(type='SyncBN', requires_grad=True)),
+        norm_cfg=dict(type='BN', requires_grad=True)),
     seg_head=dict(
         type='BEV_FCNHead',
         use_centerness=True,
@@ -40,7 +40,7 @@ model = dict(
         concat_input=False,
         dropout_ratio=0.1,
         num_classes=2,
-        norm_cfg=dict(type='SyncBN', requires_grad=True),
+        norm_cfg=dict(type='BN', requires_grad=True),
         align_corners=False,
         loss_ce=dict(type='CrossEntropyLoss',use_sigmoid=True, loss_weight=1.0),
         loss_dice=dict(type='DiceLoss_zq', loss_weight=1.0)
@@ -159,7 +159,7 @@ test_pipeline = [
 
 data = dict(
     samples_per_gpu=1,
-    workers_per_gpu=1,
+    workers_per_gpu=8,
     train=dict(
         type='RepeatDataset',
         times=1,

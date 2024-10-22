@@ -124,6 +124,10 @@ class MVXTwoStageDetector(Base3DDetector):
     def with_img_backbone(self):
         """bool: Whether the detector has a 2D image backbone."""
         return hasattr(self, 'img_backbone') and self.img_backbone is not None
+    @property
+    def with_pts_backbone(self):
+        """bool: Whether the detector has a points backbone."""
+        return hasattr(self, 'pts_backbone') and self.pts_backbone is not None
 
     @property
     def with_pts_backbone(self):
@@ -387,9 +391,9 @@ class MVXTwoStageDetector(Base3DDetector):
         proposal_inputs = rpn_outs + (img_metas, rpn_test_cfg)
         proposal_list = self.img_rpn_head.get_bboxes(*proposal_inputs)
         return proposal_list
-
+    """
     def simple_test_pts(self, x, img_metas, rescale=False):
-        """Test function of point cloud branch."""
+        
         outs = self.pts_bbox_head(x)
         bbox_list = self.pts_bbox_head.get_bboxes(
             *outs, img_metas, rescale=rescale)
@@ -398,23 +402,25 @@ class MVXTwoStageDetector(Base3DDetector):
             for bboxes, scores, labels in bbox_list
         ]
         return bbox_results
-
+    """
     def simple_test(self, points, img_metas, img=None, rescale=False):
         """Test function without augmentaiton."""
         img_feats, pts_feats = self.extract_feat(
             points, img=img, img_metas=img_metas)
 
         bbox_list = [dict() for i in range(len(img_metas))]
-        if pts_feats and self.with_pts_bbox:
-            bbox_pts = self.simple_test_pts(
-                pts_feats, img_metas, rescale=rescale)
-            for result_dict, pts_bbox in zip(bbox_list, bbox_pts):
+        
+        
+            
+        bbox_pts = self.simple_test_pts(pts_feats, img_metas, rescale=rescale)
+                
+        for result_dict, pts_bbox in zip(bbox_list, bbox_pts):
                 result_dict['pts_bbox'] = pts_bbox
-        if img_feats and self.with_img_bbox:
-            bbox_img = self.simple_test_img(
-                img_feats, img_metas, rescale=rescale)
-            for result_dict, img_bbox in zip(bbox_list, bbox_img):
-                result_dict['img_bbox'] = img_bbox
+        #if img_feats and self.with_img_bbox:
+        #    bbox_img = self.simple_test_img(
+        #        img_feats, img_metas, rescale=rescale)
+        #    for result_dict, img_bbox in zip(bbox_list, bbox_img):
+        #        result_dict['img_bbox'] = img_bbox
         return bbox_list
 
     def aug_test(self, points, img_metas, imgs=None, rescale=False):

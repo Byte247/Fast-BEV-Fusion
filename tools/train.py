@@ -39,6 +39,8 @@ def parse_args():
     parser.add_argument(
         '--load-from', help='the checkpoint file to load from')
     parser.add_argument(
+        '--load-additional-from', help='the second checkpoint file to load from, mostly for pretrained models')
+    parser.add_argument(
         '--no-validate',
         action='store_true',
         help='whether not to evaluate the checkpoint during training')
@@ -114,6 +116,9 @@ def parse_args():
 
 
 def main():
+
+    #torch.autograd.set_detect_anomaly(True)
+
     args = parse_args()
 
     cfg = Config.fromfile(args.config)
@@ -140,6 +145,10 @@ def main():
         cfg.resume_from = args.resume_from
     if args.load_from is not None:
         cfg.load_from = args.load_from
+
+    if args.load_additional_from is not None:
+        cfg.load_additional_from = args.load_additional_from
+
     if args.gpu_ids is not None:
         cfg.gpu_ids = args.gpu_ids
     else:
@@ -200,7 +209,7 @@ def main():
 
     # log some basic info
     logger.info(f'Distributed training: {distributed}')
-    logger.info(f'Config:\n{cfg.pretty_text}')
+    #logger.info(f'Config:\n{cfg.pretty_text}')
 
     # set random seeds
     if args.seed is not None:
@@ -215,18 +224,28 @@ def main():
         cfg.model,
         train_cfg=cfg.get('train_cfg'),
         test_cfg=cfg.get('test_cfg'))
-    model.init_weights()
-    logger.info(f'Model:\n{model}')
+    model.init_weights() #init weights from the load-from
+
+
+
+    # Count total number of parameters
+    total_params = sum(p.numel() for p in model.parameters())
+
+    # Print the total number of parameters
+    print(f'Total number of parameters: {total_params}')
+
+
+    # logger.info(f'Model:\n{model}')
     
-    frozen_det = cfg.get('frozen_det', False)
-    if frozen_det:
-        print('### freeze detection branch ###')
-        model.neck.eval()
-        model.neck_fuse.eval()
-        model.neck_3d.eval()
-        for name, param in model.named_parameters():
-            if not 'seg' in name:
-                param.requires_grad = False
+    # frozen_det = cfg.get('frozen_det', False)
+    # if frozen_det:
+    #     print('### freeze detection branch ###')
+    #     model.neck.eval()
+    #     model.neck_fuse.eval()
+    #     model.neck_3d.eval()
+    #     for name, param in model.named_parameters():
+    #         if not 'seg' in name:
+    #             param.requires_grad = False
 
     datasets = [build_dataset(cfg.data.train)]
     if args.debug:

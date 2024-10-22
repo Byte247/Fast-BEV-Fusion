@@ -24,9 +24,9 @@ class M2BevNet(BaseDetector):
         neck_fuse,
         neck_3d,
         bbox_head,
-        seg_head,
         n_voxels,
         voxel_size,
+        seg_head = None,
         bbox_head_2d=None,
         train_cfg=None,
         test_cfg=None,
@@ -92,7 +92,10 @@ class M2BevNet(BaseDetector):
         projection = []
         intrinsic = torch.tensor(img_meta["lidar2img"]["intrinsic"][:3, :3])
         intrinsic[:2] /= stride
+
+        #print(f"intrinsic after stride: {intrinsic}")
         extrinsics = map(torch.tensor, img_meta["lidar2img"]["extrinsic"])
+        #print(f"extrinsics: {extrinsics}")
         for extrinsic in extrinsics:
             if noise > 0:
                 projection.append(intrinsic @ extrinsic[:3] + noise)
@@ -105,9 +108,12 @@ class M2BevNet(BaseDetector):
         img = img.reshape(
             [-1] + list(img.shape)[2:]
         )  # [1, 6, 3, 928, 1600] -> [6, 3, 928, 1600]
+        #print(f"img shape: {img.shape}")
         x = self.backbone(
             img
         )  # [6, 256, 232, 400]; [6, 512, 116, 200]; [6, 1024, 58, 100]; [6, 2048, 29, 50]
+
+       
 
         # use for vovnet
         if isinstance(x, dict):

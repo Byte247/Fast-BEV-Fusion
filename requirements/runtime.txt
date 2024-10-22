@@ -9,3 +9,8 @@ scikit-image
 # by default we also use tensorboard to log results
 tensorboard
 trimesh>=2.35.39,<2.35.40
+mmsegmentation==0.14.1
+spconv-cu113
+timm
+ipdb
+torch_scatter

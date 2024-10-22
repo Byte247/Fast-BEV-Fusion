@@ -5,6 +5,7 @@ import torch.utils.checkpoint as cp
 
 from mmdet.models import NECKS
 from mmcv.runner import auto_fp16
+from mmcv.runner import force_fp32
 import ipdb
 
 
@@ -30,8 +31,7 @@ class ResModule2D(nn.Module):
             norm_cfg=norm_cfg,
             act_cfg=None)
         self.activation = nn.ReLU(inplace=True)
-
-    @auto_fp16()
+    @force_fp32()
     def forward(self, x):
         """Forward function.
 
@@ -98,7 +98,6 @@ class M2BevNeck(nn.Module):
                 norm_cfg=norm_cfg,
                 act_cfg=dict(type='ReLU', inplace=True)))
         self.model = nn.Sequential(*model)
-
     @auto_fp16()
     def forward(self, x):
         """Forward function.
@@ -111,7 +110,9 @@ class M2BevNeck(nn.Module):
         """
 
         def _inner_forward(x):
+            
             out = self.model.forward(x)
+            
             return out
 
         if bool(os.getenv("DEPLOY", False)):

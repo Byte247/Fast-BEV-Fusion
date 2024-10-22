@@ -425,7 +425,7 @@ class NuScenesMonoDataset(CocoDataset):
             eval_set=eval_set_map[self.version],
             output_dir=output_dir,
             verbose=False)
-        nusc_eval.main(render_curves=True)
+        nusc_eval.main(render_curves=True, plot_examples=True)
 
         # record metrics
         metrics = mmcv.load(osp.join(output_dir, 'metrics_summary.json'))

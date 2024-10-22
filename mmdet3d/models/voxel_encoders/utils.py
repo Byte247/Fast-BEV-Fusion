@@ -179,3 +179,5 @@ class PFNLayer(nn.Module):
             x_repeat = x_max.repeat(1, inputs.shape[1], 1)
             x_concatenated = torch.cat([x, x_repeat], dim=2)
             return x_concatenated
+        
+

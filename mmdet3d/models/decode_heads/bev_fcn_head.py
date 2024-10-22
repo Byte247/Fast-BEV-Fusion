@@ -140,7 +140,7 @@ class BEV_FCNHead(BEV_BaseDecodeHead):
 
 
 def bev_centerness_weight(nx, ny):
-    assert nx == ny == 200
+
     xs, ys = torch.meshgrid(torch.arange(0, nx), torch.arange(0, nx))
     grid = torch.cat([xs[:, :, None], ys[:, :, None]], -1)
     grid = grid - nx//2
