@@ -347,17 +347,17 @@ lr_config = dict(
      policy='cyclic',
      target_ratio=(10, 1e-4),
      cyclic_times=1,
-     step_ratio_up=0.3,
+     step_ratio_up=0.4,
  )
 momentum_config = dict(
     policy='cyclic',
     target_ratio=(0.8947368421052632, 1),
     cyclic_times=1,
-    step_ratio_up=0.3)
+    step_ratio_up=0.4)
 
 
 # runtime settings
-runner = dict(type='EpochBasedRunner', max_epochs=10)
+runner = dict(type='EpochBasedRunner', max_epochs=20)
 
 #total_epochs = 20
 checkpoint_config = dict(interval=1)
